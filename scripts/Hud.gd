@@ -105,7 +105,7 @@ func flash_msg(text):
 	_msg_t = 1.8
 
 
-func refresh(sim, w, won):
+func refresh(sim, w, st, won):
 	var ph = "SIANG" if w.phase == Config.PHASE_DAY else "MALAM"
 	_lbl_phase.text = "%s   %d%%" % [ph, int(w.progress() * 100)]
 	if w.phase == Config.PHASE_NIGHT and w.progress() > 0.78:
@@ -123,10 +123,10 @@ func refresh(sim, w, won):
 		int(sim.water), " <" if bn == "AIR" else "",
 		int(sim.light), " <" if bn == "CAHAYA" else ""]
 
-	_lbl_cov.text = "TERTUTUP  %d%%  /  %d%%" % [
-		int(sim.coverage * 100), int(Config.COVERAGE_GOAL * 100)]
-	_c_fill.rect_size = Vector2(
-			238.0 * min(1.0, sim.coverage / Config.COVERAGE_GOAL), 11)
+	# Bar ini menyusut saat gedung dilemahkan dan diruntuhkan.
+	var integ = st.integritas_total()
+	_lbl_cov.text = "STRUKTUR  %d%%" % int(round(integ * 100))
+	_c_fill.rect_size = Vector2(238.0 * clamp(integ, 0.0, 1.0), 11)
 
 	var lvl = "aman"
 	if w.suspicion > 0.35:

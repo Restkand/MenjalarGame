@@ -51,6 +51,7 @@ func grow(delta, steer, t, world):
 	var target = angle
 	if steer != null:
 		target = steer
+	target = _tarik_joint(target, steer, tip, world)
 	target += sin(t * 2.7 + id * 13.0) * Config.NOISE_AMOUNT * delta
 
 	var d = wrapf(target - angle, -PI, PI)
@@ -99,6 +100,22 @@ func grow(delta, steer, t, world):
 			_spawn_leaf(world)
 
 	return gained
+
+
+# Tigmotropisme ke arah sambungan struktur. Hanya sulur — akar tidak mencari
+# joint. Saat pemain sedang mengarahkan, deviasinya dibatasi JOINT_TARIK_MAX
+# supaya tetap terasa mengusulkan, bukan kehilangan kendali (Logika §5.1).
+func _tarik_joint(target, steer, p, world):
+	if is_root:
+		return target
+	var j = world.nearest_joint(p, Config.JOINT_TARIK_RADIUS)
+	if j == null:
+		return target
+	var ke_joint = atan2(j.y - p.y, j.x - p.x)
+	if steer == null:
+		return ke_joint
+	return steer + clamp(wrapf(ke_joint - steer, -PI, PI),
+			-Config.JOINT_TARIK_MAX, Config.JOINT_TARIK_MAX)
 
 
 func _spawn_leaf(world):
@@ -152,8 +169,13 @@ func preview(mouse, length, world):
 	var turn_px = Config.MAX_TURN / max(0.001, spd)
 	for _i in range(int(length)):
 		var a2 = a
+		var st = null
 		if p.distance_to(mouse) > Config.DEAD_ZONE:
-			a2 = atan2(mouse.y - p.y, mouse.x - p.x)
+			st = atan2(mouse.y - p.y, mouse.x - p.x)
+			a2 = st
+		# pratinjau harus memakai aturan yang sama, termasuk tarikan joint,
+		# supaya menunjukkan ke mana sulur benar-benar tumbuh (Logika §11)
+		a2 = _tarik_joint(a2, st, p, world)
 		var d = wrapf(a2 - a, -PI, PI)
 		a += clamp(d, -turn_px, turn_px)
 		var q = Vector2(p.x + cos(a), p.y + sin(a))

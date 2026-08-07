@@ -221,7 +221,7 @@ func draw_frame(world):
 	for m in world.members:
 		if not m.alive:
 			continue
-		var cap = m.integritas * Config.KAPASITAS_MAX
+		var cap = world.kapasitas(m)
 		var stress = 1.0 if cap <= 0.0 else clamp(m.beban / cap, 0.0, 1.0)
 		_line(_ovl_img, m.x0, m.y0, m.x1, m.y1,
 				Config.C_FRAME_OK.linear_interpolate(Config.C_FRAME_BAD, stress))
@@ -261,7 +261,7 @@ func draw_cracks(world):
 	for m in world.members:
 		if not m.alive:
 			continue
-		var cap = m.integritas * Config.KAPASITAS_MAX
+		var cap = world.kapasitas(m)
 		if cap <= 0.0:
 			continue
 		var stress = m.beban / cap

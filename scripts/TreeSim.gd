@@ -176,6 +176,26 @@ func branch():
 	return true
 
 
+func spend(amount):
+	if amount <= 0.0:
+		return
+	energy = max(0.0, energy - amount)
+
+
+# Sulur menempel pada fasad. Kalau fasad di bawah ujungnya lenyap karena
+# keruntuhan, ujung itu kehilangan pijakan dan berhenti — badannya tetap
+# tergambar. Meruntuhkan gedung berarti ikut menghancurkan pijakan sendiri.
+func prune_unsupported(world):
+	var n = 0
+	for s in strands:
+		if not s.alive or s.is_root:
+			continue
+		if not world.on_facade(s.tip.x, s.tip.y):
+			s.alive = false
+			n += 1
+	return n
+
+
 func stop_selected():
 	if selected != null:
 		selected.alive = false

@@ -107,6 +107,8 @@ func _process(delta):
 			if structure.wave_index == 1:
 				_freeze = Config.FREEZE_TIME
 			structure.wave_panjang = 0.0
+			# fasad baru saja berlubang — ujung yang kehilangan pijakan berhenti
+			sim.prune_unsupported(world)
 
 		if structure.dirty_img:
 			structure.dirty_img = false
@@ -115,6 +117,7 @@ func _process(delta):
 		if playing and not won:
 			seen = sim.update(delta, is_steering, m, world, warden.phase)
 			warden.update(delta, sim, world, seen)
+			sim.spend(structure.weaken(sim, delta))
 
 	if warden.did_prune:
 		canvas.clear_tree()
@@ -141,7 +144,7 @@ func _process(delta):
 	canvas.end_frame()
 
 	canvas.set_night(warden.night_amount())
-	hud.refresh(sim, warden, won)
+	hud.refresh(sim, warden, structure, won)
 
 
 func _input(event):

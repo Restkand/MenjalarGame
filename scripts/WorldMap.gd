@@ -331,6 +331,57 @@ func settle_many(points):
 	image.unlock()
 
 
+# Member hanya sekuat sambungan terlemahnya. Satu-satunya sumber kebenaran
+# untuk kapasitas — dipakai deteksi gagal, warna debug, dan retakan.
+func kapasitas(m):
+	return m.integritas * min(joints[m.joint_a].integritas,
+			joints[m.joint_b].integritas) * Config.KAPASITAS_MAX
+
+
+# Joint terdekat yang masih layak diserang: belum habis, dan setidaknya satu
+# member yang menempel padanya masih hidup.
+func nearest_joint(p, radius):
+	var best = radius
+	var found = null
+	for j in joints:
+		if j.integritas <= 0.0:
+			continue
+		var hidup = false
+		for mid in j.member_terhubung:
+			if members[mid].alive:
+				hidup = true
+				break
+		if not hidup:
+			continue
+		var d = p.distance_to(Vector2(j.x, j.y))
+		if d < best:
+			best = d
+			found = j
+	return found
+
+
+# Kaki gedung terdekat — ruas KOLOM paling bawah. Sasaran akar.
+#
+# Sengaja bukan "semua member ber-member_bawah kosong": balok level dasar juga
+# memenuhi syarat itu, padahal tidak ada yang bertumpu padanya, jadi
+# meruntuhkannya tidak memicu apa pun. Lebih buruk, akar lahir 2 piksel di
+# bawah balok dasar dan akan menggerogotinya sia-sia sejak frame pertama.
+# Ruas kolom bawahlah yang memikul seluruh gedung.
+func foundation_at(p, radius):
+	var best = radius
+	var found = null
+	for m in members:
+		if not m.alive or m.tipe != Config.M_KOLOM or m.integritas <= 0.0:
+			continue
+		if m.member_bawah.size() > 0:
+			continue
+		var d = _dist_seg(p, Vector2(m.x0, m.y0), Vector2(m.x1, m.y1))
+		if d < best:
+			best = d
+			found = m
+	return found
+
+
 func member_at(p, radius):
 	var best = radius
 	var found = -1

@@ -24,6 +24,8 @@ var last_wave  = 0       # jumlah member yang gagal di gelombang terakhir
 var wave_panjang = 0.0
 var wave_index   = 0
 
+var dirty_caps = false   # ada joint/member yang melemah — cek gagal ulang
+
 var _timer = 0.0
 var _iter  = 0
 
@@ -38,6 +40,7 @@ func setup(w):
 	last_wave = 0
 	wave_panjang = 0.0
 	wave_index = 0
+	dirty_caps = false
 	_timer = 0.0
 	_iter = 0
 	solve()
@@ -77,7 +80,7 @@ func _failures():
 		if m.member_bawah.size() > 0 and not _ada_tumpuan(m):
 			out.append(m.id)
 			continue
-		if m.beban > m.integritas * Config.KAPASITAS_MAX:
+		if m.beban > world.kapasitas(m):
 			out.append(m.id)
 	return out
 
@@ -89,15 +92,59 @@ func _ada_tumpuan(m):
 	return false
 
 
-# Nol berarti gedung sudah rata. Dipakai HUD nanti (TAHAP 5).
+# Nol berarti gedung sudah rata. Member dan joint dihitung bersama supaya
+# melemahkan sambungan pun langsung menggerakkan bar di HUD.
 func integritas_total():
-	if world.members.empty():
+	var n = world.members.size() + world.joints.size()
+	if n == 0:
 		return 0.0
-	var hidup = 0.0
+	var sisa = 0.0
 	for m in world.members:
 		if m.alive:
-			hidup += m.integritas
-	return hidup / float(world.members.size())
+			sisa += m.integritas
+	# Joint yang semua membernya sudah mati tidak lagi berarti apa-apa, jadi
+	# dihitung nol. Tanpa ini bar berhenti di 39% walau gedungnya sudah rata.
+	for j in world.joints:
+		for mid in j.member_terhubung:
+			if world.members[mid].alive:
+				sisa += j.integritas
+				break
+	return sisa / float(n)
+
+
+# ---------------------------------------------------------------------------
+# Pelemahan oleh tanaman
+# ---------------------------------------------------------------------------
+
+# Sulur menyerang joint, akar menyerang member pondasi. Mengembalikan biaya
+# energi; TreeSim yang memiliki energi, jadi pemanggil yang membelanjakannya.
+# Kalau energi tidak cukup, tidak ada yang melemah sama sekali.
+func weaken(sim, delta):
+	var sasaran = []
+	for s in sim.strands:
+		if not s.alive:
+			continue
+		if s.is_root:
+			var f = world.foundation_at(s.tip, Config.JOINT_RADIUS)
+			if f != null:
+				sasaran.append(f)
+		else:
+			var j = world.nearest_joint(s.tip, Config.JOINT_RADIUS)
+			if j != null:
+				sasaran.append(j)
+
+	if sasaran.empty():
+		return 0.0
+
+	# laju yang sama seperti satu ujung yang tumbuh biasa
+	var biaya = sasaran.size() * 9.0 * Config.COST_PER_PIXEL * delta
+	if sim.energy < biaya:
+		return 0.0
+
+	for t in sasaran:
+		t.integritas = max(0.0, t.integritas - Config.WEAKEN_RATE * delta)
+	dirty_caps = true
+	return biaya
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +167,19 @@ func fail_member(id):
 func update(delta):
 	_debris_step(delta)
 	_dust_step(delta)
+
+	# Beban tidak berubah saat integritas turun — hanya kapasitasnya. Jadi
+	# solve() tetap event-driven; yang dicek ulang hanya ambang gagalnya, dan
+	# itu pun hanya kalau ada yang benar-benar melemah frame ini.
+	if dirty_caps and not collapsing:
+		dirty_caps = false
+		var f = _failures()
+		if not f.empty():
+			queue = f
+			collapsing = true
+			_timer = 0.0
+			_iter = 0
+
 	if not collapsing:
 		return
 

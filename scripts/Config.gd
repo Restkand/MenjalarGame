@@ -87,6 +87,23 @@ const DEBU_MAX_TOTAL = 400
 const DEBU_NAIK      = 9.0
 const DEBU_UMUR      = 1.1
 
+# melemahkan struktur
+#
+# Kapasitas member = integritas_member * min(integritas kedua joint)
+#                    * KAPASITAS_MAX
+# Member hanya sekuat sambungan terlemahnya.
+#
+# WEAKEN_RATE adalah knob pacing utama. Untuk menjatuhkan KOLOM1.3 (beban 301,
+# kapasitas 350) cukup menurunkan joint ke 0.86 — 14% saja, sekitar 1,2 detik
+# pada 0.12/detik. Kolom terluar (beban 199) butuh turun ke 0.57, sekitar 3,6
+# detik. Jadi menyerang titik paling terbebani otomatis paling cepat, dan itu
+# mengajarkan jalur beban tanpa satu pun teks.
+var WEAKEN_RATE = 0.12
+
+const JOINT_RADIUS       = 3.0     # jangkauan melemahkan
+const JOINT_TARIK_RADIUS = 12.0    # jangkauan tigmotropisme ke joint
+const JOINT_TARIK_MAX    = 0.262   # 15 derajat, batas deviasi dari arah pemain
+
 const SUN_RAY = Vector2(-0.34, -0.94)
 
 const T_SKY      = 0

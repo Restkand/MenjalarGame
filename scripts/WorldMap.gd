@@ -6,6 +6,7 @@ var light
 var vis
 var members = []
 var joints  = []
+var panels  = []       # massa dinding di antara rangka
 var settled            # puing yang sudah mengendap, 0/1 per piksel
 var solve_order = []   # id member dalam urutan topologis atas-ke-bawah
 
@@ -132,6 +133,7 @@ func _bake_vis():
 func _build_frame():
 	members = []
 	joints = []
+	panels = []
 	solve_order = []
 
 	var cx = []   # x tiap garis kolom
@@ -173,6 +175,23 @@ func _build_frame():
 
 	_link_supports()
 	_build_solve_order()
+
+	# Panel dinding di antara rangka. INI massa gedung yang sebenarnya.
+	# Member cuma garis selebar 3 piksel, jadi tanpa panel, menghancurkan
+	# seluruh rangka nyaris tidak mengubah apa pun di layar — persis yang
+	# terjadi di playtest: STRUKTUR 0% tapi gedungnya masih berdiri utuh.
+	# Empat member yang mengurung tiap panel dicatat sebagai penopangnya.
+	for j in range(Config.FRAME_ROWS - 1):
+		for i in range(Config.FRAME_COLS - 1):
+			panels.append({
+				"x0": cx[i], "y0": ry[j],
+				"x1": cx[i + 1], "y1": ry[j + 1],
+				"alive": true,
+				"rangka": [
+					_balok_id(i, j), _balok_id(i, j + 1),
+					_kolom_id(i, j), _kolom_id(i + 1, j),
+				],
+			})
 
 
 # Urutan topologis: di tiap level, balok dulu baru ruas kolom. Keduanya hanya
@@ -317,6 +336,16 @@ func carve_member(m):
 		for dy in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
 			for dx in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
 				_carve_px(px + dx, py + dy)
+	image.unlock()
+
+
+# Menjatuhkan seluruh panel dinding sekaligus. Jauh lebih banyak piksel
+# daripada carve_member, tapi hanya terjadi 12 kali sepanjang satu ronde.
+func carve_panel(p):
+	image.lock()
+	for y in range(p.y0, p.y1 + 1):
+		for x in range(p.x0, p.x1 + 1):
+			_carve_px(x, y)
 	image.unlock()
 
 

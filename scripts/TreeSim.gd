@@ -8,7 +8,6 @@ var time     = 0.0
 var energy   = 0.0
 var water    = 0.0
 var light    = 0.0
-var coverage = 0.0
 var starved  = false
 var _next_id = 0
 
@@ -20,7 +19,6 @@ func reset():
 	energy = Config.ENERGY_START
 	water = 0.0
 	light = 0.0
-	coverage = 0.0
 	starved = false
 	var root = _make(Config.SEED_X, Config.GROUND_Y + 1, PI / 2, true, 0)
 	var vine = _make(Config.SEED_X, Config.FACADE_Y1 - 2, -PI / 2, false, 0)

@@ -93,6 +93,7 @@ Diambil dari `docs/04-status-proyek.md` §9.
 | `z_index` pada `ColorRect` | `ColorRect` adalah `Control`, bukan `Node2D` | pindah ke `CanvasLayer` terpisah |
 | Fotosintesis jalan malam hari | tidak dicek fase | energi hanya bertambah saat `PHASE_DAY` |
 | Permainan buntu setelah keruntuhan besar | ujung sulur yang kehilangan fasad dimatikan permanen, padahal satu rantai melubangi sampai 20 dari 31 member sekaligus | ujung **mundur** ke titik terakhir yang masih menempel, lalu lanjut hidup (`Strand.retreat_to_facade`) |
+| STRUKTUR 0% tapi gedung tetap berdiri | member hanya garis 3 px; menghancurkan seluruh rangka cuma menghapus 31 garis tipis dari persegi panjang padat | `WorldMap.panels` — massa dinding jatuh menyusul rangkanya (`Structure._runtuhkan_panel`) |
 | Sulur terkurung di panel fasad | lubang keruntuhan selebar 3 px diperlakukan seperti langit, karena bagi sulur "solid" berarti bukan-fasad | `WorldMap.vine_ok()` — sulur boleh merentang `VINE_JEMBATAN` piksel. **Semua** cek pijakan sulur harus lewat `vine_ok()`, bukan `on_facade()` mentah, atau perbaikannya batal sendiri |
 
 ---
@@ -128,13 +129,19 @@ Sistem yang sudah ada dari pivot:
   31 ruas antar-joint. `solve_order` sudah topologis atas-ke-bawah.
 - `WorldMap.kapasitas(m)` — satu-satunya sumber kebenaran kapasitas:
   `integritas_member * min(integritas kedua joint) * KAPASITAS_MAX`.
+- `WorldMap.panels` — 12 panel dinding di antara rangka. **Inilah massa gedung
+  yang sebenarnya**; member cuma garis selebar 3 px. Panel jatuh saat
+  `PANEL_AMBANG` dari 4 member yang mengurungnya sudah gagal.
 - `Structure.gd` — solve beban, keruntuhan berantai per gelombang, puing,
-  debu, dan pelemahan oleh tanaman.
+  debu, panel, dan pelemahan oleh tanaman.
 - Sulur menyerang joint, akar menyerang ruas kolom paling bawah.
+- `WorldMap.vine_ok()` — predikat pijakan sulur, mengizinkan rentangan
+  `VINE_JEMBATAN` px melewati celah sempit.
 
-Kondisi menang **masih berbasis coverage 55%** walau bar HUD sudah diganti
-integritas struktur. Itu memang urutan yang ditetapkan dokumen — diperbaiki di
-TAHAP 8.
+Kondisi menang: `Structure.hancur()` — tidak ada KOLOM tersisa. Sengaja bukan
+"semua member mati", karena balok level dasar berdiri di pondasi sehingga tidak
+pernah gagal karena kehilangan tumpuan, dan tidak terjangkau akar maupun sulur
+setelah fasadnya lenyap. Syarat coverage 55% sudah dihapus seluruhnya.
 
 Dokumen `docs/01-konteks-game.md` dan `docs/02-logika-game.md` adalah rancangan
 prototipe asli. Yang masih berlaku dari keduanya: palet warna, teknik render

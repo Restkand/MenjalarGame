@@ -290,21 +290,6 @@ func _hash(n):
 	return s - floor(s)
 
 
-func count_covered():
-	var n = 0
-	var y = Config.FACADE_Y0
-	while y < Config.FACADE_Y1:
-		var x = Config.FACADE_X0
-		while x < Config.FACADE_X1:
-			if _tree_img.get_pixel(x, y).a > 0.1:
-				n += 4
-			x += 2
-		y += 2
-	var total = (Config.FACADE_X1 - Config.FACADE_X0) \
-			* (Config.FACADE_Y1 - Config.FACADE_Y0)
-	return float(n) / float(total)
-
-
 func _stamp(img, cx, cy, r, col):
 	var ir = int(ceil(r))
 	var px = int(round(cx))

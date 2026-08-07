@@ -29,7 +29,6 @@ const COST_BRANCH = 15.0
 const ENERGY_MAX = 200.0
 const ENERGY_START = 120.0
 const SUSPICION_MAX = 100.0
-const COVERAGE_GOAL = 0.55
 
 const FACADE_X0 = 44
 const FACADE_X1 = 196
@@ -68,6 +67,12 @@ const MEMBER_TEBAL      = 1
 const PUING_PER_PIKSEL  = 0.6
 const PUING_GRAVITASI   = 120.0
 const PUING_MAX         = 900
+
+# Panel dinding jatuh saat sekian dari 4 member yang mengurungnya sudah gagal.
+# 2 artinya kehilangan satu kolom dan satu balok sudah cukup — dramatis dan
+# mudah dibaca pemain. Naikkan ke 3 atau 4 kalau ingin gedung lebih bandel.
+const PANEL_AMBANG   = 2
+const PUING_PER_LUAS = 22    # satu butir puing tiap sekian piksel persegi
 
 # juice keruntuhan
 #

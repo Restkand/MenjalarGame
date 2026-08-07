@@ -94,6 +94,22 @@ func _ada_tumpuan(m):
 
 # Nol berarti gedung sudah rata. Member dan joint dihitung bersama supaya
 # melemahkan sambungan pun langsung menggerakkan bar di HUD.
+# Gedung dianggap runtuh saat tidak ada KOLOM yang tersisa — kolomlah yang
+# menahannya berdiri.
+#
+# Sengaja bukan "semua member mati". Balok level dasar berdiri di pondasi, jadi
+# tidak pernah gagal karena kehilangan tumpuan, dan akar hanya menyasar kolom.
+# Kalau seluruh panel sudah jatuh, fasadnya lenyap dan sulur tidak punya tempat
+# hidup lagi — balok dasar itu jadi mustahil dijangkau siapa pun dan permainan
+# buntu. Kolom selalu bisa dihabisi akar dari bawah tanah, jadi kemenangan
+# selalu terjangkau.
+func hancur():
+	for m in world.members:
+		if m.alive and m.tipe == Config.M_KOLOM:
+			return false
+	return true
+
+
 func integritas_total():
 	var n = world.members.size() + world.joints.size()
 	if n == 0:
@@ -204,6 +220,10 @@ func update(delta):
 		_kill(world.members[id])
 	queue = []
 
+	# panel dicek setelah member mati, jadi runtuhnya menyusul di gelombang
+	# yang sama dan terbaca sebagai satu kejadian
+	wave_panjang = wave_panjang + _runtuhkan_panel()
+
 	solve()
 	queue = _failures()
 	if queue.empty():
@@ -235,6 +255,58 @@ func _spawn_debris(m):
 			"y": m.y0 + (m.y1 - m.y0) * t,
 			"vx": rand_range(-7.0, 7.0),
 			"vy": rand_range(-4.0, 6.0),
+		})
+
+
+# Panel yang cukup banyak penopangnya gagal ikut jatuh, membawa serta massa
+# dindingnya. Tanpa ini, menghancurkan seluruh rangka hanya menghapus 31 garis
+# selebar 3 piksel dan gedungnya tetap berdiri utuh di layar.
+# Mengembalikan besaran untuk getaran layar.
+func _runtuhkan_panel():
+	var besar = 0.0
+	for p in world.panels:
+		if not p.alive:
+			continue
+		var mati = 0
+		for mid in p.rangka:
+			if not world.members[mid].alive:
+				mati += 1
+		if mati < Config.PANEL_AMBANG:
+			continue
+		p.alive = false
+		world.carve_panel(p)
+		_spawn_debris_panel(p)
+		_spawn_dust_panel(p)
+		dirty_img = true
+		besar += float(p.x1 - p.x0 + p.y1 - p.y0)
+	return besar
+
+
+func _spawn_debris_panel(p):
+	var w = p.x1 - p.x0
+	var h = p.y1 - p.y0
+	var n = int(float(w * h) / float(Config.PUING_PER_LUAS))
+	for _k in range(n):
+		if falling.size() >= Config.PUING_MAX:
+			return
+		falling.append({
+			"x": p.x0 + randf() * w,
+			"y": p.y0 + randf() * h,
+			"vx": rand_range(-6.0, 6.0),
+			"vy": rand_range(-3.0, 8.0),
+		})
+
+
+func _spawn_dust_panel(p):
+	for _k in range(Config.DEBU_MAX):
+		if dust.size() >= Config.DEBU_MAX_TOTAL:
+			return
+		dust.append({
+			"x": p.x0 + randf() * (p.x1 - p.x0),
+			"y": p.y0 + randf() * (p.y1 - p.y0),
+			"vx": rand_range(-6.0, 6.0),
+			"vy": -rand_range(2.0, Config.DEBU_NAIK),
+			"age": 0.0,
 		})
 
 

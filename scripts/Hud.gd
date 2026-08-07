@@ -78,13 +78,13 @@ func _build_overlay():
 	_overlay.add_child(dim)
 
 	var info = Label.new()
-	info.rect_position = Vector2(210, 190)
-	info.text = "SIANG  penjaga menyapu fasad dengan pandangannya.\n       Sulur yang tertangkap pandangan memanas (kuning, lalu merah).\n       Tekan X pada sulur panas untuk merontokkan ujungnya sebelum senja.\n\nMALAM  penjaga pulang. Sulur merambat. Tumbuh di area terang\n       tetap meninggalkan jejak yang terlihat esok hari.\n\nTahan V untuk melihat peta risiko fasad."
+	info.rect_position = Vector2(140, 80)
+	info.text = "TUJUAN   Runtuhkan gedung. Bar STRUKTUR habis = menang.\n\nSIANG    Akar tumbuh. Arahkan sebagian ke tanah lembap atau pipa untuk\n         energi, sebagian lagi ke kaki kolom untuk menggerogotinya.\n         Akar di tanah kering hampir tidak menghasilkan air.\n\nMALAM    Sulur merambat di fasad. Dekatkan ujungnya ke sambungan rangka\n         untuk melemahkannya.\n\nENERGI   Bertambah sebesar min(Air, Cahaya), dan HANYA saat siang.\n         Yang lebih kecil ditandai '<' — itu leher botolnya.\n\nRUNTUH   Sambungan yang lemah menurunkan kapasitas member. Saat beban\n         melebihi kapasitas, member gagal dan bebannya pindah ke\n         tetangga, yang bisa ikut gagal beruntun. Panel dinding jatuh\n         menyusul rangkanya.\n\n         Retakan = member mendekati batas.\n         Tahan B untuk melihat rangka: hijau santai, merah di ambang."
 	_overlay.add_child(info)
 
 	var btn = Button.new()
 	btn.text = "  MULAI  "
-	btn.rect_position = Vector2(430, 400)
+	btn.rect_position = Vector2(430, 520)
 	btn.rect_min_size = Vector2(100, 44)
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.connect("pressed", self, "_on_play")
@@ -139,7 +139,7 @@ func refresh(sim, w, st, won):
 	_msg_t = max(0.0, _msg_t - get_process_delta_time())
 
 	if won:
-		_lbl_win.text = "GEDUNG TERTUTUP HIJAU     (R untuk ulang)"
+		_lbl_win.text = "GEDUNG RUNTUH     (R untuk ulang)"
 	elif w.flash > 0.0:
 		_lbl_win.text = "DIPANGKAS  %d sulur" % w.last_cut
 	elif _msg_t > 0.0:

@@ -21,7 +21,6 @@ var playing = false
 var won = false
 var show_risk = false
 var show_frame = false
-var _cov_t = 0.0
 var _freeze = 0.0
 var _redraw_tree = false
 
@@ -143,12 +142,11 @@ func _process(delta):
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
 		canvas.draw_preview(sim.selected.preview(m, 40, world))
 
-	_cov_t += delta
-	if _cov_t > 0.5:
-		_cov_t = 0.0
-		sim.coverage = canvas.count_covered()
-		if sim.coverage >= Config.COVERAGE_GOAL:
-			won = true
+	# Menang saat seluruh member gedung gagal. Menggantikan syarat coverage
+	# 55%, yang sudah tidak nyambung sejak konsepnya bergeser ke pembongkaran
+	# dan bar HUD diganti integritas struktur.
+	if playing and not won and structure.hancur():
+		won = true
 	canvas.end_frame()
 
 	canvas.set_night(warden.night_amount())

@@ -183,15 +183,20 @@ func spend(amount):
 
 
 # Sulur menempel pada fasad. Kalau fasad di bawah ujungnya lenyap karena
-# keruntuhan, ujung itu kehilangan pijakan dan berhenti — badannya tetap
-# tergambar. Meruntuhkan gedung berarti ikut menghancurkan pijakan sendiri.
-func prune_unsupported(world):
+# keruntuhan, ujung itu MUNDUR ke titik terakhir yang masih menempel, bukan
+# mati.
+#
+# Versi pertama mematikannya, dan itu membuat permainan buntu: satu keruntuhan
+# berantai melubangi sampai 20 dari 31 member sekaligus, jadi hampir semua
+# sulur mati serentak — padahal sulur adalah satu-satunya alat untuk
+# melemahkan joint. Mundur tetap menghukum (pertumbuhan hilang, pijakan
+# menyempit) tanpa menghabisi permainannya.
+func retreat_unsupported(world):
 	var n = 0
 	for s in strands:
 		if not s.alive or s.is_root:
 			continue
-		if not world.on_facade(s.tip.x, s.tip.y):
-			s.alive = false
+		if s.retreat_to_facade(world):
 			n += 1
 	return n
 

@@ -23,6 +23,7 @@ var show_risk = false
 var show_frame = false
 var _cov_t = 0.0
 var _freeze = 0.0
+var _redraw_tree = false
 
 
 func _ready():
@@ -72,6 +73,7 @@ func _restart():
 	show_risk = false
 	show_frame = false
 	_freeze = 0.0
+	_redraw_tree = false
 	hud.show_overlay()
 
 
@@ -107,8 +109,12 @@ func _process(delta):
 			if structure.wave_index == 1:
 				_freeze = Config.FREEZE_TIME
 			structure.wave_panjang = 0.0
-			# fasad baru saja berlubang — ujung yang kehilangan pijakan berhenti
-			sim.prune_unsupported(world)
+			# fasad baru saja berlubang — ujung yang kehilangan pijakan mundur
+			if sim.retreat_unsupported(world) > 0:
+				# titik yang menggantung di atas lubang sudah dibuang, jadi
+				# lapisan pohon harus digambar ulang dari nol
+				_redraw_tree = true
+				sim.ensure_selection(warden.phase)
 
 		if structure.dirty_img:
 			structure.dirty_img = false
@@ -119,11 +125,13 @@ func _process(delta):
 			warden.update(delta, sim, world, seen)
 			sim.spend(structure.weaken(sim, delta))
 
-	if warden.did_prune:
+	var gambar_penuh = warden.did_prune or _redraw_tree
+	_redraw_tree = false
+	if gambar_penuh:
 		canvas.clear_tree()
 
 	canvas.begin_frame()
-	sim.render(canvas, warden.did_prune)
+	sim.render(canvas, gambar_penuh)
 	canvas.draw_cracks(world)
 	if show_risk:
 		canvas.draw_risk(world)

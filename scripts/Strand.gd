@@ -146,6 +146,35 @@ func exposure(world):
 	return tot / max(1, cnt)
 
 
+# Fasad di bawah ujung runtuh. Mundur ke titik terakhir yang masih menempel,
+# buang bagian yang kini menggantung di atas lubang, lalu lanjut hidup.
+# Mengembalikan true kalau untai ini memang terdampak.
+func retreat_to_facade(world):
+	if is_root or world.on_facade(tip.x, tip.y):
+		return false
+
+	var i = points.size() - 1
+	while i >= 0 and not world.on_facade(points[i].x, points[i].y):
+		i -= 1
+
+	if i < 1:
+		alive = false   # tidak ada pijakan tersisa sama sekali
+		return true
+
+	points.resize(i + 1)
+	tip = Vector2(points[i].x, points[i].y)
+	angle = angle + PI   # menghadap balik, menjauh dari lubang
+	_acc = 0.0
+	_leaf_acc = 0.0
+
+	var keep = []
+	for l in leaves:
+		if world.on_facade(l.pos.x, l.pos.y):
+			keep.append(l)
+	leaves = keep
+	return true
+
+
 func trim(n):
 	for _i in range(n):
 		if points.size() <= 2:

@@ -92,6 +92,7 @@ Diambil dari `docs/04-status-proyek.md` §9.
 | Ujung mati di tepi layar | tidak ada pantulan | pantul sudut di tepi |
 | `z_index` pada `ColorRect` | `ColorRect` adalah `Control`, bukan `Node2D` | pindah ke `CanvasLayer` terpisah |
 | Fotosintesis jalan malam hari | tidak dicek fase | energi hanya bertambah saat `PHASE_DAY` |
+| Permainan buntu setelah keruntuhan besar | ujung sulur yang kehilangan fasad dimatikan permanen, padahal satu rantai melubangi sampai 20 dari 31 member sekaligus | ujung **mundur** ke titik terakhir yang masih menempel, lalu lanjut hidup (`Strand.retreat_to_facade`) |
 
 ---
 
@@ -111,11 +112,14 @@ yang sudah terverifikasi jalan.
 Status pivot: **TAHAP 0–5 selesai secara kode. Berikutnya TAHAP 6 (puing jadi
 tanah baru).**
 
-⚠️ **TAHAP 2–5 belum pernah dijalankan di Godot.** Yang terverifikasi hanya
-matematikanya lewat skrip terpisah: tata letak rangka, distribusi beban,
-perilaku rantai, ambang retakan, dan pacing pelemahan. Parsing GDScript dan
-perilaku runtime belum teruji sama sekali. Kalau sesi baru dimulai dengan
-laporan error, curigai keempat tahap itu, bukan hanya yang terakhir.
+TAHAP 2–5 sudah dijalankan di Godot dan berjalan tanpa error. Keruntuhan
+berantai plus getaran layar dinilai pemilik proyek sudah terasa menarik — jadi
+gerbang verifikasi TAHAP 3 lolos dan konsep pivotnya terbukti.
+
+Sisa yang diketahui: lubang hasil keruntuhan selebar 3 piksel memotong fasad
+jadi panel-panel terpisah, dan sulur tidak bisa menyeberanginya karena bagi
+sulur "solid" berarti bukan-fasad. TAHAP 6 (puing jadi terrain baru) yang
+seharusnya membuka jalur lagi.
 
 Sistem yang sudah ada dari pivot:
 

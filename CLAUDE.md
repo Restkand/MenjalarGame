@@ -70,7 +70,8 @@ res://
     ├── WorldMap.gd        peta + grid terrain + bake cahaya & keterlihatan
     ├── Strand.gd          satu untai: tumbuh, tigmotropisme, pratinjau
     ├── TreeSim.gd         kumpulan untai + ekonomi energi
-    ├── Warden.gd          tukang kebun, kerucut pandang, panas, pangkas
+    ├── Structure.gd       beban, keruntuhan, puing, pelemahan
+    ├── Cycle.gd           jam siklus siang-malam (dulu Warden.gd)
     ├── PixelCanvas.gd     semua yang menulis piksel
     ├── TuningPanel.gd     slider runtime
     └── Hud.gd             bar energi/tertutup/terlihat + overlay MULAI
@@ -100,7 +101,33 @@ Diambil dari `docs/04-status-proyek.md` §9.
 
 ## Arah saat ini
 
-Proyek sedang **bergeser dari stealth-coverage ke pembongkaran struktural.**
+**Menjalar adalah game pembongkaran.** Inspirasinya Rampage, dibalut isu
+lingkungan: pemain adalah alam yang merebut kembali kota, dan regu perawatan
+gedung melawan.
+
+**Sistem stealth sudah DIHAPUS seluruhnya** — heat per-sulur, kerucut pandang,
+kecurigaan, pemangkasan fajar. Stealth menuntut pemain lemah dan tersembunyi,
+pembongkaran menuntut sebaliknya; keduanya saling menarik ke arah berlawanan.
+Jangan hidupkan lagi. `Warden.gd` sudah dihapus, sisanya jadi `Cycle.gd` yang
+hanya memegang jam siang-malam.
+
+Antagonis baru yang sedang dibangun (menggantikan TAHAP 7 di dokumen):
+
+- Regu darat menggali akar di sekitar kaki gedung — tepat di titik yang paling
+  ingin dikuasai pemain untuk menggerogoti kolom.
+- Pemanjat **menaiki sulur pemain sendiri**. Jalur musuh adalah bangunan
+  pemain, jadi tiap keputusan menumbuhkan juga keputusan soal mobilitas dia.
+  Ini yang membuatnya tidak pernah jadi pola hafalan.
+- Pemain bisa memutus sulurnya sendiri untuk menjatuhkan pemanjat, dengan
+  harga pertumbuhan di atas potongan itu.
+- Jumlah regu bertambah seiring `STRUKTUR` turun, jadi tekanan memuncak justru
+  saat pemain hampir menang.
+
+Peta `vis` tetap dipakai, tapi maknanya bergeser dari "pemain tak terlihat"
+jadi "regu menemukannya lebih lambat". Bayangan tetap berguna tanpa jadi
+stealth.
+
+Riwayat: proyek bergeser dari stealth-coverage ke pembongkaran struktural.
 
 Konsep lama: sulur menutupi 55% fasad tanpa ketahuan tukang kebun.
 Konsep baru: gedung punya rangka (kolom, balok, sambungan) dengan aliran beban.

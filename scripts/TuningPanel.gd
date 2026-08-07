@@ -7,10 +7,8 @@ const SPECS = [
 	["MAX_TURN",       0.2,  5.0, 0.05],
 	["ENERGY_RATE",    1.0, 20.0, 0.5],
 	["COST_PER_PIXEL", 0.1,  2.0, 0.05],
-	["GAZE_RANGE",    30.0,140.0, 2.0],
-	["HEAT_RATE",      0.1,  1.5, 0.02],
-	["HEAT_DECAY",     0.0,  0.4, 0.01],
-	["NIGHT_HEAT",     0.0,  0.8, 0.02],
+	["WEAKEN_RATE",    0.02, 0.6, 0.01],
+	["KAPASITAS_MAX", 310.0,600.0, 5.0],
 	["DAY_LEN",        6.0, 40.0, 1.0],
 	["NIGHT_LEN",      6.0, 60.0, 1.0],
 ]

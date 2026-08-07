@@ -1,8 +1,8 @@
-extends Node2D
+﻿extends Node2D
 
 const WorldMapCls    = preload("res://scripts/WorldMap.gd")
 const TreeSimCls     = preload("res://scripts/TreeSim.gd")
-const WardenCls      = preload("res://scripts/Warden.gd")
+const CycleCls       = preload("res://scripts/Cycle.gd")
 const StructureCls   = preload("res://scripts/Structure.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
@@ -10,7 +10,7 @@ const HudCls         = preload("res://scripts/Hud.gd")
 
 var world
 var sim
-var warden
+var cycle
 var structure
 var canvas
 var panel
@@ -41,8 +41,8 @@ func _ready():
 	sim = TreeSimCls.new()
 	sim.reset()
 
-	warden = WardenCls.new()
-	warden.reset()
+	cycle = CycleCls.new()
+	cycle.reset()
 
 	panel = TuningPanelCls.new()
 	add_child(panel)
@@ -59,12 +59,12 @@ func _on_play():
 
 func _restart():
 	# Keruntuhan mengubah grid dan image secara permanen, jadi dunianya harus
-	# dibangun ulang — bukan sekadar mereset pohon.
+	# dibangun ulang â€” bukan sekadar mereset pohon.
 	world.build()
 	canvas.set_world_image(world.image)
 	structure.setup(world)
 	sim.reset()
-	warden.reset()
+	cycle.reset()
 	canvas.clear_tree()
 	is_steering = false
 	playing = false
@@ -86,7 +86,7 @@ func _try_branch():
 	if sim.selected == null or not sim.selected.alive:
 		hud.flash_msg("Pilih ujung dulu (klik kiri)")
 	elif sim.energy < Config.COST_BRANCH:
-		hud.flash_msg("Energi kurang — butuh %d" % int(Config.COST_BRANCH))
+		hud.flash_msg("Energi kurang â€” butuh %d" % int(Config.COST_BRANCH))
 	else:
 		hud.flash_msg("Batas untai tercapai")
 
@@ -94,10 +94,9 @@ func _try_branch():
 func _process(delta):
 	delta = min(delta, 1.0 / 30.0)
 	var m = _mouse_sim()
-	var seen = 0.0
 
 	if _freeze > 0.0:
-		# jeda mikro — simulasi beku, render dan getaran tetap jalan
+		# jeda mikro â€” simulasi beku, render dan getaran tetap jalan
 		_freeze = max(0.0, _freeze - delta)
 	else:
 		# berjalan juga sebelum MULAI, supaya uji klik-kanan bisa dilakukan
@@ -108,23 +107,23 @@ func _process(delta):
 			if structure.wave_index == 1:
 				_freeze = Config.FREEZE_TIME
 			structure.wave_panjang = 0.0
-			# fasad baru saja berlubang — ujung yang kehilangan pijakan mundur
+			# fasad baru saja berlubang â€” ujung yang kehilangan pijakan mundur
 			if sim.retreat_unsupported(world) > 0:
 				# titik yang menggantung di atas lubang sudah dibuang, jadi
 				# lapisan pohon harus digambar ulang dari nol
 				_redraw_tree = true
-				sim.ensure_selection(warden.phase)
+				sim.ensure_selection(cycle.phase)
 
 		if structure.dirty_img:
 			structure.dirty_img = false
 			canvas.refresh_world()
 
 		if playing and not won:
-			seen = sim.update(delta, is_steering, m, world, warden.phase)
-			warden.update(delta, sim, world, seen)
+			sim.update(delta, is_steering, m, world, cycle.phase)
+			cycle.update(delta, sim)
 			sim.spend(structure.weaken(sim, delta))
 
-	var gambar_penuh = warden.did_prune or _redraw_tree
+	var gambar_penuh = _redraw_tree
 	_redraw_tree = false
 	if gambar_penuh:
 		canvas.clear_tree()
@@ -136,7 +135,6 @@ func _process(delta):
 		canvas.draw_risk(world)
 	if show_frame:
 		canvas.draw_frame(world)
-	canvas.draw_warden(warden, world)
 	canvas.draw_debris(structure.falling)
 	canvas.draw_dust(structure.dust)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
@@ -149,8 +147,8 @@ func _process(delta):
 		won = true
 	canvas.end_frame()
 
-	canvas.set_night(warden.night_amount())
-	hud.refresh(sim, warden, structure, won)
+	canvas.set_night(cycle.night_amount())
+	hud.refresh(sim, cycle, structure, won)
 
 
 func _input(event):
@@ -190,18 +188,14 @@ func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed:
 		var m = _mouse_sim()
 		if event.button_index == BUTTON_LEFT:
-			sim.select_near(m, warden.phase)
+			sim.select_near(m, cycle.phase)
 			is_steering = true
 		elif event.button_index == BUTTON_RIGHT:
-			if sim.select_near(m, warden.phase):
+			if sim.select_near(m, cycle.phase):
 				_try_branch()
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.scancode == KEY_SPACE:
 			_try_branch()
 		elif event.scancode == KEY_X:
-			if warden.phase == Config.PHASE_DAY:
-				if not sim.shed():
-					hud.flash_msg("Tidak ada yang perlu dirontokkan")
-			else:
-				sim.stop_selected()
+			sim.stop_selected()

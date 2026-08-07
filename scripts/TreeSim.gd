@@ -61,6 +61,9 @@ func update(delta, steering, mouse, world, phase):
 	energy -= cost
 	starved = false
 
+	# Seberapa mencolok pertumbuhan malam ini, dari peta vis. Belum ada yang
+	# memakainya sejak sistem stealth dihapus, tapi ini persis sinyal yang
+	# dibutuhkan regu perawatan nanti: seberapa cepat mereka menemukannya.
 	var seen = 0.0
 	for s in growing:
 		var steer = null
@@ -117,9 +120,6 @@ func render(canvas, full):
 			canvas.draw_strand(s)
 	for s in strands:
 		canvas.draw_leaves(s)
-	for s in strands:
-		if s.alive and not s.is_root:
-			canvas.draw_heat(s, time)
 	for s in strands:
 		if s.alive:
 			canvas.draw_tip(s.tip, s == selected, time)
@@ -202,15 +202,6 @@ func retreat_unsupported(world):
 func stop_selected():
 	if selected != null:
 		selected.alive = false
-
-func shed():
-	if selected == null or not selected.alive or selected.is_root:
-		return false
-	if selected.heat < 0.15 or selected.points.size() < 20:
-		return false
-	selected.trim(Config.SHED_COST)
-	selected.heat = 0.0
-	return true
 
 func alive_count():
 	var n = 0

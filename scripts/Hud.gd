@@ -3,13 +3,11 @@ extends CanvasLayer
 signal play_pressed
 
 var _e_fill
-var _s_fill
 var _c_fill
 var _lbl_phase
 var _lbl_energy
 var _lbl_res
 var _lbl_cov
-var _lbl_sus
 var _lbl_win
 var _overlay
 var _msg = ""
@@ -40,10 +38,6 @@ func _ready():
 	_lbl_cov = Label.new()
 	vb.add_child(_lbl_cov)
 	_c_fill = _bar(vb, Config.C_LEAF)
-
-	_lbl_sus = Label.new()
-	vb.add_child(_lbl_sus)
-	_s_fill = _bar(vb, Config.C_ALERT)
 
 	_lbl_win = Label.new()
 	_lbl_win.rect_position = Vector2(330, 250)
@@ -128,20 +122,10 @@ func refresh(sim, w, st, won):
 	_lbl_cov.text = "STRUKTUR  %d%%" % int(round(integ * 100))
 	_c_fill.rect_size = Vector2(238.0 * clamp(integ, 0.0, 1.0), 11)
 
-	var lvl = "aman"
-	if w.suspicion > 0.35:
-		lvl = "diamati"
-	if w.suspicion > 0.75:
-		lvl = "AKAN DIPANGKAS"
-	_lbl_sus.text = "TERLIHAT  %d%%   %s" % [int(w.suspicion * 100), lvl]
-	_s_fill.rect_size = Vector2(238.0 * w.suspicion, 11)
-
 	_msg_t = max(0.0, _msg_t - get_process_delta_time())
 
 	if won:
 		_lbl_win.text = "GEDUNG RUNTUH     (R untuk ulang)"
-	elif w.flash > 0.0:
-		_lbl_win.text = "DIPANGKAS  %d sulur" % w.last_cut
 	elif _msg_t > 0.0:
 		_lbl_win.text = _msg
 	else:

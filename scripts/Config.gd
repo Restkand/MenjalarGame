@@ -7,16 +7,10 @@ var NOISE_AMOUNT   = 0.35
 var ENERGY_RATE    = 7.0
 var COST_PER_PIXEL = 0.30
 var COST_TIP_EXP   = 0.62
-var GAZE_RANGE     = 84.0
-var GAZE_HALF      = 0.52
-var HEAT_RATE      = 0.30
-var HEAT_DECAY     = 0.10
-var NIGHT_HEAT     = 0.55
 var DAY_LEN        = 22.0
 var NIGHT_LEN      = 24.0
 
 const DEAD_ZONE = 7.0
-const SHED_COST = 40
 const C_WARN = Color("D8A34A")
 const W = 240
 const H = 160
@@ -28,7 +22,6 @@ const LEAF_SPACING = 7.0
 const COST_BRANCH = 15.0
 const ENERGY_MAX = 200.0
 const ENERGY_START = 120.0
-const SUSPICION_MAX = 100.0
 
 const FACADE_X0 = 44
 const FACADE_X1 = 196

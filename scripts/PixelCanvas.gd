@@ -156,51 +156,6 @@ func draw_preview(pts):
 			_put(_ovl_img, int(round(pts[i].x)), int(round(pts[i].y)), c)
 
 
-func draw_warden(w, world):
-	if w.phase != Config.PHASE_DAY:
-		return
-
-	# kerucut pandang
-	var e = w.eye()
-	var col = Config.C_WARN
-	col.a = 0.5 if w.spotting else 0.26
-	var steps = 9
-	for k in range(steps + 1):
-		var a = w.gaze - Config.GAZE_HALF \
-				+ (2.0 * Config.GAZE_HALF) * float(k) / float(steps)
-		var d = 6.0
-		while d < Config.GAZE_RANGE:
-			var px = e.x + cos(a) * d
-			var py = e.y + sin(a) * d
-			if py < 2 or px < 2 or px > Config.W - 3:
-				break
-			if int(d) % 4 < 2:
-				_put(_ovl_img, int(round(px)), int(round(py)), col)
-			d += 1.0
-
-	# badan
-	var x = int(round(w.pos_x))
-	var y = Config.GROUND_Y
-	var bc = Config.C_ALERT if w.spotting else Config.C_WARDEN
-	for j in range(y - 9, y):
-		for i in range(x - 1, x + 2):
-			_put(_ovl_img, i, j, bc)
-	_put(_ovl_img, x - 2, y - 6, bc)
-	_put(_ovl_img, x + 2, y - 6, bc)
-
-
-func draw_heat(s, t):
-	if s.heat < 0.12:
-		return
-	var col = Config.C_WARN if s.heat < 0.6 else Config.C_ALERT
-	if s.heat >= 0.85 and fmod(t, 0.4) < 0.2:
-		return
-	for i in s.hot_points():
-		if i % 3 == 0:
-			_put(_ovl_img, int(round(s.points[i].x)),
-					int(round(s.points[i].y)), col)
-
-
 func draw_risk(world):
 	var c = Config.C_ALERT
 	c.a = 0.30

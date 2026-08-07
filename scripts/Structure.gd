@@ -28,6 +28,7 @@ var dirty_caps = false   # ada joint/member yang melemah — cek gagal ulang
 
 var _timer = 0.0
 var _iter  = 0
+var _last_cap = 0.0
 
 
 func setup(w):
@@ -43,6 +44,7 @@ func setup(w):
 	dirty_caps = false
 	_timer = 0.0
 	_iter = 0
+	_last_cap = Config.KAPASITAS_MAX
 	solve()
 
 
@@ -183,6 +185,12 @@ func fail_member(id):
 func update(delta):
 	_debris_step(delta)
 	_dust_step(delta)
+
+	# KAPASITAS_MAX bisa digeser lewat panel tuning saat bermain, dan itu
+	# mengubah ambang gagal setiap member sekaligus.
+	if Config.KAPASITAS_MAX != _last_cap:
+		_last_cap = Config.KAPASITAS_MAX
+		dirty_caps = true
 
 	# Beban tidak berubah saat integritas turun — hanya kapasitasnya. Jadi
 	# solve() tetap event-driven; yang dicek ulang hanya ambang gagalnya, dan

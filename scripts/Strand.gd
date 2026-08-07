@@ -10,7 +10,6 @@ var generation = 0
 var id         = 0
 var _acc       = 0.0
 var _leaf_acc  = 0.0
-var heat = 0.0
 
 
 func _init(x, y, a, root, gen, sid):
@@ -20,10 +19,6 @@ func _init(x, y, a, root, gen, sid):
 	is_root = root
 	generation = gen
 	id = sid
-
-func hot_points():
-	var n = points.size()
-	return range(max(0, n - 50), n)
 
 func solid_at(world, x, y):
 	if is_root:
@@ -132,18 +127,6 @@ func _spawn_leaf(world):
 func age_leaves(delta):
 	for l in leaves:
 		l.age = min(1.5, l.age + delta)
-
-
-func exposure(world):
-	var n = points.size()
-	if n < 3:
-		return 0.0
-	var tot = 0.0
-	var cnt = 0
-	for i in range(max(0, n - 60), n):
-		tot += world.vis_at(int(round(points[i].x)), int(round(points[i].y)))
-		cnt += 1
-	return tot / max(1, cnt)
 
 
 # Fasad di bawah ujung runtuh. Mundur ke titik terakhir yang masih menempel,

@@ -62,38 +62,44 @@ const FRAME_ROWS = 5
 # 199 / 301 / 301 / 199, jadi ambang harus di atas 301 atau gedung runtuh
 # sendiri saat mulai. Perilaku terukur:
 #
-#   350  margin 16% saat utuh. Menggagalkan kolom bawah terluar meruntuhkan
-#        20 dari 31 member dalam 9 gelombang; kolom dalam 12 dari 31 dalam
-#        7 gelombang. Ini yang dipakai — runtuhnya benar-benar berantai.
-#   420+ terkurung: hanya 4 member (satu garis kolom) per serangan, tanpa
-#        rambatan ke tetangga. Pakai ini kalau ingin pemain menyerang
-#        berkali-kali secara terencana.
+#   350  runtuh berantai besar: satu serangan menjatuhkan 20 dari 31 member.
+#        Terlalu mudah — playtest menunjukkan gedung roboh setelah menjalar
+#        sedikit saja.
+#   420  DIPAKAI. Terkurung: satu serangan menjatuhkan satu garis kolom
+#        (4 member) tanpa merambat ke tetangga, jadi butuh 4 serangan berhasil
+#        untuk menang. Margin gedung utuh 28% (stress terberat 0.717).
 var BERAT_PER_PIKSEL = 1.0
-var KAPASITAS_MAX    = 350.0
+var KAPASITAS_MAX    = 420.0
 var COLLAPSE_STEP    = 0.15
 
 const COLLAPSE_MAX_ITER = 20
 const MEMBER_TEBAL      = 1
 const PUING_PER_PIKSEL  = 0.6
 const PUING_GRAVITASI   = 120.0
-const PUING_MAX         = 900
+const PUING_MAX         = 1400
 
 # Panel dinding jatuh saat sekian dari 4 member yang mengurungnya sudah gagal.
-# 2 artinya kehilangan satu kolom dan satu balok sudah cukup — dramatis dan
-# mudah dibaca pemain. Naikkan ke 3 atau 4 kalau ingin gedung lebih bandel.
-const PANEL_AMBANG   = 2
-const PUING_PER_LUAS = 22    # satu butir puing tiap sekian piksel persegi
+# 3, bukan 2: dengan 2, satu serangan menjatuhkan hampir seluruh dinding
+# sekaligus dan gedung terasa rapuh.
+const PANEL_AMBANG   = 3
+
+# Panel luruh baris demi baris dari atas, bukan lenyap seketika. Tanpa ini,
+# dindingnya hilang dalam satu frame dan yang tersisa cuma awan titik — pemain
+# tidak melihat massa apa pun jatuh.
+const PANEL_LURUH    = 85.0  # baris per detik
+const PUING_PER_LUAS = 14    # satu bongkah puing tiap sekian piksel persegi
 
 # juice keruntuhan
 #
-# RETAK_AMBANG 0.80 dipilih supaya dua ruas kolom dalam paling bawah (rasio
-# beban 301/350 = 0.86) menunjukkan retakan halus sejak awal. Itu memberi tahu
-# pemain di mana jalur bebannya terberat tanpa satu pun teks. Naikkan ke 0.88
-# kalau retakan hanya boleh muncul sebagai peringatan menjelang gagal.
+# RETAK_AMBANG 0.65 dipilih supaya dua ruas kolom dalam paling bawah (rasio
+# beban 301/420 = 0.717) menunjukkan retakan sepanjang 19% sejak awal. Itu
+# memberi tahu pemain di mana jalur bebannya terberat tanpa satu pun teks.
+# Kolom terluar (0.474) tidak menampilkan apa pun. Naikkan ke 0.75 kalau
+# retakan hanya boleh muncul sebagai peringatan menjelang gagal.
 var SHAKE_MAX        = 3.0    # piksel simulasi
 var SHAKE_DECAY      = 0.30   # detik sampai reda
 var FREEZE_TIME      = 0.08
-var RETAK_AMBANG     = 0.80
+var RETAK_AMBANG     = 0.65
 
 const SHAKE_PER_PANJANG = 0.06
 const DEBU_MIN       = 20
@@ -108,12 +114,19 @@ const DEBU_UMUR      = 1.1
 #                    * KAPASITAS_MAX
 # Member hanya sekuat sambungan terlemahnya.
 #
-# WEAKEN_RATE adalah knob pacing utama. Untuk menjatuhkan KOLOM1.3 (beban 301,
-# kapasitas 350) cukup menurunkan joint ke 0.86 — 14% saja, sekitar 1,2 detik
-# pada 0.12/detik. Kolom terluar (beban 199) butuh turun ke 0.57, sekitar 3,6
-# detik. Jadi menyerang titik paling terbebani otomatis paling cepat, dan itu
-# mengajarkan jalur beban tanpa satu pun teks.
-var WEAKEN_RATE = 0.12
+# WEAKEN_RATE adalah knob pacing utama. Dengan kapasitas 420:
+#
+#   KOLOM1.3 (beban 301)  joint harus turun ke 0.717  ->  5,7 detik kontak
+#   KOLOM0.3 (beban 199)  joint harus turun ke 0.474  -> 10,5 detik kontak
+#
+# Menyerang titik paling terbebani otomatis paling cepat, dan itu mengajarkan
+# jalur beban tanpa satu pun teks.
+#
+# Nilai lama 0.12 hanya butuh 1,2 detik dan itu terlalu mudah. Setelah satu
+# garis kolom habis, tetangganya melonjak ke stress 0.955 sehingga serangan
+# berikutnya cuma perlu 0,9 detik — kurva kesulitannya menurun sendiri, dan
+# endgame memuncak bersamaan dengan bertambahnya regu perawatan.
+var WEAKEN_RATE = 0.05
 
 # Seberapa lebar celah yang masih bisa direntang sulur. Lubang hasil
 # carve_member selebar 3 piksel, jadi titik tengahnya berjarak 2 piksel dari

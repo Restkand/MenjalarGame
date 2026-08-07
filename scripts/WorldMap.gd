@@ -339,11 +339,12 @@ func carve_member(m):
 	image.unlock()
 
 
-# Menjatuhkan seluruh panel dinding sekaligus. Jauh lebih banyak piksel
-# daripada carve_member, tapi hanya terjadi 12 kali sepanjang satu ronde.
-func carve_panel(p):
+# Sepotong panel, dari baris ya sampai yb. Panel diluruhkan sedikit demi
+# sedikit dari atas ke bawah, bukan dihapus sekaligus, supaya pemain melihat
+# dindingnya jatuh alih-alih menghilang begitu saja.
+func carve_rows(p, ya, yb):
 	image.lock()
-	for y in range(p.y0, p.y1 + 1):
+	for y in range(max(p.y0, ya), min(p.y1, yb) + 1):
 		for x in range(p.x0, p.x1 + 1):
 			_carve_px(x, y)
 	image.unlock()
@@ -380,12 +381,16 @@ func settle_many(points):
 		return
 	image.lock()
 	for p in points:
-		var x = int(p.x)
-		var y = int(p.y)
-		if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
-			continue
-		settled.set(y * Config.W + x, 1)
-		image.set_pixel(x, y, Config.C_PUING)
+		# 2x2, sama seperti saat melayang, supaya tumpukan tidak mendadak
+		# menyusut jadi sebutir begitu mendarat
+		for dy in range(0, 2):
+			for dx in range(0, 2):
+				var x = int(p.x) + dx
+				var y = int(p.y) + dy
+				if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
+					continue
+				settled.set(y * Config.W + x, 1)
+				image.set_pixel(x, y, Config.C_PUING)
 	image.unlock()
 
 

@@ -217,9 +217,17 @@ func draw_frame(world):
 				_put(_ovl_img, j.x + dx, j.y + dy, c)
 
 
+# Bongkahan 2x2, bukan sebutir. Satu piksel per puing terbaca sebagai debu
+# halus, bukan pecahan beton — itu yang membuat keruntuhan terlihat seperti
+# coretan alih-alih massa yang jatuh.
 func draw_debris(falling):
 	for p in falling:
-		_put(_ovl_img, int(round(p.x)), int(round(p.y)), Config.C_PUING)
+		var x = int(round(p.x))
+		var y = int(round(p.y))
+		_put(_ovl_img, x, y, Config.C_PUING)
+		_put(_ovl_img, x + 1, y, Config.C_PUING)
+		_put(_ovl_img, x, y + 1, Config.C_PUING)
+		_put(_ovl_img, x + 1, y + 1, Config.C_PUING)
 
 
 func draw_dust(dust):

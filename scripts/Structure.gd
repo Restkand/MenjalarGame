@@ -14,6 +14,7 @@ var world
 var queue      = []      # id member yang gagal pada gelombang berikutnya
 var falling    = []      # puing yang masih melayang
 var dust       = []      # debu yang naik lalu memudar
+var luruh      = []      # panel yang sedang runtuh: {p, y}
 var collapsing = false
 var dirty_img  = false   # world.image berubah — minta canvas.refresh_world()
 var last_wave  = 0       # jumlah member yang gagal di gelombang terakhir
@@ -36,6 +37,7 @@ func setup(w):
 	queue = []
 	falling = []
 	dust = []
+	luruh = []
 	collapsing = false
 	dirty_img = false
 	last_wave = 0
@@ -185,6 +187,7 @@ func fail_member(id):
 func update(delta):
 	_debris_step(delta)
 	_dust_step(delta)
+	_luruh_step(delta)
 
 	# KAPASITAS_MAX bisa digeser lewat panel tuning saat bermain, dan itu
 	# mengubah ambang gagal setiap member sekaligus.
@@ -282,26 +285,46 @@ func _runtuhkan_panel():
 		if mati < Config.PANEL_AMBANG:
 			continue
 		p.alive = false
-		world.carve_panel(p)
-		_spawn_debris_panel(p)
+		luruh.append({"p": p, "y": float(p.y0)})
 		_spawn_dust_panel(p)
-		dirty_img = true
 		besar += float(p.x1 - p.x0 + p.y1 - p.y0)
 	return besar
 
 
-func _spawn_debris_panel(p):
+# Panel diluruhkan baris demi baris dari atas, dengan puing lahir di baris yang
+# sedang lenyap. Menghapusnya sekaligus membuat dinding hilang dalam satu frame
+# dan yang tersisa hanya awan titik — tidak ada massa yang terasa jatuh.
+func _luruh_step(delta):
+	if luruh.empty():
+		return
+	var sisa = []
+	for l in luruh:
+		var dari = int(l.y)
+		l.y = l.y + Config.PANEL_LURUH * delta
+		var sampai = int(l.y) - 1
+		if sampai >= dari:
+			world.carve_rows(l.p, dari, sampai)
+			_spawn_debris_baris(l.p, dari, min(sampai, l.p.y1))
+			dirty_img = true
+		if l.y < float(l.p.y1 + 1):
+			sisa.append(l)
+	luruh = sisa
+
+
+func _spawn_debris_baris(p, ya, yb):
+	var tinggi = yb - ya + 1
+	if tinggi <= 0:
+		return
 	var w = p.x1 - p.x0
-	var h = p.y1 - p.y0
-	var n = int(float(w * h) / float(Config.PUING_PER_LUAS))
+	var n = int(float(w * tinggi) / float(Config.PUING_PER_LUAS))
 	for _k in range(n):
 		if falling.size() >= Config.PUING_MAX:
 			return
 		falling.append({
 			"x": p.x0 + randf() * w,
-			"y": p.y0 + randf() * h,
-			"vx": rand_range(-6.0, 6.0),
-			"vy": rand_range(-3.0, 8.0),
+			"y": float(ya) + randf() * tinggi,
+			"vx": rand_range(-5.0, 5.0),
+			"vy": rand_range(0.0, 6.0),
 		})
 
 

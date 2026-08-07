@@ -66,10 +66,15 @@ func _ready():
 	btn.connect("pressed", self, "_on_reset")
 	vb.add_child(btn)
 
+	# Dua baris pendek dengan latar, bukan satu baris panjang. Versi lama
+	# terpotong di tepi kanan layar 960 px.
+	var help_box = PanelContainer.new()
+	help_box.rect_position = Vector2(8, 584)
+	add_child(help_box)
+
 	_help = Label.new()
-	_help.rect_position = Vector2(12, 604)
-	_help.text = "Klik kiri: pilih & arahkan   |   Klik kanan / Spasi: bercabang   |   X: hentikan ujung   |   Tahan V: peta risiko   |   Tahan B: rangka   |   Tab: panel   |   R: reset"
-	add_child(_help)
+	_help.text = "Klik kiri: pilih & arahkan      Klik kanan / Spasi: bercabang      X: hentikan ujung\nTab: panel      R: ulang      Tahan V: peta risiko      Tahan B: rangka"
+	help_box.add_child(_help)
 
 
 func _on_changed(value, key):

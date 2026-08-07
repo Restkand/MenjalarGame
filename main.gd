@@ -3,6 +3,7 @@
 const WorldMapCls    = preload("res://scripts/WorldMap.gd")
 const TreeSimCls     = preload("res://scripts/TreeSim.gd")
 const CycleCls       = preload("res://scripts/Cycle.gd")
+const CrewCls        = preload("res://scripts/Crew.gd")
 const StructureCls   = preload("res://scripts/Structure.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
@@ -11,6 +12,7 @@ const HudCls         = preload("res://scripts/Hud.gd")
 var world
 var sim
 var cycle
+var crew
 var structure
 var canvas
 var panel
@@ -44,6 +46,9 @@ func _ready():
 	cycle = CycleCls.new()
 	cycle.reset()
 
+	crew = CrewCls.new()
+	crew.reset()
+
 	panel = TuningPanelCls.new()
 	add_child(panel)
 	panel.connect("reset_pressed", self, "_restart")
@@ -65,6 +70,7 @@ func _restart():
 	structure.setup(world)
 	sim.reset()
 	cycle.reset()
+	crew.reset()
 	canvas.clear_tree()
 	is_steering = false
 	playing = false
@@ -123,6 +129,13 @@ func _process(delta):
 			cycle.update(delta, sim)
 			sim.spend(structure.weaken(sim, delta))
 
+			crew.update(delta, sim, world, structure, cycle.phase)
+			if crew.dipotong > 0:
+				# titik sudah dibuang dari untai, jadi lapisan pohon yang
+				# akumulatif harus digambar ulang dari nol
+				_redraw_tree = true
+				sim.ensure_selection(cycle.phase)
+
 	var gambar_penuh = _redraw_tree
 	_redraw_tree = false
 	if gambar_penuh:
@@ -135,6 +148,7 @@ func _process(delta):
 		canvas.draw_risk(world)
 	if show_frame:
 		canvas.draw_frame(world)
+	canvas.draw_crew(crew)
 	canvas.draw_debris(structure.falling)
 	canvas.draw_dust(structure.dust)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
@@ -148,7 +162,7 @@ func _process(delta):
 	canvas.end_frame()
 
 	canvas.set_night(cycle.night_amount())
-	hud.refresh(sim, cycle, structure, won)
+	hud.refresh(sim, cycle, structure, crew, won)
 
 
 func _input(event):

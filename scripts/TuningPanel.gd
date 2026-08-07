@@ -9,6 +9,9 @@ const SPECS = [
 	["COST_PER_PIXEL", 0.1,  2.0, 0.05],
 	["WEAKEN_RATE",    0.02, 0.6, 0.01],
 	["KAPASITAS_MAX", 310.0,600.0, 5.0],
+	["CREW_SPEED",     5.0, 60.0, 1.0],
+	["CREW_CABUT",     0.1,  3.0, 0.05],
+	["CREW_MAX",       1.0,  8.0, 1.0],
 	["DAY_LEN",        6.0, 40.0, 1.0],
 	["NIGHT_LEN",      6.0, 60.0, 1.0],
 ]

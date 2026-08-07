@@ -10,6 +10,23 @@ var COST_TIP_EXP   = 0.62
 var DAY_LEN        = 22.0
 var NIGHT_LEN      = 24.0
 
+# regu perawatan gedung
+#
+# Mereka tidak mencurigai apa pun — begitu menemukan tanaman dalam jangkauan,
+# langsung dicabut. Prioritas sasaran memakai peta vis, jadi tumbuh di area
+# terang berarti ditemukan lebih dulu. Bayangan tetap berguna tanpa jadi
+# stealth. Akar di bawah tanah tidak punya nilai vis sama sekali, jadi hanya
+# ditemukan dari kedekatan — bawah tanah memang lebih aman.
+var CREW_SPEED = 18.0    # piksel per detik
+var CREW_CABUT = 0.55    # detik per potongan
+var CREW_MAX   = 4       # jumlah regu saat gedung nyaris rata
+
+const CREW_JANGKAUAN  = 5.0     # sedekat apa untuk mulai mencabut
+const CREW_CARI       = 120.0   # sejauh apa mereka mencari sasaran
+const CREW_PANJANG    = 14      # titik yang dipotong tiap potongan
+const CREW_BAND_ATAS  = 26.0    # setinggi apa di fasad mereka bisa meraih
+const CREW_BAND_BAWAH = 18.0    # sedalam apa mereka bisa menggali
+
 const DEAD_ZONE = 7.0
 const C_WARN = Color("D8A34A")
 const W = 240

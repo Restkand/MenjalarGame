@@ -156,6 +156,27 @@ func draw_preview(pts):
 			_put(_ovl_img, int(round(pts[i].x)), int(round(pts[i].y)), c)
 
 
+func draw_crew(crew):
+	for u in crew.units:
+		var x = int(round(u.x))
+		var y = Config.GROUND_Y
+		var bekerja = u.kerja > 0.0 and u.sasaran != null
+		var c = Config.C_ALERT if bekerja else Config.C_WARDEN
+
+		# garis ke sasaran digambar dulu supaya badan menutupinya — pemain
+		# harus langsung tahu tanaman mana yang sedang dicabut
+		if bekerja:
+			_line(_ovl_img, x, y - 6,
+					int(round(u.sasaran.tip.x)), int(round(u.sasaran.tip.y)),
+					Config.C_ALERT)
+
+		for j in range(y - 9, y):
+			for i in range(x - 1, x + 2):
+				_put(_ovl_img, i, j, c)
+		_put(_ovl_img, x - 2, y - 6, c)
+		_put(_ovl_img, x + 2, y - 6, c)
+
+
 func draw_risk(world):
 	var c = Config.C_ALERT
 	c.a = 0.30

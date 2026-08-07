@@ -13,20 +13,31 @@ extends Reference
 var world
 var queue      = []      # id member yang gagal pada gelombang berikutnya
 var falling    = []      # puing yang masih melayang
+var dust       = []      # debu yang naik lalu memudar
 var collapsing = false
 var dirty_img  = false   # world.image berubah — minta canvas.refresh_world()
 var last_wave  = 0       # jumlah member yang gagal di gelombang terakhir
-var _timer     = 0.0
-var _iter      = 0
+
+# Dibaca lalu dinolkan oleh main.gd untuk memicu getaran dan jeda mikro.
+# wave_panjang > 0 berarti baru saja ada gelombang; wave_index == 1 berarti itu
+# gelombang pertama sebuah rantai.
+var wave_panjang = 0.0
+var wave_index   = 0
+
+var _timer = 0.0
+var _iter  = 0
 
 
 func setup(w):
 	world = w
 	queue = []
 	falling = []
+	dust = []
 	collapsing = false
 	dirty_img = false
 	last_wave = 0
+	wave_panjang = 0.0
+	wave_index = 0
 	_timer = 0.0
 	_iter = 0
 	solve()
@@ -108,6 +119,7 @@ func fail_member(id):
 
 func update(delta):
 	_debris_step(delta)
+	_dust_step(delta)
 	if not collapsing:
 		return
 
@@ -125,7 +137,10 @@ func update(delta):
 		return
 
 	last_wave = queue.size()
+	wave_index = _iter
+	wave_panjang = 0.0
 	for id in queue:
+		wave_panjang = wave_panjang + world.members[id].panjang
 		_kill(world.members[id])
 	queue = []
 
@@ -141,6 +156,7 @@ func _kill(m):
 	m.integritas = 0.0
 	world.carve_member(m)
 	_spawn_debris(m)
+	_spawn_dust(m)
 	dirty_img = true
 
 
@@ -160,6 +176,37 @@ func _spawn_debris(m):
 			"vx": rand_range(-7.0, 7.0),
 			"vy": rand_range(-4.0, 6.0),
 		})
+
+
+func _spawn_dust(m):
+	var n = int(rand_range(Config.DEBU_MIN, Config.DEBU_MAX + 1))
+	for _k in range(n):
+		if dust.size() >= Config.DEBU_MAX_TOTAL:
+			return
+		var t = randf()
+		dust.append({
+			"x": m.x0 + (m.x1 - m.x0) * t + rand_range(-2.0, 2.0),
+			"y": m.y0 + (m.y1 - m.y0) * t + rand_range(-2.0, 2.0),
+			"vx": rand_range(-5.0, 5.0),
+			"vy": -rand_range(2.0, Config.DEBU_NAIK),
+			"age": 0.0,
+		})
+
+
+func _dust_step(delta):
+	if dust.empty():
+		return
+	var sisa = []
+	for d in dust:
+		d.age = d.age + delta
+		if d.age >= Config.DEBU_UMUR:
+			continue
+		d.x = d.x + d.vx * delta
+		d.y = d.y + d.vy * delta
+		d.vx = d.vx * 0.96   # melambat, lalu menggantung
+		d.vy = d.vy * 0.97
+		sisa.append(d)
+	dust = sisa
 
 
 func _debris_step(delta):

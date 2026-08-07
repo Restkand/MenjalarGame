@@ -7,6 +7,8 @@ var _tree_tex
 var _ovl_img
 var _ovl_tex
 var _night
+var _shake_t   = 0.0
+var _shake_amp = 0.0
 
 
 func setup(world_img):
@@ -34,6 +36,28 @@ func setup(world_img):
 	_night.rect_size = Vector2(Config.W * Config.SCALE, Config.H * Config.SCALE)
 	_night.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_night)
+
+
+# Getaran digeser dalam kelipatan penuh SCALE, jadi kisi pikselnya tetap lurus.
+# Menggeser pecahan piksel layar akan membuat pixel art terlihat kotor.
+# _night, HUD, dan panel ada di CanvasLayer, jadi tidak ikut bergetar.
+func add_shake(amp):
+	_shake_amp = max(_shake_amp, min(Config.SHAKE_MAX, amp))
+	_shake_t = Config.SHAKE_DECAY
+
+
+func _process(delta):
+	if _shake_t <= 0.0:
+		return
+	_shake_t = max(0.0, _shake_t - delta)
+	if _shake_t <= 0.0:
+		_shake_amp = 0.0
+		position = Vector2()
+		return
+	var a = _shake_amp * (_shake_t / Config.SHAKE_DECAY)
+	position = Vector2(
+			round(rand_range(-a, a)) * Config.SCALE,
+			round(rand_range(-a, a)) * Config.SCALE)
 
 
 # Dipanggil hanya saat piksel dunia benar-benar berubah — member dilubangi
@@ -220,6 +244,50 @@ func draw_frame(world):
 func draw_debris(falling):
 	for p in falling:
 		_put(_ovl_img, int(round(p.x)), int(round(p.y)), Config.C_PUING)
+
+
+func draw_dust(dust):
+	for d in dust:
+		var c = Config.C_DEBU
+		c.a = clamp(1.0 - d.age / Config.DEBU_UMUR, 0.0, 1.0) * 0.8
+		_put(_ovl_img, int(round(d.x)), int(round(d.y)), c)
+
+
+# Retakan tumbuh menurut RASIO BEBAN, bukan integritas mentah. Rasionya adalah
+# beban / (integritas * KAPASITAS_MAX), jadi ia ikut naik saat integritas turun
+# — yang baru terjadi mulai TAHAP 5 saat tanaman melemahkan sambungan.
+# Selalu digambar, bukan hanya saat mode debug: ini umpan balik untuk pemain.
+func draw_cracks(world):
+	for m in world.members:
+		if not m.alive:
+			continue
+		var cap = m.integritas * Config.KAPASITAS_MAX
+		if cap <= 0.0:
+			continue
+		var stress = m.beban / cap
+		if stress < Config.RETAK_AMBANG:
+			continue
+		var f = clamp((stress - Config.RETAK_AMBANG)
+				/ max(0.01, 1.0 - Config.RETAK_AMBANG), 0.0, 1.0)
+		var dx = m.x1 - m.x0
+		var dy = m.y1 - m.y0
+		var n = int(max(abs(dx), abs(dy)))
+		if n <= 0:
+			continue
+		var pl = Vector2(-dy, dx).normalized()   # tegak lurus member
+		for k in range(int(n * f) + 1):
+			var t = float(k) / float(n)
+			# jitter tetap per member supaya retakan tidak berkedip tiap frame
+			var off = round(_hash(m.id * 7.3 + k * 1.7) * 2.0) - 1.0
+			_put(_ovl_img,
+					int(round(m.x0 + dx * t + pl.x * off)),
+					int(round(m.y0 + dy * t + pl.y * off)),
+					Config.C_RETAK)
+
+
+func _hash(n):
+	var s = sin(n * 127.1) * 43758.5453
+	return s - floor(s)
 
 
 func count_covered():

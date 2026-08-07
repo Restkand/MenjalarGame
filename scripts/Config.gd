@@ -69,6 +69,24 @@ const PUING_PER_PIKSEL  = 0.6
 const PUING_GRAVITASI   = 120.0
 const PUING_MAX         = 900
 
+# juice keruntuhan
+#
+# RETAK_AMBANG 0.80 dipilih supaya dua ruas kolom dalam paling bawah (rasio
+# beban 301/350 = 0.86) menunjukkan retakan halus sejak awal. Itu memberi tahu
+# pemain di mana jalur bebannya terberat tanpa satu pun teks. Naikkan ke 0.88
+# kalau retakan hanya boleh muncul sebagai peringatan menjelang gagal.
+var SHAKE_MAX        = 3.0    # piksel simulasi
+var SHAKE_DECAY      = 0.30   # detik sampai reda
+var FREEZE_TIME      = 0.08
+var RETAK_AMBANG     = 0.80
+
+const SHAKE_PER_PANJANG = 0.06
+const DEBU_MIN       = 20
+const DEBU_MAX       = 40
+const DEBU_MAX_TOTAL = 400
+const DEBU_NAIK      = 9.0
+const DEBU_UMUR      = 1.1
+
 const SUN_RAY = Vector2(-0.34, -0.94)
 
 const T_SKY      = 0
@@ -101,6 +119,8 @@ const C_WARDEN    = Color("3A3F49")
 const C_ALERT     = Color("C25A4A")
 
 const C_PUING     = Color("6B6B64")
+const C_DEBU      = Color("9A9A92")
+const C_RETAK     = Color("3A3A36")
 
 # debug rangka (tahan B)
 const C_FRAME_OK  = Color("5EC24A")

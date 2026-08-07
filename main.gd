@@ -22,6 +22,7 @@ var won = false
 var show_risk = false
 var show_frame = false
 var _cov_t = 0.0
+var _freeze = 0.0
 
 
 func _ready():
@@ -70,6 +71,7 @@ func _restart():
 	won = false
 	show_risk = false
 	show_frame = false
+	_freeze = 0.0
 	hud.show_overlay()
 
 
@@ -93,27 +95,40 @@ func _process(delta):
 	var m = _mouse_sim()
 	var seen = 0.0
 
-	# berjalan juga sebelum MULAI, supaya uji klik-kanan bisa dilakukan
-	structure.update(delta)
-	if structure.dirty_img:
-		structure.dirty_img = false
-		canvas.refresh_world()
+	if _freeze > 0.0:
+		# jeda mikro — simulasi beku, render dan getaran tetap jalan
+		_freeze = max(0.0, _freeze - delta)
+	else:
+		# berjalan juga sebelum MULAI, supaya uji klik-kanan bisa dilakukan
+		structure.update(delta)
 
-	if playing and not won:
-		seen = sim.update(delta, is_steering, m, world, warden.phase)
-		warden.update(delta, sim, world, seen)
+		if structure.wave_panjang > 0.0:
+			canvas.add_shake(structure.wave_panjang * Config.SHAKE_PER_PANJANG)
+			if structure.wave_index == 1:
+				_freeze = Config.FREEZE_TIME
+			structure.wave_panjang = 0.0
+
+		if structure.dirty_img:
+			structure.dirty_img = false
+			canvas.refresh_world()
+
+		if playing and not won:
+			seen = sim.update(delta, is_steering, m, world, warden.phase)
+			warden.update(delta, sim, world, seen)
 
 	if warden.did_prune:
 		canvas.clear_tree()
 
 	canvas.begin_frame()
 	sim.render(canvas, warden.did_prune)
+	canvas.draw_cracks(world)
 	if show_risk:
 		canvas.draw_risk(world)
 	if show_frame:
 		canvas.draw_frame(world)
 	canvas.draw_warden(warden, world)
 	canvas.draw_debris(structure.falling)
+	canvas.draw_dust(structure.dust)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
 		canvas.draw_preview(sim.selected.preview(m, 40, world))
 

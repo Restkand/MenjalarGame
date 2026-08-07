@@ -39,6 +39,13 @@ const FACADE_Y1 = 112
 const PHASE_DAY = 0
 const PHASE_NIGHT = 1
 
+# rangka struktural
+const M_KOLOM = 0
+const M_BALOK = 1
+
+const FRAME_COLS = 4
+const FRAME_ROWS = 5
+
 const SUN_RAY = Vector2(-0.34, -0.94)
 
 const T_SKY      = 0
@@ -69,3 +76,8 @@ const C_LEAF      = Color("5EC24A")
 const C_TIP       = Color("B8E986")
 const C_WARDEN    = Color("3A3F49")
 const C_ALERT     = Color("C25A4A")
+
+# debug rangka (tahan B)
+const C_FRAME_OK  = Color("5EC24A")
+const C_FRAME_BAD = Color("C25A4A")
+const C_JOINT     = Color("B8E986")

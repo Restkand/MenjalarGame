@@ -18,6 +18,7 @@ var is_steering = false
 var playing = false
 var won = false
 var show_risk = false
+var show_frame = false
 var _cov_t = 0.0
 
 
@@ -58,6 +59,7 @@ func _restart():
 	playing = false
 	won = false
 	show_risk = false
+	show_frame = false
 	hud.show_overlay()
 
 
@@ -92,6 +94,8 @@ func _process(delta):
 	sim.render(canvas, warden.did_prune)
 	if show_risk:
 		canvas.draw_risk(world)
+	if show_frame:
+		canvas.draw_frame(world)
 	canvas.draw_warden(warden, world)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
 		canvas.draw_preview(sim.selected.preview(m, 40, world))
@@ -115,6 +119,9 @@ func _input(event):
 
 	if event is InputEventKey and event.scancode == KEY_V:
 		show_risk = event.pressed
+
+	if event is InputEventKey and event.scancode == KEY_B:
+		show_frame = event.pressed
 
 
 func _unhandled_input(event):

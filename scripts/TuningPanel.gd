@@ -67,7 +67,7 @@ func _ready():
 
 	_help = Label.new()
 	_help.rect_position = Vector2(12, 604)
-	_help.text = "Klik kiri: pilih & arahkan   |   Klik kanan / Spasi: bercabang   |   X: hentikan ujung   |   Tab: panel   |   R: reset"
+	_help.text = "Klik kiri: pilih & arahkan   |   Klik kanan / Spasi: bercabang   |   X: hentikan ujung   |   Tahan V: peta risiko   |   Tahan B: rangka   |   Tab: panel   |   R: reset"
 	add_child(_help)
 
 

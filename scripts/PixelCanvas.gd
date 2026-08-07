@@ -174,6 +174,20 @@ func draw_risk(world):
 		y += 4
 
 
+func draw_frame(world):
+	for m in world.members:
+		_line(_ovl_img, m.x0, m.y0, m.x1, m.y1,
+				Config.C_FRAME_BAD.linear_interpolate(
+						Config.C_FRAME_OK, m.integritas))
+	# joint digambar belakangan supaya duduk di atas member
+	for j in world.joints:
+		var c = Config.C_FRAME_BAD.linear_interpolate(
+				Config.C_JOINT, j.integritas)
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				_put(_ovl_img, j.x + dx, j.y + dy, c)
+
+
 func count_covered():
 	var n = 0
 	var y = Config.FACADE_Y0
@@ -198,6 +212,18 @@ func _stamp(img, cx, cy, r, col):
 			if dx * dx + dy * dy > r * r:
 				continue
 			_put(img, px + dx, py + dy, col)
+
+
+func _line(img, x0, y0, x1, y1, col):
+	var dx = x1 - x0
+	var dy = y1 - y0
+	var n = int(max(abs(dx), abs(dy)))
+	if n == 0:
+		_put(img, x0, y0, col)
+		return
+	for k in range(n + 1):
+		var t = float(k) / float(n)
+		_put(img, int(round(x0 + dx * t)), int(round(y0 + dy * t)), col)
 
 
 func _put(img, x, y, col):

@@ -4,6 +4,8 @@ var image
 var grid
 var light
 var vis
+var members = []
+var joints  = []
 
 
 func build():
@@ -50,6 +52,7 @@ func build():
 	image.unlock()
 	_bake_light()
 	_bake_vis()
+	_build_frame()
 
 
 func _rect(x, y, w, h, col, kind):
@@ -105,6 +108,123 @@ func _bake_vis():
 			if k == Config.T_LEDGE:
 				v -= 0.28
 			vis.set(i, clamp(v, 0.0, 1.0))
+
+
+# ---------------------------------------------------------------------------
+# Rangka struktural
+#
+# Lapisan data murni di atas grid terrain. grid, image, light, dan vis tidak
+# tersentuh sama sekali. Belum ada perhitungan beban dan belum ada keruntuhan
+# — itu TAHAP 3.
+#
+# Kolom dan balok disimpan sebagai RUAS antar-joint, bukan satu member utuh,
+# supaya beban punya kisi untuk mengalir. Di layar tetap tampak 4 kolom dan
+# 5 balok.
+#
+# _kolom_id() dan _balok_id() menghitung id dari koordinat kisi, jadi urutan
+# pembuatan di _build_frame() mengikat: SELURUH ruas kolom dibuat lebih dulu,
+# baru seluruh ruas balok.
+# ---------------------------------------------------------------------------
+
+func _build_frame():
+	members = []
+	joints = []
+
+	var cx = []   # x tiap garis kolom
+	for i in range(Config.FRAME_COLS):
+		cx.append(Config.FACADE_X0 + int(round(
+				float(i) * float(Config.FACADE_X1 - 1 - Config.FACADE_X0)
+				/ float(Config.FRAME_COLS - 1))))
+
+	var ry = []   # y tiap level balok
+	for j in range(Config.FRAME_ROWS):
+		ry.append(Config.FACADE_Y0 + int(round(
+				float(j) * float(Config.FACADE_Y1 - 1 - Config.FACADE_Y0)
+				/ float(Config.FRAME_ROWS - 1))))
+
+	# joint di tiap perpotongan — id = j * FRAME_COLS + i
+	for j in range(Config.FRAME_ROWS):
+		for i in range(Config.FRAME_COLS):
+			joints.append({
+				"id": joints.size(),
+				"x": cx[i],
+				"y": ry[j],
+				"col": i,
+				"row": j,
+				"member_terhubung": [],
+				"integritas": 1.0,
+			})
+
+	# ruas kolom — wajib dibuat lebih dulu, lihat _kolom_id()
+	for i in range(Config.FRAME_COLS):
+		for j in range(Config.FRAME_ROWS - 1):
+			_add_member(Config.M_KOLOM, cx[i], ry[j], cx[i], ry[j + 1],
+					_joint_id(i, j), _joint_id(i, j + 1))
+
+	# ruas balok
+	for j in range(Config.FRAME_ROWS):
+		for i in range(Config.FRAME_COLS - 1):
+			_add_member(Config.M_BALOK, cx[i], ry[j], cx[i + 1], ry[j],
+					_joint_id(i, j), _joint_id(i + 1, j))
+
+	_link_supports()
+
+
+func _add_member(tipe, x0, y0, x1, y1, ja, jb):
+	var m = {
+		"id": members.size(),
+		"x0": x0, "y0": y0,
+		"x1": x1, "y1": y1,
+		"tipe": tipe,
+		"integritas": 1.0,
+		"beban": 0.0,
+		"member_bawah": [],
+		"joint_a": ja,
+		"joint_b": jb,
+	}
+	members.append(m)
+	joints[ja].member_terhubung.append(m.id)
+	joints[jb].member_terhubung.append(m.id)
+	return m.id
+
+
+func _link_supports():
+	# Ruas kolom ditopang ruas kolom di bawahnya. Yang paling bawah berdiri di
+	# pondasi, jadi member_bawah-nya kosong.
+	for i in range(Config.FRAME_COLS):
+		for j in range(Config.FRAME_ROWS - 1):
+			var below = _kolom_id(i, j + 1)
+			if below >= 0:
+				members[_kolom_id(i, j)].member_bawah.append(below)
+
+	# Ruas balok ditopang ruas kolom yang menggantung di bawah kedua joint
+	# ujungnya. Di level paling bawah tidak ada kolom di bawahnya — pondasi.
+	for j in range(Config.FRAME_ROWS):
+		for i in range(Config.FRAME_COLS - 1):
+			var b = members[_balok_id(i, j)]
+			for k in [i, i + 1]:
+				var kid = _kolom_id(k, j)
+				if kid >= 0:
+					b.member_bawah.append(kid)
+
+
+func _joint_id(i, j):
+	return j * Config.FRAME_COLS + i
+
+
+func _kolom_id(i, j):
+	# ruas kolom pada garis kolom i, antara level balok j dan j+1
+	if i < 0 or i >= Config.FRAME_COLS or j < 0 or j >= Config.FRAME_ROWS - 1:
+		return -1
+	return i * (Config.FRAME_ROWS - 1) + j
+
+
+func _balok_id(i, j):
+	# ruas balok pada level j, antara garis kolom i dan i+1
+	if i < 0 or i >= Config.FRAME_COLS - 1 or j < 0 or j >= Config.FRAME_ROWS:
+		return -1
+	return Config.FRAME_COLS * (Config.FRAME_ROWS - 1) \
+			+ j * (Config.FRAME_COLS - 1) + i
 
 
 func at(x, y):

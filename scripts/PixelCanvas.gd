@@ -1,0 +1,205 @@
+extends Node2D
+
+var _tree_img
+var _tree_tex
+var _ovl_img
+var _ovl_tex
+var _night
+
+
+func setup(world_img):
+	var wt = ImageTexture.new()
+	wt.create_from_image(world_img, 0)
+	_add_sprite(wt, 0)
+
+	_tree_img = _blank()
+	_tree_tex = ImageTexture.new()
+	_tree_tex.create_from_image(_tree_img, 0)
+	_add_sprite(_tree_tex, 1)
+
+	_ovl_img = _blank()
+	_ovl_tex = ImageTexture.new()
+	_ovl_tex.create_from_image(_ovl_img, 0)
+	_add_sprite(_ovl_tex, 2)
+	
+	var layer = CanvasLayer.new()
+	layer.layer = 5
+	add_child(layer)
+
+	_night = ColorRect.new()
+	_night.color = Color(0.05, 0.08, 0.20, 0.0)
+	_night.rect_size = Vector2(Config.W * Config.SCALE, Config.H * Config.SCALE)
+	_night.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(_night)
+
+
+func set_night(a):
+	_night.color = Color(0.05, 0.08, 0.20, a * 0.55)
+
+
+func _blank():
+	var img = Image.new()
+	img.create(Config.W, Config.H, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	return img
+
+
+func _add_sprite(tex, z):
+	var s = Sprite.new()
+	s.texture = tex
+	s.centered = false
+	s.scale = Vector2(Config.SCALE, Config.SCALE)
+	s.z_index = z
+	add_child(s)
+
+
+func begin_frame():
+	_ovl_img.fill(Color(0, 0, 0, 0))
+	_tree_img.lock()
+	_ovl_img.lock()
+
+
+func end_frame():
+	_tree_img.unlock()
+	_ovl_img.unlock()
+	_tree_tex.set_data(_tree_img)
+	_ovl_tex.set_data(_ovl_img)
+
+
+func clear_tree():
+	_tree_img.fill(Color(0, 0, 0, 0))
+	_tree_tex.set_data(_tree_img)
+
+
+func draw_strand(s):
+	_paint(s, max(0, s.points.size() - 180))
+
+
+func draw_strand_full(s):
+	_paint(s, 0)
+
+
+func _paint(s, start):
+	var n = s.points.size()
+	var col = Config.C_ROOT if s.is_root else Config.C_BRANCH
+	for i in range(start, n):
+		var th = 0.6 + min(2.2, (n - i) * 0.015) - s.generation * 0.3
+		_stamp(_tree_img, s.points[i].x, s.points[i].y, max(0.6, th), col)
+
+
+func draw_leaves(s):
+	for l in s.leaves:
+		_stamp(_tree_img, l.pos.x, l.pos.y,
+				0.8 if l.age < 1.5 else 1.2, Config.C_LEAF)
+
+
+func draw_tip(p, is_selected, t):
+	var col = Config.C_TIP if fmod(t, 0.6) < 0.3 else Config.C_LEAF
+	_stamp(_ovl_img, p.x, p.y, 0.6, col)
+	if is_selected:
+		var cx = int(round(p.x))
+		var cy = int(round(p.y))
+		for d in range(-3, 4):
+			if abs(d) == 3:
+				continue
+			_put(_ovl_img, cx + d, cy - 3, Config.C_TIP)
+			_put(_ovl_img, cx + d, cy + 3, Config.C_TIP)
+			_put(_ovl_img, cx - 3, cy + d, Config.C_TIP)
+			_put(_ovl_img, cx + 3, cy + d, Config.C_TIP)
+
+
+func draw_preview(pts):
+	var c = Config.C_TIP
+	c.a = 0.55
+	for i in range(pts.size()):
+		if i % 3 == 0:
+			_put(_ovl_img, int(round(pts[i].x)), int(round(pts[i].y)), c)
+
+
+func draw_warden(w, world):
+	if w.phase != Config.PHASE_DAY:
+		return
+
+	# kerucut pandang
+	var e = w.eye()
+	var col = Config.C_WARN
+	col.a = 0.5 if w.spotting else 0.26
+	var steps = 9
+	for k in range(steps + 1):
+		var a = w.gaze - Config.GAZE_HALF \
+				+ (2.0 * Config.GAZE_HALF) * float(k) / float(steps)
+		var d = 6.0
+		while d < Config.GAZE_RANGE:
+			var px = e.x + cos(a) * d
+			var py = e.y + sin(a) * d
+			if py < 2 or px < 2 or px > Config.W - 3:
+				break
+			if int(d) % 4 < 2:
+				_put(_ovl_img, int(round(px)), int(round(py)), col)
+			d += 1.0
+
+	# badan
+	var x = int(round(w.pos_x))
+	var y = Config.GROUND_Y
+	var bc = Config.C_ALERT if w.spotting else Config.C_WARDEN
+	for j in range(y - 9, y):
+		for i in range(x - 1, x + 2):
+			_put(_ovl_img, i, j, bc)
+	_put(_ovl_img, x - 2, y - 6, bc)
+	_put(_ovl_img, x + 2, y - 6, bc)
+
+
+func draw_heat(s, t):
+	if s.heat < 0.12:
+		return
+	var col = Config.C_WARN if s.heat < 0.6 else Config.C_ALERT
+	if s.heat >= 0.85 and fmod(t, 0.4) < 0.2:
+		return
+	for i in s.hot_points():
+		if i % 3 == 0:
+			_put(_ovl_img, int(round(s.points[i].x)),
+					int(round(s.points[i].y)), col)
+
+
+func draw_risk(world):
+	var c = Config.C_ALERT
+	c.a = 0.30
+	var y = Config.FACADE_Y0
+	while y < Config.FACADE_Y1:
+		var x = Config.FACADE_X0
+		while x < Config.FACADE_X1:
+			if world.vis_at(x, y) > 0.60:
+				_put(_ovl_img, x, y, c)
+			x += 4
+		y += 4
+
+
+func count_covered():
+	var n = 0
+	var y = Config.FACADE_Y0
+	while y < Config.FACADE_Y1:
+		var x = Config.FACADE_X0
+		while x < Config.FACADE_X1:
+			if _tree_img.get_pixel(x, y).a > 0.1:
+				n += 4
+			x += 2
+		y += 2
+	var total = (Config.FACADE_X1 - Config.FACADE_X0) \
+			* (Config.FACADE_Y1 - Config.FACADE_Y0)
+	return float(n) / float(total)
+
+
+func _stamp(img, cx, cy, r, col):
+	var ir = int(ceil(r))
+	var px = int(round(cx))
+	var py = int(round(cy))
+	for dy in range(-ir, ir + 1):
+		for dx in range(-ir, ir + 1):
+			if dx * dx + dy * dy > r * r:
+				continue
+			_put(img, px + dx, py + dy, col)
+
+
+func _put(img, x, y, col):
+	if x >= 0 and x < Config.W and y >= 0 and y < Config.H:
+		img.set_pixel(x, y, col)

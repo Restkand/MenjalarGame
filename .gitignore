@@ -1,0 +1,29 @@
+# Godot 3.x — folder cache hasil import aset (di-generate ulang otomatis)
+.import/
+
+# Setelan export yang berisi path lokal / kredensial
+export.cfg
+export_presets.cfg
+
+# Hasil build/export
+build/
+exports/
+
+# File terjemahan hasil kompilasi
+*.translation
+
+# Mono / C# (kalau nanti dipakai)
+.mono/
+data_*/
+mono_crash.*.json
+
+# Godot 4 (jaga-jaga kalau nanti upgrade)
+.godot/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/
+.idea/

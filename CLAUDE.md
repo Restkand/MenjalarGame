@@ -108,8 +108,28 @@ Urutan kerja bertahap ada di **`docs/05-prompt-pivot-pembongkaran.md`**
 (TAHAP 0 sampai TAHAP 8). Kerjakan **satu tahap per sesi**, commit tiap tahap
 yang sudah terverifikasi jalan.
 
-Status pivot: **TAHAP 0 dan 1 selesai. Berikutnya TAHAP 2 (rangka struktural,
-data saja).**
+Status pivot: **TAHAP 0–5 selesai secara kode. Berikutnya TAHAP 6 (puing jadi
+tanah baru).**
+
+⚠️ **TAHAP 2–5 belum pernah dijalankan di Godot.** Yang terverifikasi hanya
+matematikanya lewat skrip terpisah: tata letak rangka, distribusi beban,
+perilaku rantai, ambang retakan, dan pacing pelemahan. Parsing GDScript dan
+perilaku runtime belum teruji sama sekali. Kalau sesi baru dimulai dengan
+laporan error, curigai keempat tahap itu, bukan hanya yang terakhir.
+
+Sistem yang sudah ada dari pivot:
+
+- `WorldMap.members` / `.joints` — rangka 4 kolom × 5 balok, disimpan sebagai
+  31 ruas antar-joint. `solve_order` sudah topologis atas-ke-bawah.
+- `WorldMap.kapasitas(m)` — satu-satunya sumber kebenaran kapasitas:
+  `integritas_member * min(integritas kedua joint) * KAPASITAS_MAX`.
+- `Structure.gd` — solve beban, keruntuhan berantai per gelombang, puing,
+  debu, dan pelemahan oleh tanaman.
+- Sulur menyerang joint, akar menyerang ruas kolom paling bawah.
+
+Kondisi menang **masih berbasis coverage 55%** walau bar HUD sudah diganti
+integritas struktur. Itu memang urutan yang ditetapkan dokumen — diperbaiki di
+TAHAP 8.
 
 Dokumen `docs/01-konteks-game.md` dan `docs/02-logika-game.md` adalah rancangan
 prototipe asli. Yang masih berlaku dari keduanya: palet warna, teknik render

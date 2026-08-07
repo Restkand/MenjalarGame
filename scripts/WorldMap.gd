@@ -272,6 +272,35 @@ func on_facade(x, y):
 	return k == Config.T_WALL or k == Config.T_WINDOW or k == Config.T_DOOR
 
 
+# Permukaan yang bisa dipijak sulur. Inilah predikat yang dipakai pertumbuhan,
+# BUKAN on_facade() mentah.
+#
+# Lubang hasil keruntuhan hanya selebar 3 piksel. Kalau sulur tidak bisa
+# menyeberanginya, fasad terpotong jadi panel-panel terpisah dan sulur
+# terkurung selamanya — persis yang terjadi di playtest. Jadi sulur boleh
+# merentang sejauh VINE_JEMBATAN piksel, seperti sulur sungguhan melewati
+# retakan.
+#
+# Hanya arah sumbu yang dipindai, bukan kotak penuh: member selalu tegak atau
+# mendatar, jadi celahnya pasti sejajar sumbu. 8 lookup, bukan 25 — penting
+# karena normal_at() memanggil solid_at() 24 kali per tabrakan.
+#
+# Dibatasi ke dalam kotak fasad supaya sulur tidak melayang keluar siluet.
+func vine_ok(x, y):
+	var ix = int(round(x))
+	var iy = int(round(y))
+	if on_facade(ix, iy):
+		return true
+	if ix < Config.FACADE_X0 or ix >= Config.FACADE_X1 \
+			or iy < Config.FACADE_Y0 or iy >= Config.FACADE_Y1:
+		return false
+	for d in range(1, Config.VINE_JEMBATAN + 1):
+		if on_facade(ix + d, iy) or on_facade(ix - d, iy) \
+				or on_facade(ix, iy + d) or on_facade(ix, iy - d):
+			return true
+	return false
+
+
 # ---------------------------------------------------------------------------
 # Perusakan — kebalikan dari _rect()
 # ---------------------------------------------------------------------------

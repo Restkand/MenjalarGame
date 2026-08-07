@@ -100,6 +100,12 @@ const DEBU_UMUR      = 1.1
 # mengajarkan jalur beban tanpa satu pun teks.
 var WEAKEN_RATE = 0.12
 
+# Seberapa lebar celah yang masih bisa direntang sulur. Lubang hasil
+# carve_member selebar 3 piksel, jadi titik tengahnya berjarak 2 piksel dari
+# fasad di kedua sisi — nilai 2 pas untuk menyeberanginya. Kawasan yang
+# benar-benar runtuh tetap tidak bisa diseberangi.
+const VINE_JEMBATAN = 2
+
 const JOINT_RADIUS       = 3.0     # jangkauan melemahkan
 const JOINT_TARIK_RADIUS = 12.0    # jangkauan tigmotropisme ke joint
 const JOINT_TARIK_MAX    = 0.262   # 15 derajat, batas deviasi dari arah pemain

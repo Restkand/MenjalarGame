@@ -30,7 +30,7 @@ func solid_at(world, x, y):
 		var k = world.at(int(round(x)), int(round(y)))
 		return k == Config.T_CONCRETE or k == Config.T_PIPE \
 				or k == Config.T_NEIGHBOR or y < Config.GROUND_Y
-	return not world.on_facade(x, y)
+	return not world.vine_ok(x, y)
 
 
 func normal_at(world, x, y):
@@ -150,11 +150,14 @@ func exposure(world):
 # buang bagian yang kini menggantung di atas lubang, lalu lanjut hidup.
 # Mengembalikan true kalau untai ini memang terdampak.
 func retreat_to_facade(world):
-	if is_root or world.on_facade(tip.x, tip.y):
+	# Pakai vine_ok(), bukan on_facade() — kalau tidak, sulur yang sedang
+	# merentang di atas celah sempit akan dianggap kehilangan pijakan dan
+	# ditarik mundur, membatalkan kemampuan menjembatani itu sendiri.
+	if is_root or world.vine_ok(tip.x, tip.y):
 		return false
 
 	var i = points.size() - 1
-	while i >= 0 and not world.on_facade(points[i].x, points[i].y):
+	while i >= 0 and not world.vine_ok(points[i].x, points[i].y):
 		i -= 1
 
 	if i < 1:

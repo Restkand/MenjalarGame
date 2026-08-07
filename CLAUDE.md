@@ -93,6 +93,7 @@ Diambil dari `docs/04-status-proyek.md` §9.
 | `z_index` pada `ColorRect` | `ColorRect` adalah `Control`, bukan `Node2D` | pindah ke `CanvasLayer` terpisah |
 | Fotosintesis jalan malam hari | tidak dicek fase | energi hanya bertambah saat `PHASE_DAY` |
 | Permainan buntu setelah keruntuhan besar | ujung sulur yang kehilangan fasad dimatikan permanen, padahal satu rantai melubangi sampai 20 dari 31 member sekaligus | ujung **mundur** ke titik terakhir yang masih menempel, lalu lanjut hidup (`Strand.retreat_to_facade`) |
+| Sulur terkurung di panel fasad | lubang keruntuhan selebar 3 px diperlakukan seperti langit, karena bagi sulur "solid" berarti bukan-fasad | `WorldMap.vine_ok()` — sulur boleh merentang `VINE_JEMBATAN` piksel. **Semua** cek pijakan sulur harus lewat `vine_ok()`, bukan `on_facade()` mentah, atau perbaikannya batal sendiri |
 
 ---
 

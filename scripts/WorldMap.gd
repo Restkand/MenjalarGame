@@ -6,6 +6,8 @@ var light
 var vis
 var members = []
 var joints  = []
+var settled            # puing yang sudah mengendap, 0/1 per piksel
+var solve_order = []   # id member dalam urutan topologis atas-ke-bawah
 
 
 func build():
@@ -14,6 +16,7 @@ func build():
 	grid = PoolByteArray(); grid.resize(Config.W * Config.H)
 	light = PoolRealArray(); light.resize(Config.W * Config.H)
 	vis = PoolRealArray(); vis.resize(Config.W * Config.H)
+	settled = PoolByteArray(); settled.resize(Config.W * Config.H)
 
 	image.lock()
 	_rect(0, 0, Config.W, Config.GROUND_Y, Config.C_SKY, Config.T_SKY)
@@ -129,6 +132,7 @@ func _bake_vis():
 func _build_frame():
 	members = []
 	joints = []
+	solve_order = []
 
 	var cx = []   # x tiap garis kolom
 	for i in range(Config.FRAME_COLS):
@@ -168,6 +172,22 @@ func _build_frame():
 					_joint_id(i, j), _joint_id(i + 1, j))
 
 	_link_supports()
+	_build_solve_order()
+
+
+# Urutan topologis: di tiap level, balok dulu baru ruas kolom. Keduanya hanya
+# menyuapi ruas di bawahnya, jadi satu sapuan atas-ke-bawah sudah cukup — tidak
+# perlu algoritma graf. Structure.gd memakai daftar ini dan karenanya tidak
+# perlu tahu apa pun tentang bentuk kisinya.
+func _build_solve_order():
+	solve_order = []
+	for j in range(Config.FRAME_ROWS):
+		for i in range(Config.FRAME_COLS - 1):
+			solve_order.append(_balok_id(i, j))
+		for i in range(Config.FRAME_COLS):
+			var kid = _kolom_id(i, j)
+			if kid >= 0:
+				solve_order.append(kid)
 
 
 func _add_member(tipe, x0, y0, x1, y1, ja, jb):
@@ -176,6 +196,8 @@ func _add_member(tipe, x0, y0, x1, y1, ja, jb):
 		"x0": x0, "y0": y0,
 		"x1": x1, "y1": y1,
 		"tipe": tipe,
+		"panjang": Vector2(x1 - x0, y1 - y0).length(),
+		"alive": true,
 		"integritas": 1.0,
 		"beban": 0.0,
 		"member_bawah": [],
@@ -248,3 +270,84 @@ func vis_at(x, y):
 func on_facade(x, y):
 	var k = at(int(round(x)), int(round(y)))
 	return k == Config.T_WALL or k == Config.T_WINDOW or k == Config.T_DOOR
+
+
+# ---------------------------------------------------------------------------
+# Perusakan — kebalikan dari _rect()
+# ---------------------------------------------------------------------------
+
+# Menghapus piksel di sepanjang member, menyisakan lubang tembus pandang.
+# image berubah, jadi pemanggil wajib meminta PixelCanvas.refresh_world().
+func carve_member(m):
+	image.lock()
+	var n = int(max(abs(m.x1 - m.x0), abs(m.y1 - m.y0)))
+	for k in range(n + 1):
+		var t = float(k) / float(max(1, n))
+		var px = int(round(m.x0 + (m.x1 - m.x0) * t))
+		var py = int(round(m.y0 + (m.y1 - m.y0) * t))
+		for dy in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
+			for dx in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
+				_carve_px(px + dx, py + dy)
+	image.unlock()
+
+
+# Hanya melubangi bagian gedung. Tanah, pipa, dan beton bawah tanah tidak
+# tersentuh walau kuas melebar melewati garis tanah.
+func _carve_px(x, y):
+	if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
+		return
+	var k = grid[y * Config.W + x]
+	if k != Config.T_WALL and k != Config.T_WINDOW \
+			and k != Config.T_DOOR and k != Config.T_LEDGE:
+		return
+	image.set_pixel(x, y, Config.C_SKY)
+	grid.set(y * Config.W + x, Config.T_SKY)
+
+
+# Puing hanya bertumpu pada tanah dan puing lain. Gedung TIDAK menghalangi:
+# kita melihat fasad dari depan, jadi reruntuhan jatuh di depan dinding.
+func blocked(x, y):
+	if x < 0 or x >= Config.W or y < 0:
+		return true
+	if y >= Config.GROUND_Y:
+		return true
+	return settled[y * Config.W + x] != 0
+
+
+# Satu lock untuk sekumpulan puing yang mengendap di frame yang sama.
+# Menulis ke image dan settled saja — grid sengaja tidak disentuh, supaya
+# tabrakan tanaman belum berubah. Itu urusan TAHAP 6.
+func settle_many(points):
+	if points.empty():
+		return
+	image.lock()
+	for p in points:
+		var x = int(p.x)
+		var y = int(p.y)
+		if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
+			continue
+		settled.set(y * Config.W + x, 1)
+		image.set_pixel(x, y, Config.C_PUING)
+	image.unlock()
+
+
+func member_at(p, radius):
+	var best = radius
+	var found = -1
+	for m in members:
+		if not m.alive:
+			continue
+		var d = _dist_seg(p, Vector2(m.x0, m.y0), Vector2(m.x1, m.y1))
+		if d < best:
+			best = d
+			found = m.id
+	return found
+
+
+func _dist_seg(p, a, b):
+	var ab = b - a
+	var l2 = ab.length_squared()
+	if l2 < 0.0001:
+		return p.distance_to(a)
+	var t = clamp((p - a).dot(ab) / l2, 0.0, 1.0)
+	return p.distance_to(a + ab * t)

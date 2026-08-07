@@ -1,5 +1,7 @@
 extends Node2D
 
+var _world_img
+var _world_tex
 var _tree_img
 var _tree_tex
 var _ovl_img
@@ -8,9 +10,10 @@ var _night
 
 
 func setup(world_img):
-	var wt = ImageTexture.new()
-	wt.create_from_image(world_img, 0)
-	_add_sprite(wt, 0)
+	_world_img = world_img
+	_world_tex = ImageTexture.new()
+	_world_tex.create_from_image(_world_img, 0)
+	_add_sprite(_world_tex, 0)
 
 	_tree_img = _blank()
 	_tree_tex = ImageTexture.new()
@@ -31,6 +34,19 @@ func setup(world_img):
 	_night.rect_size = Vector2(Config.W * Config.SCALE, Config.H * Config.SCALE)
 	_night.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_night)
+
+
+# Dipanggil hanya saat piksel dunia benar-benar berubah — member dilubangi
+# atau puing mengendap — bukan tiap frame.
+func refresh_world():
+	_world_tex.set_data(_world_img)
+
+
+# world.build() membuat Image baru, jadi setelah reset teksturnya harus
+# diarahkan ulang ke objek yang baru.
+func set_world_image(world_img):
+	_world_img = world_img
+	_world_tex.create_from_image(_world_img, 0)
 
 
 func set_night(a):
@@ -174,18 +190,36 @@ func draw_risk(world):
 		y += 4
 
 
+# Member diwarnai menurut RASIO BEBAN, bukan integritas — itu yang perlu
+# dilihat saat menyetel KAPASITAS_MAX. Hijau = santai, merah = di ambang.
+# Joint tetap diwarnai menurut integritas (baru berubah di TAHAP 5).
 func draw_frame(world):
 	for m in world.members:
+		if not m.alive:
+			continue
+		var cap = m.integritas * Config.KAPASITAS_MAX
+		var stress = 1.0 if cap <= 0.0 else clamp(m.beban / cap, 0.0, 1.0)
 		_line(_ovl_img, m.x0, m.y0, m.x1, m.y1,
-				Config.C_FRAME_BAD.linear_interpolate(
-						Config.C_FRAME_OK, m.integritas))
+				Config.C_FRAME_OK.linear_interpolate(Config.C_FRAME_BAD, stress))
 	# joint digambar belakangan supaya duduk di atas member
 	for j in world.joints:
+		var hidup = false
+		for mid in j.member_terhubung:
+			if world.members[mid].alive:
+				hidup = true
+				break
+		if not hidup:
+			continue
 		var c = Config.C_FRAME_BAD.linear_interpolate(
 				Config.C_JOINT, j.integritas)
 		for dy in range(-1, 2):
 			for dx in range(-1, 2):
 				_put(_ovl_img, j.x + dx, j.y + dy, c)
+
+
+func draw_debris(falling):
+	for p in falling:
+		_put(_ovl_img, int(round(p.x)), int(round(p.y)), Config.C_PUING)
 
 
 func count_covered():

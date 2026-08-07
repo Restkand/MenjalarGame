@@ -3,6 +3,7 @@ extends Node2D
 const WorldMapCls    = preload("res://scripts/WorldMap.gd")
 const TreeSimCls     = preload("res://scripts/TreeSim.gd")
 const WardenCls      = preload("res://scripts/Warden.gd")
+const StructureCls   = preload("res://scripts/Structure.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
 const HudCls         = preload("res://scripts/Hud.gd")
@@ -10,6 +11,7 @@ const HudCls         = preload("res://scripts/Hud.gd")
 var world
 var sim
 var warden
+var structure
 var canvas
 var panel
 var hud
@@ -32,6 +34,9 @@ func _ready():
 	add_child(canvas)
 	canvas.setup(world.image)
 
+	structure = StructureCls.new()
+	structure.setup(world)
+
 	sim = TreeSimCls.new()
 	sim.reset()
 
@@ -52,6 +57,11 @@ func _on_play():
 
 
 func _restart():
+	# Keruntuhan mengubah grid dan image secara permanen, jadi dunianya harus
+	# dibangun ulang — bukan sekadar mereset pohon.
+	world.build()
+	canvas.set_world_image(world.image)
+	structure.setup(world)
 	sim.reset()
 	warden.reset()
 	canvas.clear_tree()
@@ -83,6 +93,12 @@ func _process(delta):
 	var m = _mouse_sim()
 	var seen = 0.0
 
+	# berjalan juga sebelum MULAI, supaya uji klik-kanan bisa dilakukan
+	structure.update(delta)
+	if structure.dirty_img:
+		structure.dirty_img = false
+		canvas.refresh_world()
+
 	if playing and not won:
 		seen = sim.update(delta, is_steering, m, world, warden.phase)
 		warden.update(delta, sim, world, seen)
@@ -97,6 +113,7 @@ func _process(delta):
 	if show_frame:
 		canvas.draw_frame(world)
 	canvas.draw_warden(warden, world)
+	canvas.draw_debris(structure.falling)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
 		canvas.draw_preview(sim.selected.preview(m, 40, world))
 
@@ -133,6 +150,15 @@ func _unhandled_input(event):
 		elif event.scancode == KEY_TAB:
 			panel.toggle()
 			return
+
+	# uji keruntuhan: tahan B lalu klik kanan pada member. Disyaratkan
+	# show_frame supaya tidak bentrok dengan klik-kanan-bercabang.
+	if show_frame and event is InputEventMouseButton and event.pressed \
+			and event.button_index == BUTTON_RIGHT:
+		var id = world.member_at(_mouse_sim(), 6.0)
+		if id >= 0:
+			structure.fail_member(id)
+		return
 
 	if not playing or won:
 		return

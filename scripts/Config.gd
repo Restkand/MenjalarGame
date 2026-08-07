@@ -46,6 +46,29 @@ const M_BALOK = 1
 const FRAME_COLS = 4
 const FRAME_ROWS = 5
 
+# beban & keruntuhan
+#
+# KAPASITAS_MAX adalah angka paling menentukan di sistem ini. Dengan
+# BERAT_PER_PIKSEL = 1.0, beban ruas kolom paling bawah saat gedung utuh adalah
+# 199 / 301 / 301 / 199, jadi ambang harus di atas 301 atau gedung runtuh
+# sendiri saat mulai. Perilaku terukur:
+#
+#   350  margin 16% saat utuh. Menggagalkan kolom bawah terluar meruntuhkan
+#        20 dari 31 member dalam 9 gelombang; kolom dalam 12 dari 31 dalam
+#        7 gelombang. Ini yang dipakai — runtuhnya benar-benar berantai.
+#   420+ terkurung: hanya 4 member (satu garis kolom) per serangan, tanpa
+#        rambatan ke tetangga. Pakai ini kalau ingin pemain menyerang
+#        berkali-kali secara terencana.
+var BERAT_PER_PIKSEL = 1.0
+var KAPASITAS_MAX    = 350.0
+var COLLAPSE_STEP    = 0.15
+
+const COLLAPSE_MAX_ITER = 20
+const MEMBER_TEBAL      = 1
+const PUING_PER_PIKSEL  = 0.6
+const PUING_GRAVITASI   = 120.0
+const PUING_MAX         = 900
+
 const SUN_RAY = Vector2(-0.34, -0.94)
 
 const T_SKY      = 0
@@ -76,6 +99,8 @@ const C_LEAF      = Color("5EC24A")
 const C_TIP       = Color("B8E986")
 const C_WARDEN    = Color("3A3F49")
 const C_ALERT     = Color("C25A4A")
+
+const C_PUING     = Color("6B6B64")
 
 # debug rangka (tahan B)
 const C_FRAME_OK  = Color("5EC24A")

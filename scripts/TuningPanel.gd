@@ -14,6 +14,8 @@ const SPECS = [
 	["CREW_CABUT",     0.1,  3.0, 0.05],
 	["CREW_MAX",       1.0,  8.0, 1.0],
 	["CREW_PINGSAN",   0.0, 20.0, 0.5],
+	["CLIMB_CABUT",    0.1,  3.0, 0.05],
+	["CLIMB_MAX",      0.0,  6.0, 1.0],
 	["DAY_LEN",        6.0, 40.0, 1.0],
 	["NIGHT_LEN",      6.0, 60.0, 1.0],
 ]
@@ -78,7 +80,7 @@ func _ready():
 	add_child(help_box)
 
 	_help = Label.new()
-	_help.text = "Klik kiri: pilih & arahkan      Klik kanan / Spasi: bercabang      X: hentikan ujung\nTab: panel      R: ulang      Tahan V: peta risiko      Tahan B: rangka"
+	_help.text = "Klik kiri: pilih & arahkan      Klik kanan / Spasi: bercabang      X: putus sulur di kursor\nTab: panel      R: ulang      Tahan V: peta risiko      Tahan B: rangka"
 	help_box.add_child(_help)
 
 

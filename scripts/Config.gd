@@ -28,6 +28,35 @@ var CREW_PINGSAN = 6.0    # detik tertimbun sebelum bangkit lagi
 
 const CREW_LEBAR = 3.0    # setengah lebar badan, untuk deteksi tertimpa
 
+# Pemanjat.
+#
+# Regu darat hanya menjangkau pita di sekitar garis tanah, jadi seluruh fasad
+# atas selama ini zona aman total. Pemanjat mengisinya — dan ia naik lewat
+# SULUR PEMAIN SENDIRI. Itu yang membuatnya tidak pernah jadi pola hafalan:
+# jalur musuh adalah bangunan pemain, jadi tiap keputusan menumbuhkan juga
+# keputusan soal mobilitas dia.
+#
+# Jawabannya: putus sulur di bawahnya (tombol X). Dia jatuh, dengan harga
+# pertumbuhan di atas titik potong itu ikut hilang.
+# Titik sulur berjarak 1 px, jadi ini juga kecepatannya di layar. Nilai 25
+# membuat sulur 300 titik dipanjat dalam 12 detik — sekitar setengah siang,
+# cukup lama untuk terlihat datang dan disikapi, cukup cepat untuk sampai.
+# Pada 9 dibutuhkan 33 detik, lebih lama dari satu siang penuh, sehingga
+# pemanjat tidak akan pernah tiba di ujung.
+var CLIMB_SPEED   = 25.0   # titik sulur yang dilalui per detik
+# Lebih lambat daripada CREW_CABUT: mereka bekerja canggung di ketinggian, dan
+# itu memberi pemain waktu bereaksi. Memutus sulur lebih awal jauh lebih murah
+# daripada terlambat, karena yang hilang adalah pertumbuhan di atas potongan.
+var CLIMB_CABUT   = 1.2    # detik per potongan setelah sampai di ujung
+var CLIMB_MAX     = 3
+var CLIMB_PINGSAN = 8.0    # detik setelah jatuh sebelum mencoba lagi
+
+# Pangkal sulur harus di bawah baris ini supaya bisa dicapai dari tanah.
+# Sulur yang dicabangkan tinggi-tinggi jadi jaringan yang tak terjangkau —
+# itulah imbalan untuk menumbuhkan jaringan terpisah, bukan satu jalur besar.
+const CLIMB_BASIS     = 80.0
+const CLIMB_MIN_TITIK = 40   # sulur harus cukup panjang untuk dipanjat
+
 const CREW_JANGKAUAN  = 5.0     # sedekat apa untuk mulai mencabut
 const CREW_CARI       = 120.0   # sejauh apa mereka mencari sasaran
 const CREW_PANJANG    = 14      # titik yang dipotong tiap potongan

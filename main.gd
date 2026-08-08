@@ -4,6 +4,7 @@ const WorldMapCls    = preload("res://scripts/WorldMap.gd")
 const TreeSimCls     = preload("res://scripts/TreeSim.gd")
 const CycleCls       = preload("res://scripts/Cycle.gd")
 const CrewCls        = preload("res://scripts/Crew.gd")
+const ClimberCls     = preload("res://scripts/Climber.gd")
 const StructureCls   = preload("res://scripts/Structure.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
@@ -13,6 +14,7 @@ var world
 var sim
 var cycle
 var crew
+var climbers
 var structure
 var canvas
 var panel
@@ -49,6 +51,9 @@ func _ready():
 	crew = CrewCls.new()
 	crew.reset()
 
+	climbers = ClimberCls.new()
+	climbers.reset()
+
 	panel = TuningPanelCls.new()
 	add_child(panel)
 	panel.connect("reset_pressed", self, "_restart")
@@ -71,6 +76,7 @@ func _restart():
 	sim.reset()
 	cycle.reset()
 	crew.reset()
+	climbers.reset()
 	canvas.clear_tree()
 	is_steering = false
 	playing = false
@@ -133,7 +139,8 @@ func _process(delta):
 			sim.spend(structure.weaken(sim, delta, cycle.phase))
 
 			crew.update(delta, sim, world, structure, cycle.phase)
-			if crew.dipotong > 0:
+			climbers.update(delta, sim, structure, cycle.phase)
+			if crew.dipotong > 0 or climbers.dipotong > 0:
 				# titik sudah dibuang dari untai, jadi lapisan pohon yang
 				# akumulatif harus digambar ulang dari nol
 				_redraw_tree = true
@@ -152,6 +159,7 @@ func _process(delta):
 	if show_frame:
 		canvas.draw_frame(world)
 	canvas.draw_crew(crew)
+	canvas.draw_climbers(climbers)
 	canvas.draw_debris(structure.falling)
 	canvas.draw_dust(structure.dust)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
@@ -165,7 +173,7 @@ func _process(delta):
 	canvas.end_frame()
 
 	canvas.set_night(cycle.night_amount())
-	hud.refresh(sim, cycle, structure, crew, won)
+	hud.refresh(sim, cycle, structure, crew, climbers, won)
 
 
 func _input(event):
@@ -215,4 +223,13 @@ func _unhandled_input(event):
 		if event.scancode == KEY_SPACE:
 			_try_branch()
 		elif event.scancode == KEY_X:
-			sim.stop_selected()
+			# putus sulur di kursor — satu-satunya jawaban terhadap pemanjat
+			var potong = sim.sever_at(_mouse_sim())
+			if potong == null:
+				hud.flash_msg("Arahkan kursor ke sulur untuk memutusnya")
+			else:
+				var n = climbers.jatuhkan(potong.s, potong.i)
+				_redraw_tree = true
+				sim.ensure_selection(cycle.phase)
+				if n > 0:
+					hud.flash_msg("Pemanjat jatuh: %d" % n)

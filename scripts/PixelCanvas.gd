@@ -206,6 +206,20 @@ func draw_crew(crew):
 		_put(_ovl_img, x + 2, y - 6, c)
 
 
+func draw_climbers(cl):
+	for c in cl.units:
+		if c.pingsan > 0.0:
+			continue   # sudah jatuh, sedang tidak di sulur
+		var p = cl.pos(c)
+		var x = int(round(p.x))
+		var y = int(round(p.y))
+		var col = Config.C_ALERT if c.kerja > 0.0 else Config.C_WARDEN
+		for j in range(-3, 1):
+			_put(_ovl_img, x, y + j, col)
+		_put(_ovl_img, x - 1, y - 2, col)
+		_put(_ovl_img, x + 1, y - 2, col)
+
+
 func draw_risk(world):
 	var c = Config.C_ALERT
 	c.a = 0.30

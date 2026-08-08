@@ -274,9 +274,43 @@ func retreat_unsupported(world):
 	return n
 
 
-func stop_selected():
-	if selected != null:
-		selected.alive = false
+# Memutus sulur di titik terdekat kursor. Seluruh bagian di atas potongan
+# hilang — itu harganya, dan itu yang membuat menjatuhkan pemanjat jadi
+# keputusan, bukan tombol gratis.
+#
+# Mengembalikan {s, i} supaya pemanggil bisa menjatuhkan pemanjat yang berada
+# di atas titik itu, atau null kalau tidak ada sulur di dekat kursor.
+func sever_at(p):
+	var best = 8.0
+	var found = null
+	var found_i = -1
+	for s in strands:
+		if not s.alive or s.is_root or s.points.size() < 8:
+			continue
+		# melangkah 2 titik: titik berjarak 1 px, jadi ini masih jauh lebih
+		# teliti daripada radius pencarian 8 px, dan setengah lebih murah
+		var i = 0
+		while i < s.points.size():
+			var d = s.points[i].distance_to(p)
+			if d < best:
+				best = d
+				found = s
+				found_i = i
+			i += 2
+
+	if found == null or found_i < 2:
+		return null
+
+	found.points.resize(found_i + 1)
+	found.tip = Vector2(found.points[found_i].x, found.points[found_i].y)
+	found.angle = found.angle + PI
+	var keep = []
+	for l in found.leaves:
+		if l.pos.distance_to(found.tip) < 40.0:
+			keep.append(l)
+	found.leaves = keep
+	return {"s": found, "i": found_i}
+
 
 func alive_count():
 	var n = 0

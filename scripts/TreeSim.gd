@@ -10,6 +10,7 @@ var water    = 0.0
 var light    = 0.0
 var starved  = false
 var _next_id = 0
+var _world   = null
 
 
 func reset():
@@ -34,6 +35,10 @@ func _make(x, y, a, is_root, gen):
 
 # mengembalikan total nilai keterlihatan pertumbuhan frame ini
 func update(delta, steering, mouse, world, phase):
+	# Disimpan supaya select_near() dan ensure_selection() bisa memeriksa
+	# apakah sebuah untai berdiri di atas puing, tanpa harus mengubah
+	# tanda tangan mereka di Cycle dan main.
+	_world = world
 	time += delta
 	water = _water(world)
 	light = _light(world)
@@ -43,16 +48,26 @@ func update(delta, steering, mouse, world, phase):
 		energy = min(Config.ENERGY_MAX,
 				energy + min(water, light) * Config.ENERGY_RATE * delta)
 
+	# Yang sefase tumbuh penuh. Yang berdiri di atas puing tetap menjalar
+	# walau di luar fasenya, tapi lebih pelan — puing itu tanah subur, dan
+	# itu yang membuat dunia selalu terlihat menghijau sendiri.
 	var growing = []
+	var bobot = 0.0
 	for s in strands:
 		if not s.alive:
 			continue
-		if phase == Config.PHASE_DAY and s.is_root:
-			growing.append(s)
-		elif phase == Config.PHASE_NIGHT and not s.is_root:
-			growing.append(s)
+		var laju = 0.0
+		if _sefase(s, phase):
+			laju = 1.0
+		elif s.on_puing(world):
+			laju = Config.PUING_LAMBAT
+		if laju <= 0.0:
+			continue
+		growing.append({"s": s, "laju": laju})
+		bobot += laju
 
-	var cost = pow(max(1.0, float(growing.size())), Config.COST_TIP_EXP) \
+	# Biaya ditimbang laju, jadi pertumbuhan pelan di puing juga lebih murah.
+	var cost = pow(max(1.0, bobot), Config.COST_TIP_EXP) \
 			* 9.0 * Config.COST_PER_PIXEL * delta
 	if energy < cost:
 		energy = 0.0
@@ -65,14 +80,21 @@ func update(delta, steering, mouse, world, phase):
 	# memakainya sejak sistem stealth dihapus, tapi ini persis sinyal yang
 	# dibutuhkan regu perawatan nanti: seberapa cepat mereka menemukannya.
 	var seen = 0.0
-	for s in growing:
+	for g in growing:
+		var s = g.s
 		var steer = null
 		if steering and s == selected:
 			if s.tip.distance_to(mouse) > Config.DEAD_ZONE:
 				steer = atan2(mouse.y - s.tip.y, mouse.x - s.tip.x)
-		seen += s.grow(delta, steer, time, world)
+		seen += s.grow(delta, steer, time, world, g.laju)
 		s.age_leaves(delta)
 	return seen
+
+
+func _sefase(s, phase):
+	if phase == Config.PHASE_DAY:
+		return s.is_root
+	return not s.is_root
 
 func _water(world):
 	var w = 1.0   # serapan dasar dari bibit — mencegah kebuntuan
@@ -124,15 +146,21 @@ func render(canvas, full):
 		if s.alive:
 			canvas.draw_tip(s.tip, s == selected, time)
 
+# Yang sefase selalu bisa dipilih. Yang menjalar sendiri di atas puing juga —
+# kalau tidak, pemain menonton sesuatu tumbuh tanpa bisa menyentuhnya.
+func _bisa_dipilih(s, phase):
+	if not s.alive:
+		return false
+	if _sefase(s, phase):
+		return true
+	return _world != null and s.on_puing(_world)
+
+
 func select_near(m, phase):
 	var best = 9.0
 	var found = null
 	for s in strands:
-		if not s.alive:
-			continue
-		if phase == Config.PHASE_DAY and not s.is_root:
-			continue
-		if phase == Config.PHASE_NIGHT and s.is_root:
+		if not _bisa_dipilih(s, phase):
 			continue
 		var d = s.tip.distance_to(m)
 		if d < best:
@@ -145,18 +173,10 @@ func select_near(m, phase):
 
 
 func ensure_selection(phase):
-	if selected != null and selected.alive:
-		if phase == Config.PHASE_DAY and selected.is_root:
-			return
-		if phase == Config.PHASE_NIGHT and not selected.is_root:
-			return
+	if selected != null and _bisa_dipilih(selected, phase):
+		return
 	for s in strands:
-		if not s.alive:
-			continue
-		if phase == Config.PHASE_DAY and s.is_root:
-			selected = s
-			return
-		if phase == Config.PHASE_NIGHT and not s.is_root:
+		if _bisa_dipilih(s, phase):
 			selected = s
 			return
 

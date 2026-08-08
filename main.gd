@@ -127,7 +127,7 @@ func _process(delta):
 		if playing and not won:
 			sim.update(delta, is_steering, m, world, cycle.phase)
 			cycle.update(delta, sim)
-			sim.spend(structure.weaken(sim, delta))
+			sim.spend(structure.weaken(sim, delta, cycle.phase))
 
 			crew.update(delta, sim, world, structure, cycle.phase)
 			if crew.dipotong > 0:

@@ -158,6 +158,13 @@ const T_PUING    = 10
 # membuang tenaga.
 const PUING_TENANG = 0.6
 
+# Laju tumbuh tanaman yang berdiri di atas puing SAAT DI LUAR FASENYA. Puing
+# adalah tanah subur: yang tumbuh di atasnya terus menjalar sendiri siang dan
+# malam, jadi dunia selalu terlihat menghijau tanpa harus terus dikemudikan.
+# Lebih pelan supaya tetap seimbang, dan pelemahan struktur tetap tergerbang
+# fase sehingga pertumbuhan otomatis ini tidak merobohkan apa pun.
+var PUING_LAMBAT = 0.45
+
 const C_SKY       = Color("8B96A3")
 const C_WALL      = Color("6E7784")
 const C_WALL_DARK = Color("5F6874")

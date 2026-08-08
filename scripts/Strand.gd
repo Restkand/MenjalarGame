@@ -42,7 +42,11 @@ func normal_at(world, x, y):
 	return n.normalized()
 
 
-func grow(delta, steer, t, world):
+func on_puing(world):
+	return world.at(int(round(tip.x)), int(round(tip.y))) == Config.T_PUING
+
+
+func grow(delta, steer, t, world, laju = 1.0):
 	var target = angle
 	if steer != null:
 		target = steer
@@ -53,7 +57,7 @@ func grow(delta, steer, t, world):
 	angle += clamp(d, -Config.MAX_TURN * delta, Config.MAX_TURN * delta)
 
 	var spd = Config.GROWTH_SPEED if is_root else Config.VINE_SPEED
-	var step = spd * delta
+	var step = spd * laju * delta
 	var np = Vector2(tip.x + cos(angle) * step, tip.y + sin(angle) * step)
 
 	if np.x < 2.0 or np.x > Config.W - 3.0:

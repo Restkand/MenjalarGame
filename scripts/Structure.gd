@@ -143,16 +143,28 @@ func integritas_total():
 # Sulur menyerang joint, akar menyerang member pondasi. Mengembalikan biaya
 # energi; TreeSim yang memiliki energi, jadi pemanggil yang membelanjakannya.
 # Kalau energi tidak cukup, tidak ada yang melemah sama sekali.
-func weaken(sim, delta):
+func weaken(sim, delta, phase):
 	var sasaran = []
 	for s in sim.strands:
 		if not s.alive:
 			continue
 		if s.is_root:
+			# Akar hanya menggerogoti saat siang, sulur hanya saat malam —
+			# yaitu saat masing-masing memang aktif tumbuh.
+			#
+			# Tanpa gerbang fase ini, regu perawatan justru meruntuhkan
+			# gedungnya sendiri: trim() menarik ujung sulur mundur, dan kalau
+			# ujung itu mendarat dekat sambungan ia parkir di sana sepanjang
+			# sisa siang (sulur tidak tumbuh siang hari) sambil terus
+			# melemahkan. 22 detik gratis, berulang tiap regu memotong.
+			if phase != Config.PHASE_DAY:
+				continue
 			var f = world.foundation_at(s.tip, Config.JOINT_RADIUS)
 			if f != null:
 				sasaran.append(f)
 		else:
+			if phase != Config.PHASE_NIGHT:
+				continue
 			var j = world.nearest_joint(s.tip, Config.JOINT_RADIUS)
 			if j != null:
 				sasaran.append(j)

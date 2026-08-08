@@ -10,6 +10,7 @@ var generation = 0
 var id         = 0
 var _acc       = 0.0
 var _leaf_acc  = 0.0
+var berakar    = 0.0   # kemajuan menjadi pohon saat berdiri di atas puing
 
 
 func _init(x, y, a, root, gen, sid):

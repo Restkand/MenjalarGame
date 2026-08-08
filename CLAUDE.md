@@ -181,6 +181,15 @@ Sistem yang sudah ada dari pivot:
   (`CREW_PINGSAN`) — sengaja sementara, karena regu yang bisa dihabisi berarti
   peta bisa dibersihkan lalu pemain bekerja tanpa lawan sama sekali.
 
+- `TreeSim.trees` — sulur yang bertahan di atas puing berakar jadi **pohon**.
+  Satu-satunya hal permanen: gedung runtuh, sulur dipangkas regu, pohon
+  tinggal. Pembagian peran yang harus dijaga — **pohon = ekonomi, sulur dan
+  akar = senjata.** Pohon menyumbang ke air DAN cahaya (menaikkan lantai
+  `min()`), tapi tidak bisa melemahkan apa pun, jadi pemain tidak bisa menang
+  dengan berdiam diri menanam. Klik kanan dekat pohon menumbuhkan sulur baru
+  dari sana — itu titik awal terpisah, prasyarat agar pemanjat nanti punya
+  lawan.
+
 Kondisi menang: `Structure.hancur()` — tidak ada KOLOM tersisa. Sengaja bukan
 "semua member mati", karena balok level dasar berdiri di pondasi sehingga tidak
 pernah gagal karena kehilangan tumpuan, dan tidak terjangkau akar maupun sulur

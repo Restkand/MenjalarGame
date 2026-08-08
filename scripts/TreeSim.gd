@@ -3,6 +3,7 @@ extends Reference
 const Strand = preload("res://scripts/Strand.gd")
 
 var strands  = []
+var trees    = []     # {x, y, tinggi} — permanen, tidak bisa dicabut regu
 var selected = null
 var time     = 0.0
 var energy   = 0.0
@@ -15,6 +16,7 @@ var _world   = null
 
 func reset():
 	strands = []
+	trees = []
 	_next_id = 0
 	time = 0.0
 	energy = Config.ENERGY_START
@@ -88,7 +90,34 @@ func update(delta, steering, mouse, world, phase):
 				steer = atan2(mouse.y - s.tip.y, mouse.x - s.tip.x)
 		seen += s.grow(delta, steer, time, world, g.laju)
 		s.age_leaves(delta)
+		_berakar(s, world, delta)
+
+	for t in trees:
+		t.tinggi = min(float(Config.POHON_TINGGI),
+				t.tinggi + Config.POHON_TUMBUH * delta)
 	return seen
+
+
+# Sulur yang bertahan di atas puing perlahan berakar. Begitu penuh, sebatang
+# pohon ditanam di titik itu dan hitungannya diulang — jadi sulur yang merayap
+# menyeberangi tumpukan meninggalkan barisan pohon di belakangnya.
+func _berakar(s, world, delta):
+	if s.is_root or not s.on_puing(world):
+		return
+	s.berakar += Config.POHON_LAJU * delta
+	if s.berakar < 1.0:
+		return
+	s.berakar = 0.0
+	_tanam(s.tip)
+
+
+func _tanam(p):
+	if trees.size() >= Config.POHON_MAX:
+		return
+	for t in trees:
+		if Vector2(t.x, t.y).distance_to(p) < Config.POHON_JARAK:
+			return
+	trees.append({"x": p.x, "y": p.y, "tinggi": 1.0})
 
 
 func _sefase(s, phase):
@@ -97,7 +126,10 @@ func _sefase(s, phase):
 	return not s.is_root
 
 func _water(world):
-	var w = 1.0   # serapan dasar dari bibit — mencegah kebuntuan
+	# Pohon berakar dalam dan berdaun lebar, jadi ia menyumbang ke KEDUA sisi
+	# min(Air, Cahaya). Itulah yang melepas cekikan ekonomi dan membebaskan
+	# akar untuk berspesialisasi jadi penyerang.
+	var w = 1.0 + trees.size() * Config.POHON_HASIL
 	for s in strands:
 		if not s.alive or not s.is_root:
 			continue
@@ -117,7 +149,7 @@ func _water(world):
 	return w
 
 func _light(world):
-	var l = 1.0   # daun kotiledon bibit
+	var l = 1.0 + trees.size() * Config.POHON_HASIL
 	for s in strands:
 		if s.is_root:
 			continue
@@ -135,6 +167,11 @@ func bottleneck():
 
 
 func render(canvas, full):
+	# Pohon yang sudah tinggi maksimal berhenti digambar: lapisan pohon
+	# akumulatif, jadi ia sudah tercetak di sana dan tidak berubah lagi.
+	for t in trees:
+		if full or t.tinggi < Config.POHON_TINGGI:
+			canvas.draw_tree(t)
 	for s in strands:
 		if full:
 			canvas.draw_strand_full(s)
@@ -179,6 +216,24 @@ func ensure_selection(phase):
 		if _bisa_dipilih(s, phase):
 			selected = s
 			return
+
+
+# Bercabang dari pohon, bukan dari ujung terpilih. Pohon adalah titik awal
+# baru: jaringan yang terpisah dari sulur utama, dan itu yang nanti membuat
+# pemanjat punya lawan — satu jalur besar bisa diputus, jaringan terpisah
+# tidak. Dicoba lebih dulu daripada branch() biasa.
+func branch_at(p):
+	for t in trees:
+		if Vector2(t.x, t.y).distance_to(p) > Config.POHON_JARAK:
+			continue
+		if strands.size() >= Config.MAX_STRANDS or energy < Config.COST_BRANCH:
+			return false
+		energy -= Config.COST_BRANCH
+		var ns = _make(t.x, t.y - t.tinggi * 0.6, -PI / 2.0, false, 0)
+		strands.append(ns)
+		selected = ns
+		return true
+	return false
 
 
 func branch():

@@ -87,6 +87,9 @@ func _mouse_sim():
 
 
 func _try_branch():
+	# pohon di dekat kursor jadi titik awal baru, kalau ada
+	if sim.branch_at(_mouse_sim()):
+		return
 	if sim.branch():
 		return
 	if sim.selected == null or not sim.selected.alive:

@@ -72,13 +72,13 @@ func _build_overlay():
 	_overlay.add_child(dim)
 
 	var info = Label.new()
-	info.rect_position = Vector2(140, 88)
-	info.text = "TUJUAN    Runtuhkan gedung. Bar STRUKTUR habis = menang.\n\nSIANG     Akar tumbuh. Sebagian ke tanah lembap atau pipa untuk energi,\n          sebagian ke kaki kolom untuk menggerogotinya. Regu perawatan\n          mencabut tanaman di sekitar garis tanah; yang tumbuh di area\n          terang ditemukan lebih dulu, dan jumlah regu bertambah seiring\n          gedung makin rusak.\n\nMALAM     Regu pulang. Sulur merambat. Dekatkan ujungnya ke sambungan\n          rangka untuk melemahkannya.\n\nENERGI    Bertambah sebesar min(Air, Cahaya), dan HANYA saat siang.\n          Yang lebih kecil ditandai '<' — itu leher botolnya.\n\nRUNTUH    Sambungan lemah menurunkan kapasitas member. Beban yang lewat\n          batas membuatnya gagal, lalu berpindah ke tetangga dan bisa\n          gagal beruntun. Retakan menandai yang mendekati batas.\n\nPUING     Reruntuhan menumpuk jadi tanah baru yang bisa ditumbuhi, dan\n          tanaman di atasnya menjalar sendiri siang dan malam.\n          Puing yang jatuh juga MENIMBUN regu di bawahnya — waktukan\n          keruntuhan saat mereka sedang lewat."
+	info.rect_position = Vector2(140, 78)
+	info.text = "TUJUAN    Runtuhkan gedung. Bar STRUKTUR habis = menang.\n\nSIANG     Akar tumbuh. Sebagian ke tanah lembap atau pipa untuk energi,\n          sebagian ke kaki kolom untuk menggerogotinya. Regu perawatan\n          mencabut tanaman di sekitar garis tanah; yang tumbuh di area\n          terang ditemukan lebih dulu, dan jumlah regu bertambah seiring\n          gedung makin rusak.\n\nMALAM     Regu pulang. Sulur merambat. Dekatkan ujungnya ke sambungan\n          rangka untuk melemahkannya.\n\nENERGI    Bertambah sebesar min(Air, Cahaya), dan HANYA saat siang.\n          Yang lebih kecil ditandai '<' — itu leher botolnya.\n\nRUNTUH    Sambungan lemah menurunkan kapasitas member. Beban yang lewat\n          batas membuatnya gagal, lalu berpindah ke tetangga dan bisa\n          gagal beruntun. Retakan menandai yang mendekati batas.\n          Puing yang jatuh MENIMBUN regu di bawahnya.\n\nPUING     Reruntuhan jadi tanah baru. Tanaman di atasnya menjalar sendiri,\n          dan yang bertahan cukup lama BERAKAR JADI POHON.\n\nPOHON     Permanen, tak bisa dicabut regu, dan menyumbang air sekaligus\n          cahaya. Klik kanan di dekatnya untuk menumbuhkan sulur baru dari\n          sana. Pohon tidak merusak apa pun — itu tugas sulur dan akar."
 	_overlay.add_child(info)
 
 	var btn = Button.new()
 	btn.text = "  MULAI  "
-	btn.rect_position = Vector2(430, 530)
+	btn.rect_position = Vector2(430, 552)
 	btn.rect_min_size = Vector2(100, 44)
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.connect("pressed", self, "_on_play")
@@ -118,6 +118,8 @@ func refresh(sim, w, st, crew, won):
 	_lbl_res.text = "AIR %d%s    CAHAYA %d%s" % [
 		int(sim.water), " <" if bn == "AIR" else "",
 		int(sim.light), " <" if bn == "CAHAYA" else ""]
+	if sim.trees.size() > 0:
+		_lbl_res.text += "    POHON %d" % sim.trees.size()
 
 	# Bar ini menyusut saat gedung dilemahkan dan diruntuhkan.
 	var integ = st.integritas_total()

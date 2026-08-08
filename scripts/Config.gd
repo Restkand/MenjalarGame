@@ -172,6 +172,31 @@ const PUING_TENANG = 0.6
 # fase sehingga pertumbuhan otomatis ini tidak merobohkan apa pun.
 var PUING_LAMBAT = 0.45
 
+# Pohon.
+#
+# Sulur yang bertahan cukup lama di atas puing berakar jadi pohon. Inilah satu-
+# satunya hal permanen di permainan: gedung runtuh, sulur dipangkas regu, tapi
+# pohon tinggal. Tanpa ini, menang berarti tidak menyisakan apa pun — ending
+# seekor monster, bukan ending alam.
+#
+# Pembagian peran yang dijaga: pohon adalah EKONOMI, sulur dan akar adalah
+# SENJATA. Pohon tidak bisa melemahkan apa pun, jadi pemain tidak bisa menang
+# dengan berdiam diri menanam. Sebaliknya pohon menyelesaikan cekikan ekonomi
+# min(Air, Cahaya), sehingga akar bebas berspesialisasi jadi penyerang.
+# POHON_HASIL menyumbang ke air DAN cahaya sekaligus, jadi nilainya berlipat:
+# ia menaikkan LANTAI dari min(Air, Cahaya), bukan salah satu sisi saja.
+# Dengan dasar air 2, nilai 1.0 dan 40 pohon menghasilkan 287 energi/detik —
+# bar penuh dalam 0,7 detik dan ekonomi berhenti jadi kendala. Pada 0.25 dan
+# 12 pohon hasilnya sekitar 35/detik, kira-kira 2,5 kali dasar: hadiah yang
+# terasa untuk meruntuhkan gedung, tanpa mematikan tekanannya.
+var POHON_LAJU  = 0.25   # kemajuan berakar per detik; 1.0 = jadi pohon
+var POHON_HASIL = 0.25   # tambahan air DAN cahaya per pohon
+
+const POHON_JARAK  = 12.0   # jarak minimal antar pohon
+const POHON_MAX    = 20
+const POHON_TINGGI = 22     # tinggi maksimal
+const POHON_TUMBUH = 3.0    # piksel tinggi per detik
+
 const C_SKY       = Color("8B96A3")
 const C_WALL      = Color("6E7784")
 const C_WALL_DARK = Color("5F6874")

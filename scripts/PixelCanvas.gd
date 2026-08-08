@@ -127,6 +127,27 @@ func _paint(s, start):
 		_stamp(_tree_img, s.points[i].x, s.points[i].y, max(0.6, th), col)
 
 
+# Pohon digambar ke lapisan pohon yang akumulatif, sama seperti untai. Ia
+# tumbuh dari waktu ke waktu, jadi menggambarnya tiap frame juga berfungsi
+# sebagai cara ia meninggi.
+func draw_tree(t):
+	var bx = int(round(t.x))
+	var by = int(round(t.y))
+	var h = int(t.tinggi)
+
+	for j in range(0, h):
+		_put(_tree_img, bx, by - j, Config.C_BRANCH)
+		if j > h / 3:   # batang menebal di bagian bawah
+			_put(_tree_img, bx - 1, by - j, Config.C_BRANCH)
+
+	var cy = by - h
+	var r = max(2, int(h / 3))
+	for dy in range(-r, r + 1):
+		for dx in range(-r, r + 1):
+			if dx * dx + dy * dy <= r * r:
+				_put(_tree_img, bx + dx, cy + dy, Config.C_LEAF)
+
+
 func draw_leaves(s):
 	for l in s.leaves:
 		_stamp(_tree_img, l.pos.x, l.pos.y,

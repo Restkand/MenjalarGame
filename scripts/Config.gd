@@ -17,9 +17,16 @@ var NIGHT_LEN      = 24.0
 # terang berarti ditemukan lebih dulu. Bayangan tetap berguna tanpa jadi
 # stealth. Akar di bawah tanah tidak punya nilai vis sama sekali, jadi hanya
 # ditemukan dari kedekatan — bawah tanah memang lebih aman.
-var CREW_SPEED = 18.0    # piksel per detik
-var CREW_CABUT = 0.55    # detik per potongan
-var CREW_MAX   = 4       # jumlah regu saat gedung nyaris rata
+# CREW_PINGSAN adalah satu-satunya jawaban pemain terhadap regu: puing yang
+# jatuh menimbun mereka. Sengaja sementara, bukan permanen — kalau regu bisa
+# dihabisi, pemain tinggal membersihkan peta lalu bekerja tanpa lawan. Yang
+# sementara justru memberi irama: runtuhkan, dapat jeda aman, mereka kembali.
+var CREW_SPEED   = 18.0   # piksel per detik
+var CREW_CABUT   = 0.55   # detik per potongan
+var CREW_MAX     = 4      # jumlah regu saat gedung nyaris rata
+var CREW_PINGSAN = 6.0    # detik tertimbun sebelum bangkit lagi
+
+const CREW_LEBAR = 3.0    # setengah lebar badan, untuk deteksi tertimpa
 
 const CREW_JANGKAUAN  = 5.0     # sedekat apa untuk mulai mencabut
 const CREW_CARI       = 120.0   # sejauh apa mereka mencari sasaran

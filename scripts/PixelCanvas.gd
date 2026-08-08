@@ -160,6 +160,14 @@ func draw_crew(crew):
 	for u in crew.units:
 		var x = int(round(u.x))
 		var y = Config.GROUND_Y
+
+		# tertimbun puing — tergeletak, tidak bekerja
+		if u.pingsan > 0.0:
+			for i in range(x - 3, x + 4):
+				_put(_ovl_img, i, y - 1, Config.C_WARDEN)
+				_put(_ovl_img, i, y - 2, Config.C_WARDEN)
+			continue
+
 		var bekerja = u.kerja > 0.0 and u.sasaran != null
 		var c = Config.C_ALERT if bekerja else Config.C_WARDEN
 

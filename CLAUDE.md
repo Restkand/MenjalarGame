@@ -176,7 +176,10 @@ Sistem yang sudah ada dari pivot:
   hanya dari baris puncak tumpukan ke bawah — sinar datang dari atas-kiri jadi
   puing hanya membayangi yang di bawahnya. Hemat ~66% dibanding panggang penuh.
 - `Crew.gd` — regu perawatan, antagonis darat. Jangkauannya hanya pita di
-  sekitar garis tanah; sulur tinggi belum ada yang mengancam.
+  sekitar garis tanah; sulur tinggi belum ada yang mengancam. Jawaban pemain
+  terhadap mereka adalah **menimbun mereka dengan puing yang jatuh**
+  (`CREW_PINGSAN`) — sengaja sementara, karena regu yang bisa dihabisi berarti
+  peta bisa dibersihkan lalu pemain bekerja tanpa lawan sama sekali.
 
 Kondisi menang: `Structure.hancur()` — tidak ada KOLOM tersisa. Sengaja bukan
 "semua member mati", karena balok level dasar berdiri di pondasi sehingga tidak

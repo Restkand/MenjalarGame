@@ -7,11 +7,13 @@ const SPECS = [
 	["MAX_TURN",       0.2,  5.0, 0.05],
 	["ENERGY_RATE",    1.0, 20.0, 0.5],
 	["COST_PER_PIXEL", 0.1,  2.0, 0.05],
+	["PUING_LAMBAT",   0.0,  1.0, 0.05],
 	["WEAKEN_RATE",    0.02, 0.6, 0.01],
 	["KAPASITAS_MAX", 310.0,600.0, 5.0],
 	["CREW_SPEED",     5.0, 60.0, 1.0],
 	["CREW_CABUT",     0.1,  3.0, 0.05],
 	["CREW_MAX",       1.0,  8.0, 1.0],
+	["CREW_PINGSAN",   0.0, 20.0, 0.5],
 	["DAY_LEN",        6.0, 40.0, 1.0],
 	["NIGHT_LEN",      6.0, 60.0, 1.0],
 ]
@@ -30,6 +32,9 @@ func _ready():
 	add_child(_panel)
 
 	var vb = VBoxContainer.new()
+	# rapat — dengan 13 slider, jarak bawaan membuat panel menabrak teks
+	# bantuan di bagian bawah layar
+	vb.add_constant_override("separation", 1)
 	_panel.add_child(vb)
 
 	var title = Label.new()
@@ -52,7 +57,7 @@ func _ready():
 		sl.max_value = spec[2]
 		sl.step = spec[3]
 		sl.value = cur
-		sl.rect_min_size = Vector2(230, 18)
+		sl.rect_min_size = Vector2(230, 14)
 		sl.focus_mode = Control.FOCUS_NONE
 		sl.connect("value_changed", self, "_on_changed", [key])
 		vb.add_child(sl)

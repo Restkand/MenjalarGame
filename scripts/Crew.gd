@@ -13,17 +13,20 @@ extends Reference
 # Counterplay pemain ada tiga: tumbuh di bayangan (ditemukan belakangan),
 # menyebar (satu regu hanya bisa di satu tempat), dan menumbuhkan ulang.
 
-var units    = []     # {x, dir, sasaran, kerja}
+var units    = []     # {x, dir, sasaran, kerja, pingsan}
 var dipotong = 0      # potongan yang terjadi frame ini; dibaca lalu dinolkan
+var ditimpa  = 0      # regu yang baru tertimbun frame ini
 
 
 func reset():
 	units = []
 	dipotong = 0
+	ditimpa = 0
 
 
 func update(delta, sim, world, structure, phase):
 	dipotong = 0
+	ditimpa = 0
 
 	# Regu pulang saat malam. Itu yang memberi malam artinya: sulur merambat
 	# tanpa gangguan, dan siang jadi soal mempertahankan hasilnya.
@@ -33,7 +36,39 @@ func update(delta, sim, world, structure, phase):
 
 	_sesuaikan_jumlah(structure)
 	for u in units:
+		if u.pingsan > 0.0:
+			u.pingsan = max(0.0, u.pingsan - delta)
+			continue
+		if _tertimpa(u, structure):
+			u.pingsan = Config.CREW_PINGSAN
+			u.sasaran = null
+			u.kerja = 0.0
+			ditimpa += 1
+			continue
 		_update_unit(u, delta, sim, world)
+
+
+# Puing yang jatuh melewati ketinggian badan menimbun regu di bawahnya.
+# Inilah jawaban pemain: waktukan keruntuhan saat mereka sedang berada di
+# bawah reruntuhan.
+func _tertimpa(u, structure):
+	if structure.falling.empty():
+		return false
+	for p in structure.falling:
+		if p.y < Config.GROUND_Y - 10.0 or p.y > Config.GROUND_Y:
+			continue
+		if abs(p.x - u.x) <= Config.CREW_LEBAR:
+			return true
+	return false
+
+
+# Yang tertimbun tidak dihitung — HUD harus menunjukkan ancaman yang nyata.
+func aktif():
+	var n = 0
+	for u in units:
+		if u.pingsan <= 0.0:
+			n += 1
+	return n
 
 
 # Tekanan naik seiring kerusakan, jadi justru saat pemain hampir menang
@@ -48,6 +83,7 @@ func _sesuaikan_jumlah(structure):
 			"dir": 1.0 if randf() < 0.5 else -1.0,
 			"sasaran": null,
 			"kerja": 0.0,
+			"pingsan": 0.0,
 		})
 	while units.size() > n:
 		units.remove(units.size() - 1)

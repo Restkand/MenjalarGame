@@ -150,6 +150,13 @@ const T_LEDGE    = 6
 const T_PIPE     = 7
 const T_NEIGHBOR = 8
 const T_DOOR     = 9
+const T_PUING    = 10
+
+# Detik hening setelah puing berhenti berjatuhan, sebelum peta cahaya
+# dipanggang ulang. Tumpukan puing mengubah siluet gedung, jadi bayangannya
+# ikut berubah — tapi memanggang ulang saat puing masih beterbangan cuma
+# membuang tenaga.
+const PUING_TENANG = 0.6
 
 const C_SKY       = Color("8B96A3")
 const C_WALL      = Color("6E7784")

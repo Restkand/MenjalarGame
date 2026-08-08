@@ -8,6 +8,7 @@ var members = []
 var joints  = []
 var panels  = []       # massa dinding di antara rangka
 var settled            # puing yang sudah mengendap, 0/1 per piksel
+var puing_atas = 0     # baris tertinggi yang sudah tertutup puing
 var solve_order = []   # id member dalam urutan topologis atas-ke-bawah
 
 
@@ -18,6 +19,7 @@ func build():
 	light = PoolRealArray(); light.resize(Config.W * Config.H)
 	vis = PoolRealArray(); vis.resize(Config.W * Config.H)
 	settled = PoolByteArray(); settled.resize(Config.W * Config.H)
+	puing_atas = Config.H
 
 	image.lock()
 	_rect(0, 0, Config.W, Config.GROUND_Y, Config.C_SKY, Config.T_SKY)
@@ -69,7 +71,23 @@ func _rect(x, y, w, h, col, kind):
 
 
 func _bake_light():
-	var y = Config.FACADE_Y0
+	_bake_light_from(Config.FACADE_Y0)
+
+
+# Dipanggil ulang setelah tumpukan puing stabil. Hanya baris dari y_awal ke
+# bawah yang dihitung ulang: sinar matahari datang dari atas-kiri, jadi puing
+# hanya bisa membayangi titik yang berada DI BAWAHNYA. Memanggang ulang seluruh
+# fasad berarti 3800 sinar dan itu hitch yang terasa di Intel HD.
+func rebake_light_from(y_awal):
+	var y0 = int(clamp(y_awal, Config.FACADE_Y0, Config.FACADE_Y1 - 1))
+	# jaga tetap selaras dengan kisi 2 px milik _bake_light_from
+	y0 -= (y0 - Config.FACADE_Y0) % 2
+	_bake_light_from(y0)
+	_bake_vis_from(y0)
+
+
+func _bake_light_from(y_awal):
+	var y = y_awal
 	while y < Config.FACADE_Y1:
 		var x = Config.FACADE_X0
 		while x < Config.FACADE_X1:
@@ -92,13 +110,20 @@ func _ray_clear(sx, sy):
 		if y < 0 or x < 0:
 			return true
 		var k = at(int(round(x)), int(round(y)))
-		if k == Config.T_NEIGHBOR or k == Config.T_LEDGE:
+		# puing ikut memblokir: tumpukan reruntuhan mengubah siluet gedung,
+		# jadi ia melemparkan bayangan seperti ledge
+		if k == Config.T_NEIGHBOR or k == Config.T_LEDGE \
+				or k == Config.T_PUING:
 			return false
 	return true
 
 
 func _bake_vis():
-	for y in range(Config.FACADE_Y0, Config.FACADE_Y1):
+	_bake_vis_from(Config.FACADE_Y0)
+
+
+func _bake_vis_from(y_awal):
+	for y in range(y_awal, Config.FACADE_Y1):
 		for x in range(Config.FACADE_X0, Config.FACADE_X1):
 			var i = y * Config.W + x
 			var h = float(y - Config.FACADE_Y0) \
@@ -286,9 +311,13 @@ func vis_at(x, y):
 	return vis[y * Config.W + x]
 
 
+# Permukaan yang bisa dicengkeram tanaman. Termasuk PUING: tumpukan reruntuhan
+# adalah tanah baru, dan itulah yang membuat pemain bisa memanjat lewat puing
+# yang dia jatuhkan sendiri.
 func on_facade(x, y):
 	var k = at(int(round(x)), int(round(y)))
-	return k == Config.T_WALL or k == Config.T_WINDOW or k == Config.T_DOOR
+	return k == Config.T_WALL or k == Config.T_WINDOW \
+			or k == Config.T_DOOR or k == Config.T_PUING
 
 
 # Permukaan yang bisa dipijak sulur. Inilah predikat yang dipakai pertumbuhan,
@@ -390,7 +419,13 @@ func settle_many(points):
 				if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 					continue
 				settled.set(y * Config.W + x, 1)
+				# Sekarang juga ditulis ke grid: puing jadi terrain sungguhan,
+				# bukan sekadar piksel di gambar. Inilah yang membuatnya bisa
+				# ditumbuhi dan ikut memberi bayangan.
+				grid.set(y * Config.W + x, Config.T_PUING)
 				image.set_pixel(x, y, Config.C_PUING)
+				if y < puing_atas:
+					puing_atas = y
 	image.unlock()
 
 

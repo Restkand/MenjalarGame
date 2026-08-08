@@ -138,8 +138,13 @@ Urutan kerja bertahap ada di **`docs/05-prompt-pivot-pembongkaran.md`**
 (TAHAP 0 sampai TAHAP 8). Kerjakan **satu tahap per sesi**, commit tiap tahap
 yang sudah terverifikasi jalan.
 
-Status pivot: **TAHAP 0–5 selesai secara kode. Berikutnya TAHAP 6 (puing jadi
-tanah baru).**
+Status pivot: **TAHAP 0–6 selesai. Berikutnya: pohon dari sulur yang runtuh
+bersama gedung, lalu pemanjat, lalu banyak gedung + kamera geser.**
+
+Catatan yang jangan hilang: akar TIDAK pernah bertemu puing. Puing selalu
+mengendap di atas `GROUND_Y` karena `blocked()` menghentikannya di sana,
+sedangkan akar hanya hidup di bawahnya. Baris TAHAP 6 soal "akar menembus
+puing" di dokumen sengaja dilewati, bukan terlupa.
 
 TAHAP 2–5 sudah dijalankan di Godot dan berjalan tanpa error. Keruntuhan
 berantai plus getaran layar dinilai pemilik proyek sudah terasa menarik — jadi
@@ -164,6 +169,13 @@ Sistem yang sudah ada dari pivot:
 - Sulur menyerang joint, akar menyerang ruas kolom paling bawah.
 - `WorldMap.vine_ok()` — predikat pijakan sulur, mengizinkan rentangan
   `VINE_JEMBATAN` px melewati celah sempit.
+- `T_PUING` — puing yang mengendap ditulis ke `grid`, bukan cuma ke `image`,
+  jadi ia terrain sungguhan: bisa ditumbuhi sulur dan ikut melempar bayangan.
+  Peta cahaya dipanggang ulang sekali setelah puing diam (`PUING_TENANG`), dan
+  hanya dari baris puncak tumpukan ke bawah — sinar datang dari atas-kiri jadi
+  puing hanya membayangi yang di bawahnya. Hemat ~66% dibanding panggang penuh.
+- `Crew.gd` — regu perawatan, antagonis darat. Jangkauannya hanya pita di
+  sekitar garis tanah; sulur tinggi belum ada yang mengancam.
 
 Kondisi menang: `Structure.hancur()` — tidak ada KOLOM tersisa. Sengaja bukan
 "semua member mati", karena balok level dasar berdiri di pondasi sehingga tidak

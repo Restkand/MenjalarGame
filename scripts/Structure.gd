@@ -30,6 +30,8 @@ var dirty_caps = false   # ada joint/member yang melemah — cek gagal ulang
 var _timer = 0.0
 var _iter  = 0
 var _last_cap = 0.0
+var _perlu_bake = false   # ada puing baru mengendap, peta cahaya sudah basi
+var _tenang     = 0.0
 
 
 func setup(w):
@@ -47,6 +49,8 @@ func setup(w):
 	_timer = 0.0
 	_iter = 0
 	_last_cap = Config.KAPASITAS_MAX
+	_perlu_bake = false
+	_tenang = 0.0
 	solve()
 
 
@@ -188,6 +192,7 @@ func update(delta):
 	_debris_step(delta)
 	_dust_step(delta)
 	_luruh_step(delta)
+	_bake_step(delta)
 
 	# KAPASITAS_MAX bisa digeser lewat panel tuning saat bermain, dan itu
 	# mengubah ambang gagal setiap member sekaligus.
@@ -294,6 +299,24 @@ func _runtuhkan_panel():
 # Panel diluruhkan baris demi baris dari atas, dengan puing lahir di baris yang
 # sedang lenyap. Menghapusnya sekaligus membuat dinding hilang dalam satu frame
 # dan yang tersisa hanya awan titik — tidak ada massa yang terasa jatuh.
+# Peta cahaya dipanggang ulang SEKALI setelah semuanya benar-benar diam.
+# Tumpukan puing mengubah siluet gedung, jadi bayangannya ikut berubah — tapi
+# memanggang ulang tiap kali sebutir puing mendarat akan membuat keruntuhan
+# tersendat parah.
+func _bake_step(delta):
+	if not _perlu_bake:
+		return
+	if not falling.empty() or not luruh.empty():
+		_tenang = 0.0
+		return
+	_tenang = _tenang + delta
+	if _tenang < Config.PUING_TENANG:
+		return
+	_perlu_bake = false
+	_tenang = 0.0
+	world.rebake_light_from(world.puing_atas - 4)
+
+
 func _luruh_step(delta):
 	if luruh.empty():
 		return
@@ -417,3 +440,5 @@ func _debris_step(delta):
 	if not mengendap.empty():
 		world.settle_many(mengendap)
 		dirty_img = true
+		_perlu_bake = true
+		_tenang = 0.0

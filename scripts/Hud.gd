@@ -72,13 +72,13 @@ func _build_overlay():
 	_overlay.add_child(dim)
 
 	var info = Label.new()
-	info.rect_position = Vector2(140, 80)
-	info.text = "TUJUAN   Runtuhkan gedung. Bar STRUKTUR habis = menang.\n\nSIANG    Akar tumbuh. Arahkan sebagian ke tanah lembap atau pipa untuk\n         energi, sebagian lagi ke kaki kolom untuk menggerogotinya.\n         Akar di tanah kering hampir tidak menghasilkan air.\n\nMALAM    Regu pulang. Sulur merambat di fasad. Dekatkan ujungnya ke\n         sambungan rangka untuk melemahkannya.\n\nREGU     Siang hari regu perawatan mencabut tanaman yang mereka temukan\n         di sekitar garis tanah. Yang tumbuh di area terang ditemukan\n         lebih dulu; akar di bawah tanah hanya ketahuan dari kedekatan.\n         Jumlah mereka bertambah seiring gedung makin rusak.\n\nENERGI   Bertambah sebesar min(Air, Cahaya), dan HANYA saat siang.\n         Yang lebih kecil ditandai '<' — itu leher botolnya.\n\nRUNTUH   Sambungan yang lemah menurunkan kapasitas member. Saat beban\n         melebihi kapasitas, member gagal dan bebannya pindah ke\n         tetangga, yang bisa ikut gagal beruntun. Panel dinding jatuh\n         menyusul rangkanya.\n\n         Retakan = member mendekati batas.\n         Tahan B untuk melihat rangka: hijau santai, merah di ambang."
+	info.rect_position = Vector2(140, 100)
+	info.text = "TUJUAN    Runtuhkan gedung. Bar STRUKTUR habis = menang.\n\nSIANG     Akar tumbuh. Sebagian ke tanah lembap atau pipa untuk energi,\n          sebagian ke kaki kolom untuk menggerogotinya. Regu perawatan\n          mencabut tanaman di sekitar garis tanah; yang tumbuh di area\n          terang ditemukan lebih dulu, dan jumlah regu bertambah seiring\n          gedung makin rusak.\n\nMALAM     Regu pulang. Sulur merambat. Dekatkan ujungnya ke sambungan\n          rangka untuk melemahkannya.\n\nENERGI    Bertambah sebesar min(Air, Cahaya), dan HANYA saat siang.\n          Yang lebih kecil ditandai '<' — itu leher botolnya.\n\nRUNTUH    Sambungan lemah menurunkan kapasitas member. Beban yang lewat\n          batas membuatnya gagal, lalu berpindah ke tetangga dan bisa\n          gagal beruntun. Retakan menandai yang mendekati batas.\n\nPUING     Reruntuhan menumpuk jadi tanah baru yang bisa ditumbuhi sulur,\n          jadi Anda memanjat lewat puing yang Anda jatuhkan sendiri."
 	_overlay.add_child(info)
 
 	var btn = Button.new()
 	btn.text = "  MULAI  "
-	btn.rect_position = Vector2(430, 520)
+	btn.rect_position = Vector2(430, 500)
 	btn.rect_min_size = Vector2(100, 44)
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.connect("pressed", self, "_on_play")

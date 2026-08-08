@@ -54,8 +54,30 @@ ia menjaga game tetap murah, dan sudah membentuk seluruh identitas visualnya.
 - **Tanpa shader.** Tidak ada `ShaderMaterial`, tidak ada `.gdshader`.
 - **Tanpa physics engine.** Tidak ada `RigidBody2D`, `Area2D`, atau
   `CharacterBody2D`. Tabrakan dihitung sendiri lewat grid.
-- **Tanpa Light2D** dan tanpa apa pun dari sistem pencahayaan 2D.
 - **Draw call harus minimal.** Jumlah `Sprite2D` di scene dijaga tetap kecil.
+- **Light2D BOLEH** — batasan ini dicabut 8 Agustus 2026, lihat di bawah.
+
+## Pencahayaan 2D — boleh, dengan dua syarat
+
+Siang-malam memakai `CanvasModulate` (meredupkan kanvas layer 0) plus
+`PointLight2D` di jendela yang menyala. HUD dan panel tuning ada di CanvasLayer
+sendiri, jadi keduanya tidak ikut gelap tanpa perlu diatur.
+
+Dua syarat yang **tidak boleh dilanggar**, karena inilah yang menjaga
+identitas pixel art:
+
+1. Tekstur lampu dibuat prosedural dengan falloff **bertangga**
+   (`LAMPU_TINGKAT`), bukan gradien halus — lihat `PixelCanvas._make_lamp_tex()`.
+   Gradien lembut melanggar aturan "tanpa gradien" di `docs/01-konteks-game.md` §5.
+2. Setiap lampu wajib `texture_filter = TEXTURE_FILTER_NEAREST`, dan
+   `texture_scale = Config.SCALE` supaya ukurannya sepadan dengan dunia 240×160.
+
+Jumlah lampu dijaga kecil (`LAMPU_JUMLAH`): di renderer Compatibility tiap
+lampu menambah satu lintasan render per objek yang disinari.
+
+Nilai yang sudah disetel dari tangkapan layar: `LAMPU_RADIUS 14`,
+`LAMPU_ENERGI 0.55`. Pada 30/1.1 jendelanya blown-out putih dan lingkaran
+cahayanya saling tindih menutupi seluruh fasad.
 
 ## Aturan render
 

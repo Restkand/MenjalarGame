@@ -14,7 +14,10 @@ var _tree_img
 var _tree_tex
 var _ovl_img
 var _ovl_tex
-var _night
+var _modulate           # CanvasModulate — peredup kanvas saat malam
+var _lights    = []     # PointLight2D di jendela yang menyala
+var _lamp_tex           # tekstur falloff bertangga, dibuat sekali
+var _world              # untuk memadamkan lampu saat jendelanya runtuh
 var _shake_t   = 0.0
 var _shake_amp = 0.0
 
@@ -32,15 +35,13 @@ func setup(world_img):
 	_ovl_tex = ImageTexture.create_from_image(_ovl_img)
 	_add_sprite(_ovl_tex, 2)
 
-	var layer = CanvasLayer.new()
-	layer.layer = 5
-	add_child(layer)
-
-	_night = ColorRect.new()
-	_night.color = Color(0.05, 0.08, 0.20, 0.0)
-	_night.size = Vector2(Config.W * Config.SCALE, Config.H * Config.SCALE)
-	_night.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(_night)
+	# CanvasModulate menggantikan ColorRect gelap yang dulu ditempel di
+	# CanvasLayer 5. Ia hanya memengaruhi kanvas layer 0 — HUD (layer 20) dan
+	# panel tuning (layer 10) punya kanvasnya sendiri, jadi keduanya tetap
+	# terang penuh tanpa perlu diatur apa pun.
+	_modulate = CanvasModulate.new()
+	_modulate.color = Color(1, 1, 1)
+	add_child(_modulate)
 
 
 # Getaran digeser dalam kelipatan penuh SCALE, jadi kisi pikselnya tetap lurus.
@@ -78,8 +79,73 @@ func set_world_image(world_img):
 	_world_tex.set_image(_world_img)
 
 
+# Lampu jendela. Dipanggil ulang tiap kali dunia dibangun ulang (reset),
+# karena grid terrain-nya baru dan lampu yang padam harus menyala lagi.
+#
+# Hanya sebagian jendela yang dipilih, bukan semuanya: 28 lampu itu mahal di
+# renderer Compatibility (tiap lampu menambah satu lintasan per objek yang
+# disinari), dan gedung yang setiap jendelanya menyala justru terbaca palsu.
+# Langkah tetap, bukan acak, supaya polanya sama tiap kali dimulai ulang.
+func setup_lights(world):
+	_world = world
+	for l in _lights:
+		l.queue_free()
+	_lights = []
+
+	if _lamp_tex == null:
+		_lamp_tex = _make_lamp_tex()
+
+	var n = world.windows.size()
+	if n == 0:
+		return
+	var langkah = int(max(1, n / Config.LAMPU_JUMLAH))
+	var i = 0
+	while i < n:
+		var w = world.windows[i]
+		var l = PointLight2D.new()
+		l.texture = _lamp_tex
+		l.texture_scale = Config.SCALE
+		l.color = Config.C_LAMPU
+		l.energy = 0.0                     # siang: padam
+		l.position = w * Config.SCALE
+		l.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		add_child(l)
+		_lights.append({"node": l, "win": w})
+		i += langkah
+
+
+# Falloff BERTANGGA, bukan gradien halus. Tanpa kuantisasi ini cahayanya jadi
+# blur lembut dan seluruh kesan pixel art rusak — lihat aturan "tanpa gradien"
+# di docs/01-konteks-game.md §5.
+func _make_lamp_tex():
+	var r = Config.LAMPU_RADIUS
+	var d = r * 2
+	var img = Image.create_empty(d, d, false, Image.FORMAT_RGBA8)
+	for y in range(d):
+		for x in range(d):
+			var dx = float(x - r) + 0.5
+			var dy = float(y - r) + 0.5
+			var t = 1.0 - sqrt(dx * dx + dy * dy) / float(r)
+			if t <= 0.0:
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+				continue
+			var q = ceil(t * Config.LAMPU_TINGKAT) / float(Config.LAMPU_TINGKAT)
+			img.set_pixel(x, y, Color(q, q, q, q))
+	return ImageTexture.create_from_image(img)
+
+
 func set_night(a):
-	_night.color = Color(0.05, 0.08, 0.20, a * 0.55)
+	_modulate.color = Color(1, 1, 1).lerp(Config.C_MALAM,
+			a * Config.NIGHT_GELAP)
+	var e = a * Config.LAMPU_ENERGI
+	for l in _lights:
+		# Jendela yang sudah runtuh tidak boleh menyisakan cahaya menggantung
+		# di udara. Murah: hanya sejumlah LAMPU_JUMLAH lookup grid per frame.
+		if _world != null and _world.at(int(l.win.x), int(l.win.y)) \
+				!= Config.T_WINDOW:
+			l.node.energy = 0.0
+		else:
+			l.node.energy = e
 
 
 func _blank():

@@ -174,6 +174,37 @@ const JOINT_RADIUS       = 3.0     # jangkauan melemahkan
 const JOINT_TARIK_RADIUS = 12.0    # jangkauan tigmotropisme ke joint
 const JOINT_TARIK_MAX    = 0.262   # 15 derajat, batas deviasi dari arah pemain
 
+# Pencahayaan 2D.
+#
+# Batasan "tanpa Light2D" DILONGGARKAN 8 Agustus 2026. Alasannya hilang: PC
+# Intel HD OpenGL 2.1 berhenti jadi target sejak pindah ke Godot 4, dan Iris Xe
+# menanganinya tanpa keringat.
+#
+# Malam tidak lagi berupa ColorRect gelap yang ditimpakan ke seluruh layar —
+# itu meredupkan segalanya secara merata dan hasilnya datar. Sekarang:
+# CanvasModulate meredupkan kanvas, lalu PointLight2D di jendela-jendela yang
+# menyala mengembalikan cahaya secara setempat. Efeknya gedung terlihat
+# DIHUNI, dan malam jadi punya bentuk, bukan cuma lebih gelap.
+#
+# Yang menjaga identitas visual: tekstur lampu dibuat prosedural dengan falloff
+# BERTANGGA (LAMPU_TINGKAT tingkat, bukan gradien halus) dan disaring nearest,
+# jadi cahayanya tetap terbaca sebagai pixel art. Gradien lembut akan merusak
+# aturan "tanpa gradien" di docs/01-konteks-game.md §5.
+# Nilai di bawah ini disetel dari tangkapan layar, bukan tebakan. Pada
+# RADIUS 30 / ENERGI 1.1 jendelanya blown-out putih dan lingkaran cahayanya
+# saling tindih sampai menutupi seluruh fasad — 30 px simulasi berarti 120 px
+# di layar. RADIUS 14 membuat tiap lampu tetap milik jendelanya sendiri, dan
+# ENERGI 0.55 menahannya di bawah titik jenuh sehingga warna hangatnya
+# benar-benar terlihat alih-alih memutih.
+var NIGHT_GELAP  = 1.0     # 0 = malam tidak menggelap sama sekali
+var LAMPU_ENERGI = 0.55    # kecerahan tiap jendela yang menyala
+
+const C_MALAM       = Color(0.20, 0.24, 0.40)   # warna kanvas saat malam penuh
+const C_LAMPU       = Color("FFD9A0")           # cahaya hangat dari dalam
+const LAMPU_RADIUS  = 14    # jangkauan, dalam piksel simulasi
+const LAMPU_TINGKAT = 4     # jumlah tangga falloff; kecil = makin pixel art
+const LAMPU_JUMLAH  = 9     # berapa jendela yang menyala (dari 28 yang ada)
+
 # Tinggi panel tuning yang bisa digulir. Jendela 640, panel mulai di y=12, dan
 # teks bantuan duduk di y=584.
 const PANEL_TINGGI = 548

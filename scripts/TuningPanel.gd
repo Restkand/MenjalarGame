@@ -18,6 +18,8 @@ const SPECS = [
 	["CLIMB_MAX",      0.0,  6.0, 1.0],
 	["DAY_LEN",        6.0, 40.0, 1.0],
 	["NIGHT_LEN",      6.0, 60.0, 1.0],
+	["NIGHT_GELAP",    0.0,  1.0, 0.05],
+	["LAMPU_ENERGI",   0.0,  3.0, 0.1],
 ]
 
 var _labels  = {}

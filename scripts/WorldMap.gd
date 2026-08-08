@@ -7,6 +7,7 @@ var vis
 var members = []
 var joints  = []
 var panels  = []       # massa dinding di antara rangka
+var windows = []       # titik tengah tiap jendela — dipakai lampu malam
 var settled            # puing yang sudah mengendap, 0/1 per piksel
 var puing_atas = 0     # baris tertinggi yang sudah tertutup puing
 var solve_order = []   # id member dalam urutan topologis atas-ke-bawah
@@ -39,10 +40,13 @@ func build():
 			Config.FACADE_Y1 - Config.FACADE_Y0,
 			Config.C_WALL, Config.T_WALL)
 
-	# jendela
+	# jendela — titik tengahnya dicatat supaya lampu malam tahu di mana
+	# harus berdiri, dan supaya lampu bisa dipadamkan saat jendelanya runtuh
+	windows = []
 	for jy in range(22, 100, 20):
 		for jx in range(54, 190, 22):
 			_rect(jx, jy, 10, 12, Config.C_WINDOW, Config.T_WINDOW)
+			windows.append(Vector2(jx + 5, jy + 6))
 
 	# ledge — penghalang yang harus diputari
 	_rect(46, 58, 60, 3, Config.C_LEDGE, Config.T_LEDGE)

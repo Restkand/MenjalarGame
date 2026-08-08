@@ -38,6 +38,7 @@ func _ready():
 	canvas = PixelCanvasCls.new()
 	add_child(canvas)
 	canvas.setup(world.image)
+	canvas.setup_lights(world)
 
 	structure = StructureCls.new()
 	structure.setup(world)
@@ -72,6 +73,7 @@ func _restart():
 	# dibangun ulang — bukan sekadar mereset pohon.
 	world.build()
 	canvas.set_world_image(world.image)
+	canvas.setup_lights(world)   # grid baru — lampu yang padam menyala lagi
 	structure.setup(world)
 	sim.reset()
 	cycle.reset()

@@ -11,14 +11,21 @@ Terakhir diperbarui: 8 Agustus 2026
 
 | Item | Nilai |
 |---|---|
-| Engine | Godot **3.5.3 stable** (bukan Godot 4 — API berbeda) |
-| Renderer | **GLES2** |
-| GPU | Intel HD Graphics, driver 8.15.10.2900 (OpenGL 2.1) |
+| Engine | Godot **4.7.1 stable** (dimigrasikan dari 3.5.3 pada 8 Agustus 2026) |
+| Renderer | **Compatibility** (`gl_compatibility`, minimal OpenGL 3.3) |
+| Mesin kerja | Laptop pengembang |
 | Nama proyek | Menjalar |
-| Bahasa | GDScript |
+| Bahasa | GDScript 2.0 |
 
-Batasan yang mengikuti dari sini: tanpa shader, tanpa Light2D, tanpa physics
-engine, jumlah draw call harus minimal.
+**PC lawas Intel HD (OpenGL 2.1) sudah tidak didukung.** Tidak ada renderer
+Godot 4 yang turun sampai GL 2.1 — Compatibility pun menuntut GL 3.3. Pindah
+engine berarti PC itu tidak bisa lagi menjalankan editor maupun hasil export.
+
+Batasan tanpa shader, tanpa Light2D, tanpa physics engine, dan draw call
+minimal **tetap dipertahankan** — sekarang sebagai disiplin desain, bukan
+karena dipaksa hardware. Ia sudah membentuk seluruh identitas visual game ini.
+
+Peta lengkap perbedaan API Godot 3 → 4 ada di `CLAUDE.md`.
 
 ---
 

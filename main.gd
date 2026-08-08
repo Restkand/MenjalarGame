@@ -1,4 +1,4 @@
-﻿extends Node2D
+extends Node2D
 
 const WorldMapCls    = preload("res://scripts/WorldMap.gd")
 const TreeSimCls     = preload("res://scripts/TreeSim.gd")
@@ -56,11 +56,11 @@ func _ready():
 
 	panel = TuningPanelCls.new()
 	add_child(panel)
-	panel.connect("reset_pressed", self, "_restart")
+	panel.reset_pressed.connect(_restart)
 
 	hud = HudCls.new()
 	add_child(hud)
-	hud.connect("play_pressed", self, "_on_play")
+	hud.play_pressed.connect(_on_play)
 
 
 func _on_play():
@@ -69,7 +69,7 @@ func _on_play():
 
 func _restart():
 	# Keruntuhan mengubah grid dan image secara permanen, jadi dunianya harus
-	# dibangun ulang â€” bukan sekadar mereset pohon.
+	# dibangun ulang — bukan sekadar mereset pohon.
 	world.build()
 	canvas.set_world_image(world.image)
 	structure.setup(world)
@@ -101,7 +101,7 @@ func _try_branch():
 	if sim.selected == null or not sim.selected.alive:
 		hud.flash_msg("Pilih ujung dulu (klik kiri)")
 	elif sim.energy < Config.COST_BRANCH:
-		hud.flash_msg("Energi kurang â€” butuh %d" % int(Config.COST_BRANCH))
+		hud.flash_msg("Energi kurang — butuh %d" % int(Config.COST_BRANCH))
 	else:
 		hud.flash_msg("Batas untai tercapai")
 
@@ -111,7 +111,7 @@ func _process(delta):
 	var m = _mouse_sim()
 
 	if _freeze > 0.0:
-		# jeda mikro â€” simulasi beku, render dan getaran tetap jalan
+		# jeda mikro — simulasi beku, render dan getaran tetap jalan
 		_freeze = max(0.0, _freeze - delta)
 	else:
 		# berjalan juga sebelum MULAI, supaya uji klik-kanan bisa dilakukan
@@ -122,7 +122,7 @@ func _process(delta):
 			if structure.wave_index == 1:
 				_freeze = Config.FREEZE_TIME
 			structure.wave_panjang = 0.0
-			# fasad baru saja berlubang â€” ujung yang kehilangan pijakan mundur
+			# fasad baru saja berlubang — ujung yang kehilangan pijakan mundur
 			if sim.retreat_unsupported(world) > 0:
 				# titik yang menggantung di atas lubang sudah dibuang, jadi
 				# lapisan pohon harus digambar ulang dari nol
@@ -176,32 +176,41 @@ func _process(delta):
 	hud.refresh(sim, cycle, structure, crew, climbers, won)
 
 
+# Godot 4 memecah satu `scancode` milik Godot 3 jadi DUA properti:
+# `keycode` mengikuti layout papan ketik, `physical_keycode` mengikuti posisi
+# fisik ala QWERTY. Salah satunya bisa bernilai 0 tergantung dari mana event
+# itu berasal, jadi memeriksa hanya satu membuat tombol diam saja di sebagian
+# papan ketik. Semua pembacaan tombol lewat sini.
+func _kunci(event, kode):
+	return event.keycode == kode or event.physical_keycode == kode
+
+
 func _input(event):
 	if event is InputEventMouseButton and not event.pressed \
-			and event.button_index == BUTTON_LEFT:
+			and event.button_index == MOUSE_BUTTON_LEFT:
 		is_steering = false
 
-	if event is InputEventKey and event.scancode == KEY_V:
+	if event is InputEventKey and _kunci(event, KEY_V):
 		show_risk = event.pressed
 
-	if event is InputEventKey and event.scancode == KEY_B:
+	if event is InputEventKey and _kunci(event, KEY_B):
 		show_frame = event.pressed
 
 
 func _unhandled_input(event):
 	# tombol yang selalu aktif, bahkan sebelum MULAI
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.scancode == KEY_R:
+		if _kunci(event, KEY_R):
 			_restart()
 			return
-		elif event.scancode == KEY_TAB:
+		elif _kunci(event, KEY_TAB):
 			panel.toggle()
 			return
 
 	# uji keruntuhan: tahan B lalu klik kanan pada member. Disyaratkan
 	# show_frame supaya tidak bentrok dengan klik-kanan-bercabang.
 	if show_frame and event is InputEventMouseButton and event.pressed \
-			and event.button_index == BUTTON_RIGHT:
+			and event.button_index == MOUSE_BUTTON_RIGHT:
 		var id = world.member_at(_mouse_sim(), 6.0)
 		if id >= 0:
 			structure.fail_member(id)
@@ -212,17 +221,17 @@ func _unhandled_input(event):
 
 	if event is InputEventMouseButton and event.pressed:
 		var m = _mouse_sim()
-		if event.button_index == BUTTON_LEFT:
+		if event.button_index == MOUSE_BUTTON_LEFT:
 			sim.select_near(m, cycle.phase)
 			is_steering = true
-		elif event.button_index == BUTTON_RIGHT:
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			if sim.select_near(m, cycle.phase):
 				_try_branch()
 
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.scancode == KEY_SPACE:
+		if _kunci(event, KEY_SPACE):
 			_try_branch()
-		elif event.scancode == KEY_X:
+		elif _kunci(event, KEY_X):
 			# putus sulur di kursor — satu-satunya jawaban terhadap pemanjat
 			var potong = sim.sever_at(_mouse_sim())
 			if potong == null:

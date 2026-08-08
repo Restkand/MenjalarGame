@@ -30,14 +30,28 @@ func _ready():
 	layer = 10
 
 	_panel = PanelContainer.new()
-	_panel.rect_position = Vector2(12, 12)
+	_panel.position = Vector2(12, 12)
 	add_child(_panel)
 
+	# Font bawaan Godot 4 lebih besar daripada Godot 3, jadi daftar slider yang
+	# dulu pas sekarang melewati tepi bawah layar — NIGHT_LEN dan tombol Reset
+	# tidak terjangkau sama sekali. ScrollContainer memberi tinggi tetap dan
+	# bilah gulir, sehingga menambah slider baru tidak akan pernah lagi
+	# memotong yang di bawahnya.
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(268, Config.PANEL_TINGGI)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.focus_mode = Control.FOCUS_NONE
+	# Tanpa ini bilah gulirnya merebut fokus dan menelan tombol Tab.
+	scroll.get_v_scroll_bar().focus_mode = Control.FOCUS_NONE
+	_panel.add_child(scroll)
+
 	var vb = VBoxContainer.new()
-	# rapat — dengan 13 slider, jarak bawaan membuat panel menabrak teks
-	# bantuan di bagian bawah layar
-	vb.add_constant_override("separation", 1)
-	_panel.add_child(vb)
+	# rapat — dengan 17 slider, jarak bawaan membuat daftarnya jauh lebih
+	# panjang daripada yang perlu digulir
+	vb.add_theme_constant_override("separation", 1)
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(vb)
 
 	var title = Label.new()
 	title.text = "PANEL TUNING"
@@ -59,24 +73,26 @@ func _ready():
 		sl.max_value = spec[2]
 		sl.step = spec[3]
 		sl.value = cur
-		sl.rect_min_size = Vector2(230, 14)
+		sl.custom_minimum_size = Vector2(230, 14)
 		sl.focus_mode = Control.FOCUS_NONE
-		sl.connect("value_changed", self, "_on_changed", [key])
+		# Godot 4: bind() menempelkan argumen tambahan DI BELAKANG argumen
+		# sinyal, jadi tanda tangan _on_changed(value, key) tetap benar.
+		sl.value_changed.connect(_on_changed.bind(key))
 		vb.add_child(sl)
 		_sliders[key] = sl
 
 		_refresh(key, sl.value)
-		
+
 	var btn = Button.new()
 	btn.text = "Reset pohon  (R)"
 	btn.focus_mode = Control.FOCUS_NONE
-	btn.connect("pressed", self, "_on_reset")
+	btn.pressed.connect(_on_reset)
 	vb.add_child(btn)
 
 	# Dua baris pendek dengan latar, bukan satu baris panjang. Versi lama
 	# terpotong di tepi kanan layar 960 px.
 	var help_box = PanelContainer.new()
-	help_box.rect_position = Vector2(8, 584)
+	help_box.position = Vector2(8, 584)
 	add_child(help_box)
 
 	_help = Label.new()
@@ -94,7 +110,7 @@ func _refresh(key, value):
 
 
 func _on_reset():
-	emit_signal("reset_pressed")
+	reset_pressed.emit()
 
 
 func sync_sliders():

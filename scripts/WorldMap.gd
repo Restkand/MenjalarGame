@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 var image
 var grid
@@ -13,15 +13,15 @@ var solve_order = []   # id member dalam urutan topologis atas-ke-bawah
 
 
 func build():
-	image = Image.new()
-	image.create(Config.W, Config.H, false, Image.FORMAT_RGBA8)
-	grid = PoolByteArray(); grid.resize(Config.W * Config.H)
-	light = PoolRealArray(); light.resize(Config.W * Config.H)
-	vis = PoolRealArray(); vis.resize(Config.W * Config.H)
-	settled = PoolByteArray(); settled.resize(Config.W * Config.H)
+	# Godot 4: Image.create_empty() statis menggantikan Image.new() + create().
+	# lock()/unlock() sudah tidak ada — set_pixel() boleh dipanggil langsung.
+	image = Image.create_empty(Config.W, Config.H, false, Image.FORMAT_RGBA8)
+	grid = PackedByteArray(); grid.resize(Config.W * Config.H)
+	light = PackedFloat32Array(); light.resize(Config.W * Config.H)
+	vis = PackedFloat32Array(); vis.resize(Config.W * Config.H)
+	settled = PackedByteArray(); settled.resize(Config.W * Config.H)
 	puing_atas = Config.H
 
-	image.lock()
 	_rect(0, 0, Config.W, Config.GROUND_Y, Config.C_SKY, Config.T_SKY)
 	_rect(0, Config.GROUND_Y, Config.W, Config.H - Config.GROUND_Y,
 			Config.C_SOIL, Config.T_SOIL_DRY)
@@ -55,7 +55,6 @@ func build():
 	# jalur pipa vertikal — koridor gelap untuk menyelinap
 	_rect(74, Config.FACADE_Y0, 4, 100, Config.C_LEDGE, Config.T_LEDGE)
 
-	image.unlock()
 	_bake_light()
 	_bake_vis()
 	_build_frame()
@@ -356,7 +355,6 @@ func vine_ok(x, y):
 # Menghapus piksel di sepanjang member, menyisakan lubang tembus pandang.
 # image berubah, jadi pemanggil wajib meminta PixelCanvas.refresh_world().
 func carve_member(m):
-	image.lock()
 	var n = int(max(abs(m.x1 - m.x0), abs(m.y1 - m.y0)))
 	for k in range(n + 1):
 		var t = float(k) / float(max(1, n))
@@ -365,18 +363,15 @@ func carve_member(m):
 		for dy in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
 			for dx in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
 				_carve_px(px + dx, py + dy)
-	image.unlock()
 
 
 # Sepotong panel, dari baris ya sampai yb. Panel diluruhkan sedikit demi
 # sedikit dari atas ke bawah, bukan dihapus sekaligus, supaya pemain melihat
 # dindingnya jatuh alih-alih menghilang begitu saja.
 func carve_rows(p, ya, yb):
-	image.lock()
 	for y in range(max(p.y0, ya), min(p.y1, yb) + 1):
 		for x in range(p.x0, p.x1 + 1):
 			_carve_px(x, y)
-	image.unlock()
 
 
 # Hanya melubangi bagian gedung. Tanah, pipa, dan beton bawah tanah tidak
@@ -402,13 +397,12 @@ func blocked(x, y):
 	return settled[y * Config.W + x] != 0
 
 
-# Satu lock untuk sekumpulan puing yang mengendap di frame yang sama.
-# Menulis ke image dan settled saja — grid sengaja tidak disentuh, supaya
-# tabrakan tanaman belum berubah. Itu urusan TAHAP 6.
+# Sekumpulan puing yang mengendap di frame yang sama. Menulis ke image dan
+# settled — dan sejak TAHAP 6 juga ke grid, sehingga puing jadi terrain
+# sungguhan yang bisa ditumbuhi.
 func settle_many(points):
-	if points.empty():
+	if points.is_empty():
 		return
-	image.lock()
 	for p in points:
 		# 2x2, sama seperti saat melayang, supaya tumpukan tidak mendadak
 		# menyusut jadi sebutir begitu mendarat
@@ -419,14 +413,13 @@ func settle_many(points):
 				if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 					continue
 				settled.set(y * Config.W + x, 1)
-				# Sekarang juga ditulis ke grid: puing jadi terrain sungguhan,
-				# bukan sekadar piksel di gambar. Inilah yang membuatnya bisa
-				# ditumbuhi dan ikut memberi bayangan.
+				# Puing jadi terrain sungguhan, bukan sekadar piksel di gambar.
+				# Inilah yang membuatnya bisa ditumbuhi dan ikut memberi
+				# bayangan.
 				grid.set(y * Config.W + x, Config.T_PUING)
 				image.set_pixel(x, y, Config.C_PUING)
 				if y < puing_atas:
 					puing_atas = y
-	image.unlock()
 
 
 # Member hanya sekuat sambungan terlemahnya. Satu-satunya sumber kebenaran

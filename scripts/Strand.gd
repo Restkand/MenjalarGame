@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 var points     = []
 var leaves     = []
@@ -91,7 +91,7 @@ func grow(delta, steer, t, world, laju = 1.0):
 		if not is_root:
 			gained = world.vis_at(int(round(tip.x)), int(round(tip.y)))
 		if points.size() > 900:
-			points.remove(0)
+			points.remove_at(0)
 
 	if not is_root:
 		_leaf_acc += step
@@ -122,7 +122,7 @@ func _spawn_leaf(world):
 	if leaves.size() > 60 or not world.on_facade(tip.x, tip.y):
 		return
 	var side = 1.0 if randf() < 0.5 else -1.0
-	var off = Vector2(-sin(angle), cos(angle)) * rand_range(1.0, 3.0) * side
+	var off = Vector2(-sin(angle), cos(angle)) * randf_range(1.0, 3.0) * side
 	var p = tip + off
 	if not world.on_facade(p.x, p.y):
 		p = tip
@@ -171,7 +171,7 @@ func trim(n):
 		if points.size() <= 2:
 			alive = false
 			return
-		points.remove(points.size() - 1)
+		points.remove_at(points.size() - 1)
 	tip = points[points.size() - 1]
 	angle = angle + PI
 	var keep = []

@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 # Regu perawatan gedung — antagonis darat.
 #
@@ -52,7 +52,7 @@ func update(delta, sim, world, structure, phase):
 # Inilah jawaban pemain: waktukan keruntuhan saat mereka sedang berada di
 # bawah reruntuhan.
 func _tertimpa(u, structure):
-	if structure.falling.empty():
+	if structure.falling.is_empty():
 		return false
 	for p in structure.falling:
 		if p.y < Config.GROUND_Y - 10.0 or p.y > Config.GROUND_Y:
@@ -79,14 +79,14 @@ func _sesuaikan_jumlah(structure):
 	n = int(clamp(n, 1, Config.CREW_MAX))
 	while units.size() < n:
 		units.append({
-			"x": rand_range(20.0, Config.W - 20.0),
+			"x": randf_range(20.0, Config.W - 20.0),
 			"dir": 1.0 if randf() < 0.5 else -1.0,
 			"sasaran": null,
 			"kerja": 0.0,
 			"pingsan": 0.0,
 		})
 	while units.size() > n:
-		units.remove(units.size() - 1)
+		units.remove_at(units.size() - 1)
 
 
 func _update_unit(u, delta, sim, world):

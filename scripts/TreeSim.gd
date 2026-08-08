@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 const Strand = preload("res://scripts/Strand.gd")
 
@@ -243,7 +243,7 @@ func branch():
 		return false
 	energy -= Config.COST_BRANCH
 	var side = 1.0 if randf() < 0.5 else -1.0
-	var off = deg2rad(rand_range(25, 40)) * side
+	var off = deg_to_rad(randf_range(25, 40)) * side
 	strands.append(_make(selected.tip.x, selected.tip.y,
 			selected.angle + off, selected.is_root, selected.generation + 1))
 	return true

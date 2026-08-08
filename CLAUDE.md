@@ -7,36 +7,69 @@ kota. Simulasi berjalan di 240×160 piksel, ditampilkan 960×640.
 
 ## Lingkungan — jangan salah engine
 
-- **Godot 3.5.3 stable**, GDScript, renderer **GLES2**.
-- **BUKAN Godot 4.** API-nya berbeda. Jangan pakai `@onready`, `@export`,
-  anotasi tipe gaya Godot 4, `Callable`, `Signal.connect(callable)`,
-  `PackedByteArray`, atau `Node2D.position` di tempat `rect_position`.
-  Sinyal disambung dengan `obj.connect("nama", self, "_metode")`.
-- Array pool memakai nama Godot 3: `PoolByteArray`, `PoolRealArray`.
+- **Godot 4.7 stable**, GDScript 2.0, renderer **Compatibility** (OpenGL 3.3).
+- **BUKAN Godot 3.** Proyek ini dimigrasikan dari 3.5.3 pada 8 Agustus 2026.
+  Kalau menemukan API Godot 3 di kode, itu sisa yang terlewat — perbaiki.
 
-## Target hardware — ini yang membentuk semua keputusan
+| Godot 3 (jangan dipakai lagi) | Godot 4 |
+|---|---|
+| `extends Reference` | `extends RefCounted` |
+| `PoolByteArray`, `PoolRealArray` | `PackedByteArray`, `PackedFloat32Array` |
+| `img.lock()` / `img.unlock()` | tidak ada — `set_pixel()` langsung |
+| `Image.new()` + `img.create(...)` | `Image.create_empty(...)` (statis) |
+| `tex.create_from_image(img, 0)` | `ImageTexture.create_from_image(img)` (statis) |
+| mengarahkan ulang tekstur ke Image lain | `tex.set_image(img)` |
+| `tex.set_data(img)` | `tex.update(img)` |
+| `Sprite` | `Sprite2D` + `texture_filter = TEXTURE_FILTER_NEAREST` |
+| `rect_position` / `rect_size` / `rect_min_size` | `position` / `size` / `custom_minimum_size` |
+| `connect("sig", self, "_m", [arg])` | `sig.connect(_m.bind(arg))` |
+| `emit_signal("sig")` | `sig.emit()` |
+| `add_constant_override` / `add_font_override` | `add_theme_constant_override` / `add_theme_font_override` |
+| `event.scancode` | `event.keycode` |
+| `BUTTON_LEFT` / `BUTTON_RIGHT` | `MOUSE_BUTTON_LEFT` / `MOUSE_BUTTON_RIGHT` |
+| `arr.empty()` | `arr.is_empty()` |
+| `arr.remove(i)` | `arr.remove_at(i)` |
+| `rand_range(a, b)` | `randf_range(a, b)` |
+| `deg2rad` / `rad2deg` | `deg_to_rad` / `rad_to_deg` |
+| `Color.linear_interpolate(c, t)` | `Color.lerp(c, t)` |
 
-PC lawas: **Intel HD Graphics, OpenGL 2.1**, driver 8.15.10.2900.
+Verifikasi tanpa membuka editor:
 
-Batasan keras yang mengikuti:
+```
+"C:/Users/renaldi.iskandar/godot/Godot_v4.7.1-stable_win64_console.exe" \
+    --headless --path . --quit-after 180
+```
+
+Nol keluaran selain baris versi berarti tidak ada error parse maupun runtime.
+
+## Target hardware
+
+Laptop pengembang, lewat renderer Compatibility (**minimal OpenGL 3.3**).
+
+**PC lawas Intel HD OpenGL 2.1 sudah TIDAK didukung** sejak pindah ke Godot 4 —
+tidak ada renderer Godot 4 yang turun sampai GL 2.1. Batasan di bawah ini
+dipertahankan sebagai **disiplin desain**, bukan lagi karena dipaksa hardware:
+ia menjaga game tetap murah, dan sudah membentuk seluruh identitas visualnya.
 
 - **Tanpa shader.** Tidak ada `ShaderMaterial`, tidak ada `.gdshader`.
-- **Tanpa Light2D** dan tanpa apa pun dari sistem pencahayaan 2D.
 - **Tanpa physics engine.** Tidak ada `RigidBody2D`, `Area2D`, atau
-  `KinematicBody2D`. Tabrakan dihitung sendiri lewat grid.
-- **Draw call harus minimal.** Jumlah `Sprite` di scene dijaga tetap kecil.
+  `CharacterBody2D`. Tabrakan dihitung sendiri lewat grid.
+- **Tanpa Light2D** dan tanpa apa pun dari sistem pencahayaan 2D.
+- **Draw call harus minimal.** Jumlah `Sprite2D` di scene dijaga tetap kecil.
 
 ## Aturan render
 
 Semua yang menulis piksel ada di `scripts/PixelCanvas.gd`.
 
 - Render lewat **`Image` + `ImageTexture`**, bukan `_draw()`. Menggambar ribuan
-  piksel lewat `_draw()` akan mematikan Intel HD.
-- `Image.lock()` / `Image.unlock()` **wajib** mengapit setiap blok `set_pixel`
-  dan `get_pixel`.
-- `ImageTexture.create_from_image(img, 0)` — flags `0` berarti tanpa filter dan
-  tanpa mipmap. Tanpa ini pixel art-nya jadi buram.
-- Perbarui tekstur dengan **`texture.set_data(img)`** tiap frame. Jangan pernah
+  piksel lewat `_draw()` jauh lebih mahal.
+- `Image.lock()` / `unlock()` **sudah tidak ada di Godot 4** — panggil
+  `set_pixel()` / `get_pixel()` langsung.
+- Nearest-neighbor dipasang **dua lapis**: `texture_filter =
+  TEXTURE_FILTER_NEAREST` di tiap `Sprite2D`, plus
+  `textures/canvas_textures/default_texture_filter=0` di `project.godot`.
+  Tanpa ini pixel art-nya jadi buram saat diskalakan 4×.
+- Perbarui tekstur dengan **`texture.update(img)`** tiap frame. Jangan pernah
   membuat `ImageTexture` baru per frame.
 - Tiga lapis Image, masing-masing satu Sprite: `world` (statis, sekali saat
   load), `tree` (akumulatif, hanya titik terbaru yang digambar ulang), dan
@@ -97,6 +130,9 @@ Diambil dari `docs/04-status-proyek.md` §9.
 | STRUKTUR 0% tapi gedung tetap berdiri | member hanya garis 3 px; menghancurkan seluruh rangka cuma menghapus 31 garis tipis dari persegi panjang padat | `WorldMap.panels` — massa dinding jatuh menyusul rangkanya (`Structure._runtuhkan_panel`) |
 | Regu perawatan meruntuhkan gedungnya sendiri | `Crew.trim()` menarik ujung sulur mundur; kalau mendarat dekat sambungan ia parkir di sana sepanjang sisa siang (sulur tidak tumbuh siang) sambil terus melemahkan — 22 detik gratis, berulang tiap regu memotong | pelemahan digerbang fase: akar hanya menggerogoti saat siang, sulur hanya saat malam, yaitu saat masing-masing memang aktif tumbuh |
 | Sulur terkurung di panel fasad | lubang keruntuhan selebar 3 px diperlakukan seperti langit, karena bagi sulur "solid" berarti bukan-fasad | `WorldMap.vine_ok()` — sulur boleh merentang `VINE_JEMBATAN` piksel. **Semua** cek pijakan sulur harus lewat `vine_ok()`, bukan `on_facade()` mentah, atau perbaikannya batal sendiri |
+| Tombol tidak bereaksi setelah pindah ke Godot 4 | satu `scancode` milik Godot 3 pecah jadi `keycode` (ikut layout) dan `physical_keycode` (posisi fisik); salah satunya bisa 0 tergantung asal event | `main._kunci(event, kode)` memeriksa **keduanya**. Semua pembacaan tombol wajib lewat helper itu, jangan bandingkan `event.keycode` langsung |
+| Peta risiko (V) dikira rusak padahal jalan | alpha 0.30 pada kisi 4 px praktis tak terlihat di atas fasad abu-abu — terbaca sebagai derau, bukan peta | dinaikkan ke alpha 0.55 kisi 3 px. Sebelum memburu bug render, buktikan dulu piksel benar-benar tertulis (hitung piksel non-transparan di `_ovl_img`) |
+| Panel tuning terpotong di tepi bawah | font bawaan Godot 4 lebih besar daripada Godot 3, jadi daftar slider yang dulu pas jadi meluber | `ScrollContainer` setinggi `Config.PANEL_TINGGI`. Menambah slider baru tidak akan pernah lagi memotong yang di bawahnya |
 
 ---
 

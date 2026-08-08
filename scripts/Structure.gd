@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 # Aliran beban dan keruntuhan berantai di atas world.members.
 #
@@ -73,7 +73,7 @@ func _pass_down(m):
 	for bid in m.member_bawah:
 		if world.members[bid].alive:
 			hidup.append(bid)
-	if hidup.empty():
+	if hidup.is_empty():
 		return   # pondasi, atau seluruh tumpuan sudah mati
 	var bagi = m.beban / float(hidup.size())
 	for bid in hidup:
@@ -169,7 +169,7 @@ func weaken(sim, delta, phase):
 			if j != null:
 				sasaran.append(j)
 
-	if sasaran.empty():
+	if sasaran.is_empty():
 		return 0.0
 
 	# laju yang sama seperti satu ujung yang tumbuh biasa
@@ -218,7 +218,7 @@ func update(delta):
 	if dirty_caps and not collapsing:
 		dirty_caps = false
 		var f = _failures()
-		if not f.empty():
+		if not f.is_empty():
 			queue = f
 			collapsing = true
 			_timer = 0.0
@@ -254,7 +254,7 @@ func update(delta):
 
 	solve()
 	queue = _failures()
-	if queue.empty():
+	if queue.is_empty():
 		collapsing = false
 
 
@@ -279,10 +279,10 @@ func _spawn_debris(m):
 			return
 		var t = float(k) / float(max(1, n - 1))
 		falling.append({
-			"x": m.x0 + (m.x1 - m.x0) * t + rand_range(-1.0, 1.0),
+			"x": m.x0 + (m.x1 - m.x0) * t + randf_range(-1.0, 1.0),
 			"y": m.y0 + (m.y1 - m.y0) * t,
-			"vx": rand_range(-7.0, 7.0),
-			"vy": rand_range(-4.0, 6.0),
+			"vx": randf_range(-7.0, 7.0),
+			"vy": randf_range(-4.0, 6.0),
 		})
 
 
@@ -318,7 +318,7 @@ func _runtuhkan_panel():
 func _bake_step(delta):
 	if not _perlu_bake:
 		return
-	if not falling.empty() or not luruh.empty():
+	if not falling.is_empty() or not luruh.is_empty():
 		_tenang = 0.0
 		return
 	_tenang = _tenang + delta
@@ -330,7 +330,7 @@ func _bake_step(delta):
 
 
 func _luruh_step(delta):
-	if luruh.empty():
+	if luruh.is_empty():
 		return
 	var sisa = []
 	for l in luruh:
@@ -358,8 +358,8 @@ func _spawn_debris_baris(p, ya, yb):
 		falling.append({
 			"x": p.x0 + randf() * w,
 			"y": float(ya) + randf() * tinggi,
-			"vx": rand_range(-5.0, 5.0),
-			"vy": rand_range(0.0, 6.0),
+			"vx": randf_range(-5.0, 5.0),
+			"vy": randf_range(0.0, 6.0),
 		})
 
 
@@ -370,29 +370,29 @@ func _spawn_dust_panel(p):
 		dust.append({
 			"x": p.x0 + randf() * (p.x1 - p.x0),
 			"y": p.y0 + randf() * (p.y1 - p.y0),
-			"vx": rand_range(-6.0, 6.0),
-			"vy": -rand_range(2.0, Config.DEBU_NAIK),
+			"vx": randf_range(-6.0, 6.0),
+			"vy": -randf_range(2.0, Config.DEBU_NAIK),
 			"age": 0.0,
 		})
 
 
 func _spawn_dust(m):
-	var n = int(rand_range(Config.DEBU_MIN, Config.DEBU_MAX + 1))
+	var n = int(randf_range(Config.DEBU_MIN, Config.DEBU_MAX + 1))
 	for _k in range(n):
 		if dust.size() >= Config.DEBU_MAX_TOTAL:
 			return
 		var t = randf()
 		dust.append({
-			"x": m.x0 + (m.x1 - m.x0) * t + rand_range(-2.0, 2.0),
-			"y": m.y0 + (m.y1 - m.y0) * t + rand_range(-2.0, 2.0),
-			"vx": rand_range(-5.0, 5.0),
-			"vy": -rand_range(2.0, Config.DEBU_NAIK),
+			"x": m.x0 + (m.x1 - m.x0) * t + randf_range(-2.0, 2.0),
+			"y": m.y0 + (m.y1 - m.y0) * t + randf_range(-2.0, 2.0),
+			"vx": randf_range(-5.0, 5.0),
+			"vy": -randf_range(2.0, Config.DEBU_NAIK),
 			"age": 0.0,
 		})
 
 
 func _dust_step(delta):
-	if dust.empty():
+	if dust.is_empty():
 		return
 	var sisa = []
 	for d in dust:
@@ -408,7 +408,7 @@ func _dust_step(delta):
 
 
 func _debris_step(delta):
-	if falling.empty():
+	if falling.is_empty():
 		return
 
 	var sisa = []
@@ -449,7 +449,7 @@ func _debris_step(delta):
 			mengendap.append(Vector2(ix, iy))
 
 	falling = sisa
-	if not mengendap.empty():
+	if not mengendap.is_empty():
 		world.settle_many(mengendap)
 		dirty_img = true
 		_perlu_bake = true

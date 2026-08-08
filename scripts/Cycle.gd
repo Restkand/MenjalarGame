@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 # Jam siklus siang-malam.
 #

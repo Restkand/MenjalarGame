@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 # Pemanjat — antagonis fasad atas.
 #
@@ -91,7 +91,7 @@ func _sesuaikan_jumlah(sim, structure):
 	n = int(clamp(n, 1, Config.CLIMB_MAX))
 
 	while units.size() > n:
-		units.remove(units.size() - 1)
+		units.remove_at(units.size() - 1)
 	if units.size() >= n:
 		return
 

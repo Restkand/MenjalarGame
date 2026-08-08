@@ -1,5 +1,13 @@
 extends Node2D
 
+# Semua yang menulis piksel ada di sini.
+#
+# Catatan Godot 4: Image.lock()/unlock() sudah dihapus — set_pixel() boleh
+# dipanggil langsung. Penggantinya untuk mengunggah ke GPU adalah
+# ImageTexture.update(img), bukan set_data(img). ImageTexture.create_from_image()
+# sekarang STATIS dan mengembalikan tekstur baru; untuk mengarahkan tekstur yang
+# sudah ada ke Image lain, pakai set_image().
+
 var _world_img
 var _world_tex
 var _tree_img
@@ -13,27 +21,24 @@ var _shake_amp = 0.0
 
 func setup(world_img):
 	_world_img = world_img
-	_world_tex = ImageTexture.new()
-	_world_tex.create_from_image(_world_img, 0)
+	_world_tex = ImageTexture.create_from_image(_world_img)
 	_add_sprite(_world_tex, 0)
 
 	_tree_img = _blank()
-	_tree_tex = ImageTexture.new()
-	_tree_tex.create_from_image(_tree_img, 0)
+	_tree_tex = ImageTexture.create_from_image(_tree_img)
 	_add_sprite(_tree_tex, 1)
 
 	_ovl_img = _blank()
-	_ovl_tex = ImageTexture.new()
-	_ovl_tex.create_from_image(_ovl_img, 0)
+	_ovl_tex = ImageTexture.create_from_image(_ovl_img)
 	_add_sprite(_ovl_tex, 2)
-	
+
 	var layer = CanvasLayer.new()
 	layer.layer = 5
 	add_child(layer)
 
 	_night = ColorRect.new()
 	_night.color = Color(0.05, 0.08, 0.20, 0.0)
-	_night.rect_size = Vector2(Config.W * Config.SCALE, Config.H * Config.SCALE)
+	_night.size = Vector2(Config.W * Config.SCALE, Config.H * Config.SCALE)
 	_night.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_night)
 
@@ -56,21 +61,21 @@ func _process(delta):
 		return
 	var a = _shake_amp * (_shake_t / Config.SHAKE_DECAY)
 	position = Vector2(
-			round(rand_range(-a, a)) * Config.SCALE,
-			round(rand_range(-a, a)) * Config.SCALE)
+			round(randf_range(-a, a)) * Config.SCALE,
+			round(randf_range(-a, a)) * Config.SCALE)
 
 
 # Dipanggil hanya saat piksel dunia benar-benar berubah — member dilubangi
 # atau puing mengendap — bukan tiap frame.
 func refresh_world():
-	_world_tex.set_data(_world_img)
+	_world_tex.update(_world_img)
 
 
 # world.build() membuat Image baru, jadi setelah reset teksturnya harus
 # diarahkan ulang ke objek yang baru.
 func set_world_image(world_img):
 	_world_img = world_img
-	_world_tex.create_from_image(_world_img, 0)
+	_world_tex.set_image(_world_img)
 
 
 func set_night(a):
@@ -78,37 +83,35 @@ func set_night(a):
 
 
 func _blank():
-	var img = Image.new()
-	img.create(Config.W, Config.H, false, Image.FORMAT_RGBA8)
+	var img = Image.create_empty(Config.W, Config.H, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 	return img
 
 
 func _add_sprite(tex, z):
-	var s = Sprite.new()
+	var s = Sprite2D.new()
 	s.texture = tex
 	s.centered = false
 	s.scale = Vector2(Config.SCALE, Config.SCALE)
 	s.z_index = z
+	# Pengganti flags=0 milik Godot 3. Tanpa ini skala 4x jadi buram dan
+	# seluruh identitas pixel art-nya hilang.
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(s)
 
 
 func begin_frame():
 	_ovl_img.fill(Color(0, 0, 0, 0))
-	_tree_img.lock()
-	_ovl_img.lock()
 
 
 func end_frame():
-	_tree_img.unlock()
-	_ovl_img.unlock()
-	_tree_tex.set_data(_tree_img)
-	_ovl_tex.set_data(_ovl_img)
+	_tree_tex.update(_tree_img)
+	_ovl_tex.update(_ovl_img)
 
 
 func clear_tree():
 	_tree_img.fill(Color(0, 0, 0, 0))
-	_tree_tex.set_data(_tree_img)
+	_tree_tex.update(_tree_img)
 
 
 func draw_strand(s):
@@ -220,17 +223,20 @@ func draw_climbers(cl):
 		_put(_ovl_img, x + 1, y - 2, col)
 
 
+# Alpha 0.30 dengan kisi 4 px praktis tidak terlihat di atas fasad abu-abu —
+# tangkapan layar membuktikan titiknya memang tergambar, tapi terbaca sebagai
+# derau, bukan sebagai peta. Dinaikkan ke 0.55 dengan kisi 3 px.
 func draw_risk(world):
 	var c = Config.C_ALERT
-	c.a = 0.30
+	c.a = 0.55
 	var y = Config.FACADE_Y0
 	while y < Config.FACADE_Y1:
 		var x = Config.FACADE_X0
 		while x < Config.FACADE_X1:
 			if world.vis_at(x, y) > 0.60:
 				_put(_ovl_img, x, y, c)
-			x += 4
-		y += 4
+			x += 3
+		y += 3
 
 
 # Member diwarnai menurut RASIO BEBAN, bukan integritas — itu yang perlu
@@ -243,7 +249,7 @@ func draw_frame(world):
 		var cap = world.kapasitas(m)
 		var stress = 1.0 if cap <= 0.0 else clamp(m.beban / cap, 0.0, 1.0)
 		_line(_ovl_img, m.x0, m.y0, m.x1, m.y1,
-				Config.C_FRAME_OK.linear_interpolate(Config.C_FRAME_BAD, stress))
+				Config.C_FRAME_OK.lerp(Config.C_FRAME_BAD, stress))
 	# joint digambar belakangan supaya duduk di atas member
 	for j in world.joints:
 		var hidup = false
@@ -253,8 +259,7 @@ func draw_frame(world):
 				break
 		if not hidup:
 			continue
-		var c = Config.C_FRAME_BAD.linear_interpolate(
-				Config.C_JOINT, j.integritas)
+		var c = Config.C_FRAME_BAD.lerp(Config.C_JOINT, j.integritas)
 		for dy in range(-1, 2):
 			for dx in range(-1, 2):
 				_put(_ovl_img, j.x + dx, j.y + dy, c)

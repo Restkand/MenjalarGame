@@ -1,5 +1,9 @@
 extends CanvasLayer
 
+# Catatan Godot 4: properti tata letak Control berganti nama —
+# rect_position -> position, rect_size -> size, rect_min_size ->
+# custom_minimum_size. Sinyal disambung lewat Callable: btn.pressed.connect(f).
+
 signal play_pressed
 
 var _e_fill
@@ -18,8 +22,8 @@ func _ready():
 	layer = 20
 
 	var box = PanelContainer.new()
-	box.rect_position = Vector2(692, 12)
-	box.rect_min_size = Vector2(256, 0)
+	box.position = Vector2(692, 12)
+	box.custom_minimum_size = Vector2(256, 0)
 	add_child(box)
 
 	var vb = VBoxContainer.new()
@@ -40,7 +44,7 @@ func _ready():
 	_c_fill = _bar(vb, Config.C_LEAF)
 
 	_lbl_win = Label.new()
-	_lbl_win.rect_position = Vector2(330, 250)
+	_lbl_win.position = Vector2(330, 250)
 	add_child(_lbl_win)
 
 	_build_overlay()
@@ -49,45 +53,43 @@ func _ready():
 func _bar(vb, col):
 	var bg = ColorRect.new()
 	bg.color = Color(0.11, 0.11, 0.13)
-	bg.rect_min_size = Vector2(238, 11)
+	bg.custom_minimum_size = Vector2(238, 11)
 	vb.add_child(bg)
 
 	var f = ColorRect.new()
 	f.color = col
-	f.rect_size = Vector2(0, 11)
+	f.size = Vector2(0, 11)
 	bg.add_child(f)
 	return f
 
 
 func _build_overlay():
 	_overlay = Control.new()
-	_overlay.anchor_right = 1.0
-	_overlay.anchor_bottom = 1.0
+	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_overlay)
 
 	var dim = ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.70)
-	dim.anchor_right = 1.0
-	dim.anchor_bottom = 1.0
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_overlay.add_child(dim)
 
 	var info = Label.new()
-	info.rect_position = Vector2(140, 76)
+	info.position = Vector2(140, 76)
 	info.text = "TUJUAN    Runtuhkan gedung. Bar STRUKTUR habis = menang.\n\nSIANG     Akar tumbuh. Sebagian ke air, sebagian ke kaki kolom untuk\n          menggerogotinya. Regu perawatan mencabut tanaman di sekitar\n          garis tanah; yang di area terang ditemukan lebih dulu.\n\nMALAM     Regu pulang. Sulur merambat. Dekatkan ujungnya ke sambungan\n          rangka untuk melemahkannya.\n\nENERGI    Bertambah sebesar min(Air, Cahaya), dan HANYA saat siang.\n          Yang lebih kecil ditandai '<' — itu leher botolnya.\n\nRUNTUH    Sambungan lemah menurunkan kapasitas member. Beban yang lewat\n          batas membuatnya gagal dan berpindah ke tetangga — beruntun.\n          Puing yang jatuh MENIMBUN regu di bawahnya.\n\nPEMANJAT  Naik lewat sulur Anda sendiri untuk mencabut dari atas.\n          Tekan X di atas sulur untuk MEMUTUSNYA — dia jatuh, tapi\n          pertumbuhan di atas potongan itu ikut hilang.\n\nPUING     Reruntuhan jadi tanah baru. Tanaman di atasnya menjalar sendiri,\n          dan yang bertahan cukup lama BERAKAR JADI POHON.\n\nPOHON     Permanen, kebal regu, menyumbang air sekaligus cahaya. Klik\n          kanan di dekatnya untuk menumbuhkan jaringan baru dari sana."
 	_overlay.add_child(info)
 
 	var btn = Button.new()
 	btn.text = "  MULAI  "
-	btn.rect_position = Vector2(430, 570)
-	btn.rect_min_size = Vector2(100, 44)
+	btn.position = Vector2(430, 570)
+	btn.custom_minimum_size = Vector2(100, 44)
 	btn.focus_mode = Control.FOCUS_NONE
-	btn.connect("pressed", self, "_on_play")
+	btn.pressed.connect(_on_play)
 	_overlay.add_child(btn)
 
 
 func _on_play():
 	_overlay.visible = false
-	emit_signal("play_pressed")
+	play_pressed.emit()
 
 
 func show_overlay():
@@ -112,7 +114,7 @@ func refresh(sim, w, st, crew, climbers, won):
 	else:
 		_lbl_phase.modulate = Color(1, 1, 1)
 
-	_e_fill.rect_size = Vector2(238.0 * (sim.energy / Config.ENERGY_MAX), 11)
+	_e_fill.size = Vector2(238.0 * (sim.energy / Config.ENERGY_MAX), 11)
 	_e_fill.color = Config.C_ALERT if sim.starved else Config.C_LEAF
 	_lbl_energy.text = "ENERGI  %d" % int(sim.energy)
 
@@ -126,7 +128,7 @@ func refresh(sim, w, st, crew, climbers, won):
 	# Bar ini menyusut saat gedung dilemahkan dan diruntuhkan.
 	var integ = st.integritas_total()
 	_lbl_cov.text = "STRUKTUR  %d%%" % int(round(integ * 100))
-	_c_fill.rect_size = Vector2(238.0 * clamp(integ, 0.0, 1.0), 11)
+	_c_fill.size = Vector2(238.0 * clamp(integ, 0.0, 1.0), 11)
 
 	_msg_t = max(0.0, _msg_t - get_process_delta_time())
 

@@ -174,6 +174,10 @@ const JOINT_RADIUS       = 3.0     # jangkauan melemahkan
 const JOINT_TARIK_RADIUS = 12.0    # jangkauan tigmotropisme ke joint
 const JOINT_TARIK_MAX    = 0.262   # 15 derajat, batas deviasi dari arah pemain
 
+# Tinggi panel tuning yang bisa digulir. Jendela 640, panel mulai di y=12, dan
+# teks bantuan duduk di y=584.
+const PANEL_TINGGI = 548
+
 const SUN_RAY = Vector2(-0.34, -0.94)
 
 const T_SKY      = 0

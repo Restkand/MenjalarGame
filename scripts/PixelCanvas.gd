@@ -8,18 +8,15 @@ extends Node
 # sekarang STATIS dan mengembalikan tekstur baru; untuk mengarahkan tekstur yang
 # sudah ada ke Image lain, pakai set_image().
 #
-# R2: lapis world sudah pindah ke TerrainView (TileMapLayer) + FasadView.
-# Yang tersisa di sini dua Image: `tree` (akumulatif — sekarang hanya pohon)
-# dan `overlay` (dibersihkan tiap frame — ujung, pratinjau, aktor, puing
-# melayang, debu, retakan, peta debug). Tiap pane punya SET SPRITE-NYA
-# SENDIRI yang menunjuk ke ImageTexture YANG SAMA.
+# R3: lapisan tree ikut hilang menyusul world — pohon sekarang PohonView,
+# puing melayang PuingView. Yang tersisa SATU Image: `overlay`, dibersihkan
+# tiap frame, berisi denyut ujung, pratinjau jalur, aktor, retakan, dan peta
+# debug. Aktor pindah ke sprite di R6; saat itu file ini tinggal lampu.
 #
 # Tiap SubViewport punya World2D-nya sendiri, jadi CanvasModulate juga harus
 # ada satu per pane. Lampu jendela TIDAK diduplikasi: jendela semuanya di atas
 # garis tanah, jadi pane bawah tidak pernah membutuhkannya.
 
-var _tree_img
-var _tree_tex
 var _ovl_img
 var _ovl_tex
 var _panes     = []     # semua pane, untuk getaran dan malam
@@ -32,18 +29,13 @@ var _world              # untuk memadamkan lampu saat jendelanya runtuh
 func setup(panes):
 	_panes = panes
 
-	_tree_img = _blank()
-	_tree_tex = ImageTexture.create_from_image(_tree_img)
-
 	_ovl_img = _blank()
 	_ovl_tex = ImageTexture.create_from_image(_ovl_img)
 
 	_modulates = []
 	for p in _panes:
-		# z 0 milik TerrainView/FasadView, z 1 milik batang sulur
-		# (TanamanView). Urutannya: terrain+fasad, batang, pohon+daun,
-		# overlay.
-		p.tempel(_sprite(_tree_tex, 2))
+		# z 0 terrain+fasad, z 1 batang/pohon/daun, z 2 puing melayang,
+		# z 3 overlay ini
 		p.tempel(_sprite(_ovl_tex, 3))
 
 		# CanvasModulate hanya memengaruhi kanvas viewport tempat ia berada.
@@ -160,39 +152,12 @@ func begin_frame():
 
 
 func end_frame():
-	_tree_tex.update(_tree_img)
 	_ovl_tex.update(_ovl_img)
 
 
-func clear_tree():
-	_tree_img.fill(Color(0, 0, 0, 0))
-	_tree_tex.update(_tree_img)
-
-
-# draw_strand / draw_strand_full / _paint / draw_leaves DIHAPUS di R1 —
-# untai kini Line2D (SulurView) dan daun kini sprite (DaunView). Lapisan
-# pohon yang akumulatif sekarang hanya berisi pohon.
-
-
-# Pohon digambar ke lapisan pohon yang akumulatif, sama seperti dulu. Ia
-# tumbuh dari waktu ke waktu, jadi menggambarnya tiap frame juga berfungsi
-# sebagai cara ia meninggi.
-func draw_tree(t):
-	var bx = int(round(t.x))
-	var by = int(round(t.y))
-	var h = int(t.tinggi)
-
-	for j in range(0, h):
-		_put(_tree_img, bx, by - j, Config.C_BRANCH)
-		if j > h / 3:   # batang menebal di bagian bawah
-			_put(_tree_img, bx - 1, by - j, Config.C_BRANCH)
-
-	var cy = by - h
-	var r = max(2, int(h / 3))
-	for dy in range(-r, r + 1):
-		for dx in range(-r, r + 1):
-			if dx * dx + dy * dy <= r * r:
-				_put(_tree_img, bx + dx, cy + dy, Config.C_LEAF)
+# draw_strand / _paint / draw_leaves dihapus di R1 (SulurView, DaunView);
+# draw_tree / clear_tree / draw_debris / draw_dust dihapus di R3 (PohonView,
+# PuingView).
 
 
 func draw_tip(p, is_selected, t):
@@ -307,26 +272,6 @@ func draw_frame(world):
 		for dy in range(-1, 2):
 			for dx in range(-1, 2):
 				_put(_ovl_img, j.x + dx, j.y + dy, c)
-
-
-# Bongkahan 2x2, bukan sebutir. Satu piksel per puing terbaca sebagai debu
-# halus, bukan pecahan beton — itu yang membuat keruntuhan terlihat seperti
-# coretan alih-alih massa yang jatuh.
-func draw_debris(falling):
-	for p in falling:
-		var x = int(round(p.x))
-		var y = int(round(p.y))
-		_put(_ovl_img, x, y, Config.C_PUING)
-		_put(_ovl_img, x + 1, y, Config.C_PUING)
-		_put(_ovl_img, x, y + 1, Config.C_PUING)
-		_put(_ovl_img, x + 1, y + 1, Config.C_PUING)
-
-
-func draw_dust(dust):
-	for d in dust:
-		var c = Config.C_DEBU
-		c.a = clamp(1.0 - d.age / Config.DEBU_UMUR, 0.0, 1.0) * 0.8
-		_put(_ovl_img, int(round(d.x)), int(round(d.y)), c)
 
 
 # Retakan tumbuh menurut RASIO BEBAN, bukan integritas mentah. Rasionya adalah

@@ -238,12 +238,30 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A, R1, dan R2 selesai.** Jalur render R1–R6
+Status: **TAHAP A, R1, R2, dan R3 selesai.** Jalur render R1–R6
 (`docs/09-arsitektur-render-baru.md`) didahulukan atas TAHAP B–G karena
 pemilik proyek memprioritaskan tampilan yang layak untuk pemain umum; tidak
-ada mekanik yang berubah selama jalur R. **Berikutnya: R3** (sisa lapisan
-piksel — pohon, aktor, puing melayang — jadi view; lapisan `tree`/`overlay`
-menyusut).
+ada mekanik yang berubah selama jalur R. **Berikutnya: R4** (peta `light` dan
+`vis` pindah ke grid petak 60×40 — bake selesai seketika, mesin cicilan
+dibuang).
+
+R3 yang sudah berdiri — lapisan `tree` DIHAPUS:
+
+- `scripts/render/PohonView.gd` — semua pohon satu batch `_draw()`; redraw
+  hanya selama ada yang masih meninggi. Prosedural dulu — sprite PixelLab
+  menunggu R6, karena pohon tumbuh tingginya dan meregangkan sprite merusak
+  gambarnya.
+- `scripts/render/PuingView.gd` — puing melayang + debu satu batch; saat
+  daftar kosong, satu redraw penutup lalu nol kerja.
+- Mekanisme `_redraw_tree` / `clear_tree` / `gambar_penuh` di `main.gd`
+  DIHAPUS — view membangun ulang dirinya sendiri saat data berubah (SulurView
+  lewat jumlah titik, DaunView lewat jumlah daun), jadi trim/retreat/putus
+  tidak butuh sinyal render apa pun.
+- `TreeSim.render(canvas)` (tanpa `full`) — hanya denyut ujung, di overlay.
+- Overlay MASIH hidup (menyimpang dari teks R3 di docs/09, disengaja): aktor
+  baru dapat sprite di R6, dan retakan/pratinjau/peta debug ikut pindah saat
+  itu. Isi overlay sekarang: tips, pratinjau, crew, climber, retakan, risk,
+  frame.
 
 R2 yang sudah berdiri — terrain = TileMapLayer, fitur fasad = _draw:
 

@@ -166,15 +166,10 @@ func bottleneck():
 	return ""
 
 
-func render(canvas, full):
-	# Sejak R1, untai dan daun digambar lapis view (SulurView / DaunView) —
-	# bukan lagi piksel di lapisan pohon. Yang tersisa di sini: pohon
-	# (masih akumulatif) dan denyut ujung (overlay).
-	# Pohon yang sudah tinggi maksimal berhenti digambar: lapisan pohon
-	# akumulatif, jadi ia sudah tercetak di sana dan tidak berubah lagi.
-	for t in trees:
-		if full or t.tinggi < Config.POHON_TINGGI:
-			canvas.draw_tree(t)
+func render(canvas):
+	# Untai, daun, dan pohon semuanya sudah digambar lapis view (SulurView /
+	# DaunView / PohonView). Yang tersisa di sini hanya denyut ujung, di
+	# overlay — ia pindah ke sprite saat R6.
 	for s in strands:
 		if s.alive:
 			canvas.draw_tip(s.tip, s == selected, time)

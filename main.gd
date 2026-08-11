@@ -10,6 +10,7 @@ const PaneCls        = preload("res://scripts/Pane.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
 const TanamanViewCls = preload("res://scripts/render/TanamanView.gd")
 const TerrainViewCls = preload("res://scripts/render/TerrainView.gd")
+const PuingViewCls   = preload("res://scripts/render/PuingView.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
 const HudCls         = preload("res://scripts/Hud.gd")
 
@@ -34,7 +35,6 @@ var won = false
 var show_risk = false
 var show_frame = false
 var _freeze = 0.0
-var _redraw_tree = false
 
 # Pane yang sedang di bawah kursor. Semua perintah kamera dan semua konversi
 # mouse memakai yang ini — tidak perlu klik untuk "memilih" pane.
@@ -76,6 +76,13 @@ func _ready():
 
 	structure = StructureCls.new()
 	structure.setup(world)
+
+	# puing melayang & debu — hanya pane atas; blocked() menghentikan puing
+	# di garis tanah, jadi ia tidak pernah masuk zona bawah
+	var puing_view = PuingViewCls.new(structure)
+	puing_view.scale = Vector2.ONE / float(Config.PPU)
+	puing_view.z_index = 2
+	pane_atas.tempel(puing_view)
 
 	sim = TreeSimCls.new()
 	sim.reset()
@@ -120,14 +127,12 @@ func _restart():
 	cycle.reset()
 	crew.reset()
 	climbers.reset()
-	canvas.clear_tree()
 	is_steering = false
 	playing = false
 	won = false
 	show_risk = false
 	show_frame = false
 	_freeze = 0.0
-	_redraw_tree = false
 	hud.show_overlay()
 
 
@@ -227,11 +232,10 @@ func _process(delta):
 			if structure.wave_index == 1:
 				_freeze = Config.FREEZE_TIME
 			structure.wave_panjang = 0.0
-			# fasad baru saja berlubang — ujung yang kehilangan pijakan mundur
+			# fasad baru saja berlubang — ujung yang kehilangan pijakan
+			# mundur. SulurView melihat jumlah titiknya berubah dan membangun
+			# ulang garisnya sendiri.
 			if sim.retreat_unsupported(world) > 0:
-				# titik yang menggantung di atas lubang sudah dibuang, jadi
-				# lapisan pohon harus digambar ulang dari nol
-				_redraw_tree = true
 				sim.ensure_selection(cycle.phase)
 
 		if playing and not won:
@@ -242,20 +246,12 @@ func _process(delta):
 			crew.update(delta, sim, world, structure, cycle.phase)
 			climbers.update(delta, sim, structure, cycle.phase)
 			if crew.dipotong > 0 or climbers.dipotong > 0:
-				# titik sudah dibuang dari untai, jadi lapisan pohon yang
-				# akumulatif harus digambar ulang dari nol
-				_redraw_tree = true
 				sim.ensure_selection(cycle.phase)
-
-	var gambar_penuh = _redraw_tree
-	_redraw_tree = false
-	if gambar_penuh:
-		canvas.clear_tree()
 
 	tanaman.sinkron()
 	terrain.sinkron()
 	canvas.begin_frame()
-	sim.render(canvas, gambar_penuh)
+	sim.render(canvas)
 	canvas.draw_cracks(world)
 	if show_risk:
 		canvas.draw_risk(world)
@@ -263,8 +259,6 @@ func _process(delta):
 		canvas.draw_frame(world)
 	canvas.draw_crew(crew)
 	canvas.draw_climbers(climbers)
-	canvas.draw_debris(structure.falling)
-	canvas.draw_dust(structure.dust)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
 		canvas.draw_preview(sim.selected.preview(m, 80, world))
 
@@ -354,7 +348,6 @@ func _unhandled_input(event):
 				hud.flash_msg("Arahkan kursor ke sulur untuk memutusnya")
 			else:
 				var n = climbers.jatuhkan(potong.s, potong.i)
-				_redraw_tree = true
 				sim.ensure_selection(cycle.phase)
 				if n > 0:
 					hud.flash_msg("Pemanjat jatuh: %d" % n)

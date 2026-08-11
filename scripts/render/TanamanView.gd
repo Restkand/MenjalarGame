@@ -14,11 +14,13 @@ extends RefCounted
 
 const SulurViewCls = preload("res://scripts/render/SulurView.gd")
 const DaunViewCls  = preload("res://scripts/render/DaunView.gd")
+const PohonViewCls = preload("res://scripts/render/PohonView.gd")
 
 var _sim
 var _root_atas
 var _root_bawah
 var _daun
+var _pohon
 var _views = {}   # strand.id -> SulurView
 
 
@@ -26,6 +28,12 @@ func setup(pane_atas, pane_bawah, sim):
 	_sim = sim
 	_root_atas = _buat_root(pane_atas)
 	_root_bawah = _buat_root(pane_bawah)
+
+	# pohon dulu, daun sesudahnya: sama-sama z 1, jadi urutan tempel yang
+	# menaruh daun di atas tajuk pohon
+	_pohon = PohonViewCls.new(sim)
+	_pohon.z_index = 1
+	_root_atas.add_child(_pohon)
 
 	# penabur daun — hanya pane atas; akar tidak berdaun
 	_daun = DaunViewCls.new(sim)

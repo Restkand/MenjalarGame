@@ -103,7 +103,7 @@ func _ready():
 	add_child(help_box)
 
 	_help = Label.new()
-	_help.text = "Klik kiri: pilih & arahkan   Klik kanan / Spasi: bercabang   X: putus sulur   WASD / seret roda-tengah: geser kamera   Roda: zoom\nTab: panel      R: ulang      Tahan V: peta risiko"
+	_help.text = "Klik kiri: pilih & arahkan (akar di beton: menembus)   Klik kanan / Spasi: bercabang   X: putus sulur   WASD: geser   Roda: zoom\nTab: panel      R: ulang      Tahan V: peta risiko"
 	help_box.add_child(_help)
 
 	# Playtest 11 Agustus: layar pembuka "terlalu ramai" — panel tuning ikut

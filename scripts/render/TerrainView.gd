@@ -26,6 +26,11 @@ const ATLAS = {
 	Config.T_CONCRETE: 5,
 	Config.T_PIPE: 6,
 	Config.T_PUING: 7,
+	Config.T_AKUIFER: 8,
+	Config.T_HUMUS: 9,
+	Config.T_BATU: 10,
+	Config.T_GORONG: 11,
+	Config.T_UTILITAS: 12,
 }
 
 var _world
@@ -57,7 +62,7 @@ func _buat_tileset():
 	var src = TileSetAtlasSource.new()
 	src.texture = load("res://aset/terrain_atlas.png")
 	src.texture_region_size = Vector2i(32, 32)
-	for i in range(8):
+	for i in range(13):
 		src.create_tile(Vector2i(i, 0))
 	ts.add_source(src, 0)
 	return ts

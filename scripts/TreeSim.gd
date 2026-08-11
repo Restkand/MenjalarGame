@@ -58,6 +58,14 @@ func update(delta, steering, mouse, world, phase):
 	for s in strands:
 		if not s.alive:
 			continue
+
+		# akar yang sedang menembus beton berhenti tumbuh dan membayar
+		# tarifnya sendiri (TAHAP C)
+		if s.is_root and s.tembus >= 0.0:
+			if _sefase(s, phase):
+				_tembus_step(s, world, delta)
+			continue
+
 		var laju = 0.0
 		if _sefase(s, phase):
 			laju = 1.0
@@ -65,6 +73,16 @@ func update(delta, steering, mouse, world, phase):
 			laju = Config.PUING_LAMBAT
 		if laju <= 0.0:
 			continue
+
+		# terrain bawah tanah memengaruhi laju akar: humus menyuburkan,
+		# gorong-gorong adalah jalan bebas hambatan
+		if s.is_root:
+			var k = world.at(int(round(s.tip.x)), int(round(s.tip.y)))
+			if k == Config.T_HUMUS:
+				laju *= Config.HUMUS_LAJU
+			elif k == Config.T_GORONG:
+				laju *= Config.GORONG_LAJU
+
 		growing.append({"s": s, "laju": laju})
 		bobot += laju
 
@@ -91,6 +109,11 @@ func update(delta, steering, mouse, world, phase):
 		seen += s.grow(delta, steer, time, world, g.laju)
 		s.age_leaves(delta)
 		_berakar(s, world, delta)
+		# akar yang menyentuh utilitas mengganggu layanan gedung — masuk ke
+		# kanal `terlihat` yang sama dengan pertumbuhan mencolok (TAHAP C)
+		if s.is_root and world.at(int(round(s.tip.x)),
+				int(round(s.tip.y))) == Config.T_UTILITAS:
+			seen += Config.UTILITAS_SEEN * delta
 
 	for t in trees:
 		t.tinggi = min(float(Config.POHON_TINGGI),
@@ -125,22 +148,39 @@ func _sefase(s, phase):
 		return s.is_root
 	return not s.is_root
 
+
+# Menembus beton: ujung diam, energi terkuras dengan tarif COST_CRACK /
+# CRACK_DURATION. Energi habis = kemajuan MEMBEKU (bukan hilang) — persis
+# rancangan docs/02 §7. Selesai = terowongan terbuka, akar bebas lanjut.
+func _tembus_step(s, world, delta):
+	var biaya = Config.COST_CRACK / Config.CRACK_DURATION * delta
+	if energy < biaya:
+		return   # beku, menunggu energi
+	energy -= biaya
+	s.tembus += delta / Config.CRACK_DURATION
+	if s.tembus < 1.0:
+		return
+	world.tembus_beton(s.tip, s.angle)
+	s.tembus = -1.0
+
+
 func _water(world):
 	# Pohon berakar dalam dan berdaun lebar, jadi ia menyumbang ke KEDUA sisi
 	# min(Air, Cahaya). Itulah yang melepas cekikan ekonomi dan membebaskan
-	# akar untuk berspesialisasi jadi penyerang.
+	# akar dari tugas ganda.
 	var w = 1.0 + trees.size() * Config.POHON_HASIL
 	for s in strands:
 		if not s.alive or not s.is_root:
 			continue
-		var near_pipe = false
-		for dy in range(-6, 7):
-			for dx in range(-6, 7):
+		# akuifer adalah hadiah di balik beton — sumber air terbesar
+		var near_akuifer = false
+		for dy in range(-4, 5):
+			for dx in range(-4, 5):
 				if world.at(int(round(s.tip.x)) + dx,
-						int(round(s.tip.y)) + dy) == Config.T_PIPE:
-					near_pipe = true
-		if near_pipe:
-			w += 3.0
+						int(round(s.tip.y)) + dy) == Config.T_AKUIFER:
+					near_akuifer = true
+		if near_akuifer:
+			w += 4.0
 		elif world.at(int(round(s.tip.x)),
 				int(round(s.tip.y))) == Config.T_SOIL_WET:
 			w += 2.0

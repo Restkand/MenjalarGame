@@ -178,6 +178,17 @@ func draw_tip(p, is_selected, t):
 			_put(_ovl_img, cx + r, cy + d, Config.C_TIP)
 
 
+# Bar kemajuan menembus beton, tepat di atas ujung akar yang sedang mengebor.
+func draw_tembus(p, t):
+	var cx = int(round(p.x)) - 5
+	var cy = int(round(p.y)) - 7
+	for i in range(11):
+		_put(_ovl_img, cx + i, cy, Config.C_RETAK)
+	var isi = int(round(10.0 * clamp(t, 0.0, 1.0)))
+	for i in range(isi + 1):
+		_put(_ovl_img, cx + i, cy, Config.C_TIP)
+
+
 func draw_preview(pts):
 	var c = Config.C_TIP
 	c.a = 0.55

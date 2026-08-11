@@ -11,6 +11,7 @@ var id         = 0
 var _acc       = 0.0
 var _leaf_acc  = 0.0
 var berakar    = 0.0   # kemajuan menjadi pohon saat berdiri di atas puing
+var tembus     = -1.0  # menembus beton: -1 = tidak; 0..1 = kemajuan bor
 
 
 func _init(x, y, a, root, gen, sid):
@@ -24,7 +25,10 @@ func _init(x, y, a, root, gen, sid):
 func solid_at(world, x, y):
 	if is_root:
 		var k = world.at(int(round(x)), int(round(y)))
-		return k == Config.T_CONCRETE or k == Config.T_PIPE \
+		# beton solid TAPI bisa ditembus (klik ujung, bayar energi);
+		# batu solid selamanya. Akuifer, humus, gorong, dan utilitas semua
+		# bisa dilalui — utilitas dihukum lewat perhatian, bukan tembok.
+		return k == Config.T_CONCRETE or k == Config.T_BATU \
 				or k == Config.T_NEIGHBOR or y < Config.GROUND_Y
 	return not world.vine_ok(x, y)
 

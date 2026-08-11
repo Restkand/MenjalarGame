@@ -52,17 +52,55 @@ func build():
 	settled = PackedByteArray(); settled.resize(Config.W * Config.H)
 	puing_atas = Config.H
 
-	# TAHAP A: tata letak diskalakan dari dunia 240x160 ke 480x320. Ini
-	# penskalaan setia, bukan rancangan ulang — bawah tanah baru dirombak di
-	# TAHAP C, dan mencampur keduanya membuat perubahan kamera tidak bisa
-	# diverifikasi sendirian.
 	_rect(0, 0, Config.W, Config.GROUND_Y, Config.T_SKY)
+
+	# -----------------------------------------------------------------------
+	# Bawah tanah (TAHAP C, docs/06 §3) — pane penuh dengan deposit dan
+	# bahayanya sendiri, bukan lagi pita kosong.
+	#
+	# Puzzle airnya: tanah lembap yang tersebar memberi air kecil untuk
+	# bertahan, tapi AKUIFER — sumber besar — dikurung lempeng beton yang
+	# hanya bisa ditembus dengan membayar energi. Batu tidak bisa ditembus
+	# sama sekali dan memaksa memutar; gorong-gorong mempercepat; utilitas
+	# di bawah gedung membangunkan teknisi kalau disentuh.
+	# -----------------------------------------------------------------------
 	_rect(0, Config.GROUND_Y, Config.W, Config.H - Config.GROUND_Y,
 			Config.T_SOIL_DRY)
-	_rect(0, 234, 148, 86, Config.T_SOIL_WET)
-	_rect(336, 242, 144, 78, Config.T_SOIL_WET)
-	_rect(120, 214, 52, 24, Config.T_CONCRETE)
-	_rect(396, 268, 44, 8, Config.T_PIPE)
+
+	# tanah lembap — air kecil, tersebar, cukup untuk hidup hemat
+	_rect(20, 230, 70, 30, Config.T_SOIL_WET)
+	_rect(300, 210, 50, 25, Config.T_SOIL_WET)
+	_rect(430, 250, 40, 30, Config.T_SOIL_WET)
+
+	# humus — mempercepat akar; ditaruh di jalur menuju kedua akuifer
+	_rect(180, 220, 50, 25, Config.T_HUMUS)
+	_rect(260, 250, 40, 25, Config.T_HUMUS)
+
+	# batu — penghalang mati, harus diputari
+	_rect(90, 250, 40, 40, Config.T_BATU)
+	_rect(350, 230, 50, 40, Config.T_BATU)
+	_rect(200, 285, 40, 30, Config.T_BATU)
+
+	# gorong-gorong — koridor cepat melintasi tengah peta
+	_rect(130, 262, 220, 9, Config.T_GORONG)
+
+	# utilitas — pita layanan tepat di bawah gedung, plus satu jalur turun.
+	# Celah x 236..250 disisakan supaya akar pertama (lahir di SEED_X=240)
+	# tidak langsung menyalakan alarm.
+	_rect(150, 200, 86, 7, Config.T_UTILITAS)
+	_rect(250, 200, 80, 7, Config.T_UTILITAS)
+	_rect(324, 207, 7, 45, Config.T_UTILITAS)
+
+	# dua akuifer di dasar peta, masing-masing terkurung cangkang beton.
+	# Tebal tudung ~10 satuan = dua kali menembus (TEMBUS_PANJANG 6).
+	_rect(40, 285, 130, 35, Config.T_CONCRETE)
+	_rect(55, 296, 100, 22, Config.T_AKUIFER)
+	_rect(390, 285, 90, 35, Config.T_CONCRETE)
+	_rect(402, 296, 66, 22, Config.T_AKUIFER)
+
+	# -----------------------------------------------------------------------
+	# Atas tanah
+	# -----------------------------------------------------------------------
 
 	# gedung tetangga di kiri — sumber bayangan; matahari datang dari atas-kiri
 	_rect(0, 60, 84, 132, Config.T_NEIGHBOR)
@@ -392,6 +430,44 @@ func zona_teratas_idx():
 		if zona_bobot[i] > zona_bobot[best]:
 			best = i
 	return best
+
+
+# ---------------------------------------------------------------------------
+# Menembus beton (TAHAP C)
+# ---------------------------------------------------------------------------
+
+# Apakah ujung akar menempel beton — syarat memulai menembus.
+func dekat_beton(p):
+	var px = int(round(p.x))
+	var py = int(round(p.y))
+	for dy in range(-3, 4):
+		for dx in range(-3, 4):
+			if at(px + dx, py + dy) == Config.T_CONCRETE:
+				return true
+	return false
+
+
+# Menembus selesai: gali terowongan pendek searah pertumbuhan akar. HANYA
+# beton yang tergali — batu tetap mustahil, dan itu disengaja: beton adalah
+# gerbang berbayar, batu adalah dinding.
+func tembus_beton(p, angle):
+	var arah = Vector2(cos(angle), sin(angle))
+	for langkah in range(0, Config.TEMBUS_PANJANG + 1):
+		var c = p + arah * float(langkah)
+		var cx = int(round(c.x))
+		var cy = int(round(c.y))
+		for dy in range(-2, 3):
+			for dx in range(-2, 3):
+				if dx * dx + dy * dy > 5:
+					continue
+				var x = cx + dx
+				var y = cy + dy
+				if x < 0 or x >= Config.W \
+						or y < Config.GROUND_Y or y >= Config.H:
+					continue
+				if grid[y * Config.W + x] == Config.T_CONCRETE:
+					grid.set(y * Config.W + x, Config.T_SOIL_DRY)
+					_tandai_petak(x, y)
 
 
 # Erosi menggugurkan satu petak: lubangi semua sel gedung di kotak itu.

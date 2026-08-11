@@ -239,6 +239,9 @@ func _process(delta):
 		canvas.draw_risk(world)
 	canvas.draw_crew(crew)
 	canvas.draw_climbers(climbers)
+	for s in sim.strands:
+		if s.alive and s.tembus >= 0.0:
+			canvas.draw_tembus(s.tip, s.tembus)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
 		canvas.draw_preview(sim.selected.preview(m, 80, world))
 
@@ -300,7 +303,15 @@ func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed:
 		var m = _mouse_dunia()
 		if event.button_index == MOUSE_BUTTON_LEFT:
-			sim.select_near(m, cycle.phase)
+			if sim.select_near(m, cycle.phase):
+				# ujung akar yang menempel beton mulai MENEMBUS saat diklik
+				# (docs/02 §7): ia berhenti tumbuh dan energi terkuras sampai
+				# terowongannya terbuka. Klik lagi tidak mengulang.
+				var s = sim.selected
+				if s != null and s.is_root and s.alive and s.tembus < 0.0 \
+						and world.dekat_beton(s.tip):
+					s.tembus = 0.0
+					hud.flash_msg("Menembus beton — energi terkuras")
 			is_steering = true
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			if sim.select_near(m, cycle.phase):

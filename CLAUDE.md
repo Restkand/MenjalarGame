@@ -238,10 +238,33 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A, B, D, E, R1–R3 selesai.** Perombakan stealth sistemik
-LENGKAP — game pembongkaran lama sudah tidak ada. **Berikutnya: playtest
-pemilik proyek**, lalu pilih: TAHAP C (bawah tanah jadi pane sungguhan),
-TAHAP F (target per zona & babak), atau lanjut jalur render R4–R6.
+Status: **TAHAP A, B, C, D, E, R1–R3 selesai.** Perombakan stealth sistemik
+LENGKAP. **Berikutnya: TAHAP F** (target per zona & tiga babak) atau jalur
+render R4–R6 — keputusan pemilik proyek setelah playtest.
+
+TAHAP C yang sudah berdiri — bawah tanah jadi pane sungguhan:
+
+- **Terrain baru** (enum 11–15): `T_AKUIFER` (air +4, terbesar; dikurung
+  cangkang beton ~11 satuan = dua kali menembus), `T_HUMUS` (laju akar
+  ×1.6), `T_BATU` (solid SELAMANYA — dinding, bukan gerbang), `T_GORONG`
+  (koridor, laju ×2), `T_UTILITAS` (bisa dilalui, tapi kontak menaikkan
+  perhatian lewat kanal `terlihat` — UTILITAS_SEEN 90, ~+0.04 per lintasan).
+  Atas = terlihat, bawah = terasa. `T_PIPE` tidak dipakai tata letak lagi.
+- **Menembus beton** (docs/02 §7, akhirnya dibangun): klik ujung akar yang
+  menempel beton (`world.dekat_beton`) → `Strand.tembus` 0→1 selama
+  `CRACK_DURATION`, tarif `COST_CRACK/CRACK_DURATION`; energi habis =
+  kemajuan MEMBEKU; selesai = `world.tembus_beton()` menggali terowongan
+  `TEMBUS_PANJANG` searah akar, HANYA sel beton. Bar kemajuan di overlay
+  (`draw_tembus`). Digerbang fase: hanya maju saat siang.
+- Tata letak bawah tanah baru hardcoded di `WorldMap.build()`: dua akuifer
+  di dasar, humus di jalur, tiga bongkah batu, satu gorong lintas tengah,
+  pita utilitas di bawah gedung dengan celah aman di SEED_X. Air: akuifer
+  +4 / lembap +2 / kering 0.25 (bonus pipa dihapus).
+- Ubin puing digambar ulang (playtest: "kurang nyaman") — gugus bongkah
+  besar, bukan bercak tersebar; atlas terrain kini 13 ubin (416×32).
+- Jebakan harness yang sudah dimakan: menaruh akar uji DI DALAM bongkah
+  batu membuatnya terkubur (semua arah solid) dan diam selamanya — itu
+  perilaku benar, bukan bug. Cek tata letak dulu sebelum memarkir titik uji.
 
 TAHAP E yang sudah berdiri — regu dipicu kalender:
 

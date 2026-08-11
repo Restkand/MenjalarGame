@@ -143,7 +143,7 @@ func _build_overlay():
 	vb.add_child(jarak2)
 
 	var kontrol = Label.new()
-	kontrol.text = "klik kiri  arahkan        klik kanan  bercabang        X  putus sulur\nWASD  geser kamera        roda  zoom        Tab  panel tuning"
+	kontrol.text = "klik kiri  arahkan        klik kanan  bercabang        X  putus sulur\nklik akar di beton  menembus        WASD  geser        roda  zoom        Tab  panel"
 	kontrol.add_theme_color_override("font_color", Color(0.48, 0.51, 0.54))
 	kontrol.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(kontrol)

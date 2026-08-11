@@ -302,10 +302,39 @@ const T_CONCRETE = 3
 const T_WALL     = 4
 const T_WINDOW   = 5
 const T_LEDGE    = 6
-const T_PIPE     = 7
+const T_PIPE     = 7    # tidak dipakai tata letak sejak TAHAP C; enum dijaga
 const T_NEIGHBOR = 8
 const T_DOOR     = 9
 const T_PUING    = 10
+
+# Terrain bawah tanah (TAHAP C, docs/06 §3). Pane bawah berhenti jadi pita
+# kosong: tiap terrain punya fungsi DAN risikonya sendiri — atas = terlihat,
+# bawah = terasa.
+const T_AKUIFER  = 11   # sumber air utama; besar, jarang, dijaga beton
+const T_HUMUS    = 12   # mempercepat pertumbuhan akar
+const T_BATU     = 13   # penghalang keras — TIDAK bisa ditembus, putari
+const T_GORONG   = 14   # koridor cepat; akar tumbuh 2x di dalamnya
+const T_UTILITAS = 15   # kabel & pipa induk — MENYENTUHNYA menaikkan perhatian
+
+# Menembus beton (docs/02 §7 — akhirnya dibangun). Klik ujung akar yang
+# menempel beton: ia berhenti, energi terkuras COST_CRACK selama
+# CRACK_DURATION detik, lalu terowongan pendek terbuka. Energi habis di
+# tengah = kemajuan MEMBEKU, tidak hilang. Lempeng beton lebih tebal dari
+# satu terowongan, jadi menjangkau akuifer butuh beberapa kali menembus —
+# itulah harga air terbaik.
+var COST_CRACK     = 40.0
+var CRACK_DURATION = 3.0
+const TEMBUS_PANJANG = 6    # panjang terowongan per sekali menembus, satuan
+
+var HUMUS_LAJU  = 1.6    # pengali laju akar di atas humus
+var GORONG_LAJU = 2.0    # pengali laju akar di dalam gorong-gorong
+
+# Akar yang menyentuh utilitas mengganggu layanan gedung — teknisi dipanggil.
+# Disalurkan lewat kanal `terlihat` yang sama dengan vis. Diukur: akar
+# menyeberangi pita utilitas 7 satuan dalam ~0,6 detik, jadi 90 * 0.0008 *
+# 0.6 ≈ +0.043 perhatian per lintasan — terasa, apalagi kalau beberapa akar
+# bolak-balik. Menyusuri pita memanjang jauh lebih mahal lagi.
+var UTILITAS_SEEN = 90.0
 
 # Detik hening setelah puing berhenti berjatuhan, sebelum peta cahaya
 # dipanggang ulang. Tumpukan puing mengubah siluet gedung, jadi bayangannya

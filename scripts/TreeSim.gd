@@ -321,6 +321,13 @@ func sever_at(p):
 	if found == null or found_i < 2:
 		return null
 
+	# jejak rambatan bagian yang dibuang ikut terhapus — memutus sulur adalah
+	# pemangkasan sungguhan, bar HIJAU/zona ikut mundur
+	if _world != null:
+		for i in range(found_i + 1, found.points.size()):
+			_world.hapus_rambatan(int(round(found.points[i].x)),
+					int(round(found.points[i].y)))
+
 	found.points.resize(found_i + 1)
 	found.tip = Vector2(found.points[found_i].x, found.points[found_i].y)
 	found.angle = found.angle + PI

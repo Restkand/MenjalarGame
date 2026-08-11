@@ -39,7 +39,7 @@ func update(delta, sim, world, cycle):
 	_bersihkan()
 	_sesuaikan_jumlah(sim, cycle)
 	for c in units:
-		_update_unit(c, delta)
+		_update_unit(c, delta, world)
 
 
 # Posisi di layar: titik sulur yang sedang dipijak.
@@ -138,7 +138,7 @@ func _bisa_dipanjat(s):
 	return s.tip.y < Config.GROUND_Y - Config.CREW_BAND_ATAS
 
 
-func _update_unit(c, delta):
+func _update_unit(c, delta, world):
 	if c.pingsan > 0.0:
 		c.pingsan = max(0.0, c.pingsan - delta)
 		return
@@ -163,6 +163,6 @@ func _update_unit(c, delta):
 	if c.kerja < Config.CLIMB_CABUT:
 		return
 	c.kerja = 0.0
-	c.s.trim(Config.CREW_PANJANG)
+	c.s.trim(Config.CREW_PANJANG, world)
 	dipotong += 1
 	c.idx = min(c.idx, float(max(0, c.s.points.size() - 1)))

@@ -29,6 +29,9 @@ var panel
 var hud
 
 var _babak_terakhir = 1
+var _fase_terakhir = Config.PHASE_DAY
+var _kartu_t = 0.0        # sisa waktu kartu pergantian fase; > 0 = jeda
+var _flash_potong = 0.0   # peredam supaya "regu memangkas" tidak spam
 
 var pane_atas
 var pane_bawah
@@ -134,6 +137,9 @@ func _restart():
 	climbers.reset()
 	babak.reset()
 	_babak_terakhir = 1
+	_fase_terakhir = Config.PHASE_DAY
+	_kartu_t = 0.0
+	hud.sembunyikan_kartu()
 	is_steering = false
 	playing = false
 	won = false
@@ -198,6 +204,42 @@ func _kamera(delta):
 			/ float(_pane_aktif.tingkat_zoom))
 
 
+# Isi kartu pergantian fase — pengajaran kontekstual: sistem perhatian
+# dijelaskan tepat pada momen ia bekerja (inspeksi, kedatangan regu), bukan
+# lewat tembok teks tutorial.
+func _kartu_fase():
+	_kartu_t = Config.KARTU_DETIK
+	if cycle.phase == Config.PHASE_NIGHT:
+		hud.tampil_kartu("MALAM",
+				"sulur merambat — bayangan aman, tempat terang menaikkan perhatian")
+		return
+
+	# fajar — hari baru
+	var judul = "HARI %d" % cycle.hari
+	var isi = ""
+	if cycle.rawat_hari_ini():
+		judul = "REGU PERAWATAN DATANG"
+		isi = "zona %s dibersihkan hari ini — lindungi, timbun, atau relakan" \
+				% cycle.rawat_zona
+	elif cycle.inspeksi_dalam() == 0:
+		judul = "HARI %d — INSPEKSI" % cycle.hari
+		if cycle.rawat_hari >= 0:
+			isi = "perhatian %d%% melewati ambang %d%%\nPERAWATAN dijadwalkan hari %d — zona %s" \
+					% [int(round(cycle.perhatian * 100)),
+					int(round(Config.AMBANG_RAWAT * 100)),
+					cycle.rawat_hari, cycle.rawat_zona]
+		else:
+			isi = "perhatian %d%% — masih di bawah ambang %d%%, gedung dianggap wajar" \
+					% [int(round(cycle.perhatian * 100)),
+					int(round(Config.AMBANG_RAWAT * 100))]
+	else:
+		isi = "akar mencari air — inspeksi dalam %d hari" % cycle.inspeksi_dalam()
+		if cycle.rawat_hari >= 0:
+			isi += "\nPERAWATAN hari %d — zona %s" \
+					% [cycle.rawat_hari, cycle.rawat_zona]
+	hud.tampil_kartu(judul, isi)
+
+
 func _try_branch():
 	# pohon di dekat kursor jadi titik awal baru, kalau ada
 	if sim.branch_at(_mouse_dunia()):
@@ -229,16 +271,31 @@ func _process(delta):
 	# reset harus tetap jatuh
 	erosi.update(delta)
 
-	if playing and not won:
+	# kartu pergantian fase menjeda simulasi; render dan kamera tetap hidup
+	if _kartu_t > 0.0:
+		_kartu_t = max(0.0, _kartu_t - delta)
+		hud.kartu_pudar(_kartu_t)
+		if _kartu_t <= 0.0:
+			hud.sembunyikan_kartu()
+	elif playing and not won:
 		# `terlihat` = jumlah nilai vis di tiap titik yang tumbuh frame ini —
 		# inilah yang menaikkan perhatian pengelola gedung
 		var terlihat = sim.update(delta, is_steering, m, world, cycle.phase)
 		cycle.update(delta, sim, world, terlihat)
 
+		if cycle.phase != _fase_terakhir:
+			_fase_terakhir = cycle.phase
+			_kartu_fase()
+
 		crew.update(delta, sim, world, erosi, cycle)
 		climbers.update(delta, sim, world, cycle)
 		if crew.dipotong > 0 or climbers.dipotong > 0:
 			sim.ensure_selection(cycle.phase)
+			# hukuman harus TERLIHAT: sekali per beberapa detik, umumkan
+			if _flash_potong <= 0.0:
+				_flash_potong = 4.0
+				hud.flash_msg("Regu memangkas — tutupan zona berkurang!")
+		_flash_potong = max(0.0, _flash_potong - delta)
 
 		babak.update(delta, sim, world)
 		if babak.babak != _babak_terakhir:
@@ -285,6 +342,12 @@ func _input(event):
 
 
 func _unhandled_input(event):
+	# klik apa pun melewati kartu pergantian fase
+	if _kartu_t > 0.0 and event is InputEventMouseButton and event.pressed:
+		_kartu_t = 0.0
+		hud.sembunyikan_kartu()
+		return
+
 	# --- kamera: selalu aktif, bahkan sebelum MULAI --------------------------
 	if event is InputEventMouseButton and event.pressed:
 		var p = _pane_di(event.position)

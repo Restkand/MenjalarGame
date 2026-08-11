@@ -21,43 +21,55 @@ var _btn
 var _msg = ""
 var _msg_t = 0.0
 
+# kartu pergantian fase — permainan jeda, kartu besar mengumumkan keadaan
+var _kartu
+var _kartu_judul
+var _kartu_isi
+
+
+# Lebar isi panel HUD. Playtest 11 Agustus: teks babak terpotong di tepi
+# kanan — panel dilebarkan, font diperkecil, dan SEMUA teks dinamis wajib
+# muat di lebar ini.
+const HUD_LEBAR = 300.0
+
 
 func _ready():
 	layer = 20
 
 	var box = PanelContainer.new()
-	box.position = Vector2(692, 12)
-	box.custom_minimum_size = Vector2(256, 0)
+	box.position = Vector2(648, 12)
+	box.custom_minimum_size = Vector2(HUD_LEBAR + 12, 0)
 	add_child(box)
 
 	var vb = VBoxContainer.new()
 	box.add_child(vb)
 
-	_lbl_phase = Label.new()
-	vb.add_child(_lbl_phase)
+	_lbl_phase = _lbl(vb)
 
 	# Kalender — jadwal inspeksi & perawatan, SELALU terlihat. Inilah seluruh
 	# sistem peringatan game ini: ancaman diumumkan sebelum tiba (docs/06 §1
 	# pilar 2), jadi ia tidak boleh disembunyikan.
-	_lbl_kalender = Label.new()
-	vb.add_child(_lbl_kalender)
+	_lbl_kalender = _lbl(vb)
 
-	_lbl_energy = Label.new()
-	vb.add_child(_lbl_energy)
+	_lbl_energy = _lbl(vb)
 	_e_fill = _bar(vb, Config.C_LEAF)
 
-	_lbl_res = Label.new()
-	vb.add_child(_lbl_res)
+	_lbl_res = _lbl(vb)
 
-	_lbl_perhatian = Label.new()
-	vb.add_child(_lbl_perhatian)
+	_lbl_perhatian = _lbl(vb)
 	# Bar perhatian memakai warna JENDELA, bukan merah — palet tidak punya
 	# warna panik, dan itu disengaja: perhatian naik pelan dan diumumkan
 	# lewat kalender (docs/08 §3.1). Garis kecil menandai AMBANG_RAWAT.
 	_p_fill = _bar(vb, Config.C_WINDOW, Config.AMBANG_RAWAT)
+	# Satu baris redup menjelaskan tuas perhatian. Larangan "nol tips" docs/08
+	# dilonggarkan atas permintaan pemilik proyek: sistemnya membingungkan
+	# tanpa satu kalimat ini (playtest 11 Agustus).
+	var info = _lbl(vb)
+	info.text = "naik: tumbuh di terang, jendela, utilitas — turun: waktu, pangkas (X)"
+	info.add_theme_font_size_override("font_size", 11)
+	info.add_theme_color_override("font_color", Color(0.55, 0.58, 0.6))
 
-	_lbl_cov = Label.new()
-	vb.add_child(_lbl_cov)
+	_lbl_cov = _lbl(vb)
 	_c_fill = _bar(vb, Config.C_LEAF)
 
 	_lbl_win = Label.new()
@@ -65,12 +77,20 @@ func _ready():
 	add_child(_lbl_win)
 
 	_build_overlay()
+	_build_kartu()
+
+
+func _lbl(vb):
+	var l = Label.new()
+	l.add_theme_font_size_override("font_size", 14)
+	vb.add_child(l)
+	return l
 
 
 func _bar(vb, col, ambang = -1.0):
 	var bg = ColorRect.new()
 	bg.color = Color(0.11, 0.11, 0.13)
-	bg.custom_minimum_size = Vector2(238, 11)
+	bg.custom_minimum_size = Vector2(HUD_LEBAR, 11)
 	vb.add_child(bg)
 
 	var f = ColorRect.new()
@@ -81,10 +101,72 @@ func _bar(vb, col, ambang = -1.0):
 	if ambang > 0.0:
 		var garis = ColorRect.new()
 		garis.color = Config.C_TIP
-		garis.position = Vector2(238.0 * ambang, 0)
+		garis.position = Vector2(HUD_LEBAR * ambang, 0)
 		garis.size = Vector2(2, 11)
 		bg.add_child(garis)
 	return f
+
+
+# ---------------------------------------------------------------------------
+# Kartu pergantian fase — permainan jeda sejenak, kartu mengumumkan keadaan.
+# Inilah pengajar utama game ini: sistem perhatian dijelaskan TEPAT saat
+# relevan (saat inspeksi, saat regu datang), bukan lewat tembok teks.
+# ---------------------------------------------------------------------------
+
+func _build_kartu():
+	_kartu = Control.new()
+	_kartu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_kartu.visible = false
+	add_child(_kartu)
+
+	var dim = ColorRect.new()
+	dim.color = Color(0.05, 0.06, 0.05, 0.72)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_kartu.add_child(dim)
+
+	var tengah = CenterContainer.new()
+	tengah.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_kartu.add_child(tengah)
+
+	var vb = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 14)
+	tengah.add_child(vb)
+
+	_kartu_judul = Label.new()
+	_kartu_judul.add_theme_font_size_override("font_size", 52)
+	_kartu_judul.add_theme_color_override("font_color", Config.C_TIP)
+	_kartu_judul.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(_kartu_judul)
+
+	_kartu_isi = Label.new()
+	_kartu_isi.add_theme_font_size_override("font_size", 20)
+	_kartu_isi.add_theme_color_override("font_color", Config.C_WINDOW)
+	_kartu_isi.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(_kartu_isi)
+
+	var lewati = Label.new()
+	lewati.text = "klik untuk lanjut"
+	lewati.add_theme_font_size_override("font_size", 12)
+	lewati.add_theme_color_override("font_color", Color(0.5, 0.53, 0.55))
+	lewati.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(lewati)
+
+
+func tampil_kartu(judul, isi):
+	_kartu_judul.text = judul
+	_kartu_isi.text = isi
+	_kartu.modulate = Color(1, 1, 1, 1)
+	_kartu.visible = true
+
+
+func kartu_pudar(sisa):
+	# setengah detik terakhir memudar keluar
+	if sisa < 0.5:
+		_kartu.modulate = Color(1, 1, 1, sisa / 0.5)
+
+
+func sembunyikan_kartu():
+	_kartu.visible = false
 
 
 # Layar judul — bukan tirai tembus pandang berisi dinding teks.
@@ -207,12 +289,12 @@ func refresh(sim, w, world, crew, climbers, babak):
 	else:
 		_lbl_kalender.modulate = Color(1, 1, 1)
 
-	_e_fill.size = Vector2(238.0 * (sim.energy / Config.ENERGY_MAX), 11)
+	_e_fill.size = Vector2(HUD_LEBAR * (sim.energy / Config.ENERGY_MAX), 11)
 	_e_fill.color = Config.C_ALERT if sim.starved else Config.C_LEAF
 	_lbl_energy.text = "ENERGI  %d" % int(sim.energy)
 
 	_lbl_perhatian.text = "PERHATIAN  %d%%" % int(round(w.perhatian * 100))
-	_p_fill.size = Vector2(238.0 * clamp(w.perhatian, 0.0, 1.0), 11)
+	_p_fill.size = Vector2(HUD_LEBAR * clamp(w.perhatian, 0.0, 1.0), 11)
 
 	var bn = sim.bottleneck()
 	_lbl_res.text = "AIR %d%s    CAHAYA %d%s" % [
@@ -232,7 +314,7 @@ func refresh(sim, w, world, crew, climbers, babak):
 				maju += 0.5
 			if world.tutupan() >= Config.BABAK1_PIJAK:
 				maju += 0.5
-			_c_fill.size = Vector2(238.0 * maju, 11)
+			_c_fill.size = Vector2(HUD_LEBAR * maju, 11)
 		2:
 			_lbl_cov.text = "BABAK II  ZONA  %d%% %d%% %d%% %d%%  target %d%%" % [
 				int(round(world.zona_tutupan(0) * 100)),
@@ -240,12 +322,12 @@ func refresh(sim, w, world, crew, climbers, babak):
 				int(round(world.zona_tutupan(2) * 100)),
 				int(round(world.zona_tutupan(3) * 100)),
 				int(round(Config.ZONA_TARGET * 100))]
-			_c_fill.size = Vector2(238.0 * clamp(
+			_c_fill.size = Vector2(HUD_LEBAR * clamp(
 					babak.min_zona(world) / Config.ZONA_TARGET, 0.0, 1.0), 11)
 		3:
 			_lbl_cov.text = "BABAK III  MENETAP — pohon %d dari %d" % [
 				sim.trees.size(), int(Config.BABAK3_POHON)]
-			_c_fill.size = Vector2(238.0 * clamp(float(sim.trees.size())
+			_c_fill.size = Vector2(HUD_LEBAR * clamp(float(sim.trees.size())
 					/ float(Config.BABAK3_POHON), 0.0, 1.0), 11)
 
 	_msg_t = max(0.0, _msg_t - get_process_delta_time())

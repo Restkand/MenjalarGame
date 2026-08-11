@@ -133,7 +133,7 @@ func _update_unit(u, delta, sim, world, x0, x1):
 	if u.kerja < Config.CREW_CABUT:
 		return
 	u.kerja = 0.0
-	u.sasaran.trim(Config.CREW_PANJANG)
+	u.sasaran.trim(Config.CREW_PANJANG, world)
 	dipotong += 1
 	if not u.sasaran.alive:
 		u.sasaran = null

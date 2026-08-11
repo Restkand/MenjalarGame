@@ -128,11 +128,15 @@ func age_leaves(delta):
 # retreat_to_facade() dihapus di TAHAP B — lihat catatan di TreeSim.
 
 
-func trim(n):
+func trim(n, world = null):
 	for _i in range(n):
 		if points.size() <= 2:
 			alive = false
 			return
+		var p = points[points.size() - 1]
+		# pemangkasan menghapus jejak rambatan — bar HIJAU/zona ikut mundur
+		if not is_root and world != null:
+			world.hapus_rambatan(int(round(p.x)), int(round(p.y)))
 		points.remove_at(points.size() - 1)
 	tip = points[points.size() - 1]
 	angle = angle + PI

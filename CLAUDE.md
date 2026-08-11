@@ -241,6 +241,25 @@ tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 Status: **TAHAP A–F dan R1–R3 selesai — seluruh mekanik docs/06 sudah
 berdiri.** Sisa peta jalan: jalur render R4–R6, lalu TAHAP G (poles).
 
+Paket keterbacaan (playtest ketiga, 11 Agustus — "bingung objective &
+punishment"):
+
+- **Pemangkasan MENGHAPUS rambatan** (`WorldMap.hapus_rambatan`, dipanggil
+  `Strand.trim` dan `sever_at`): bar HIJAU/zona benar-benar mundur saat regu
+  memotong. Sebelumnya `tutup` permanen — hukuman regu tidak meninggalkan
+  bekas sistemik apa pun, hanya garis memendek. Flash "Regu memangkas —
+  tutupan zona berkurang!" (diredam 4 detik) menyertainya.
+- **Kartu pergantian fase** (`Hud.tampil_kartu`, `main._kartu_fase`):
+  permainan JEDA `KARTU_DETIK` saat fase berganti; kartu besar mengumumkan
+  hari/inspeksi/kedatangan regu, klik untuk lewati. Inilah pengajar utama —
+  sistem perhatian dijelaskan TEPAT saat bekerja (hasil inspeksi menyebut
+  angka & ambangnya), bukan lewat tembok teks.
+- HUD: panel dilebarkan (`HUD_LEBAR` 300, x 648), font 14 — playtest kedua
+  teks babak terpotong kanan. SEMUA teks HUD dinamis wajib muat di lebar itu.
+- Satu baris redup di bawah bar perhatian menjelaskan tuasnya (naik/turun).
+  Larangan "nol tips" docs/08 DILONGGARKAN atas permintaan pemilik proyek.
+- Tempo turun lagi: `DAY_LEN` 42, `NIGHT_LEN` 46.
+
 TAHAP F yang sudah berdiri — tiga babak (`Babak.gd`):
 
 - **I MENYUSUP** — `sim.dekat_akuifer` (ada akar di akuifer) DAN tutupan ≥

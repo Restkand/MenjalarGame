@@ -22,10 +22,16 @@ var NOISE_AMOUNT   = 0.35
 var ENERGY_RATE    = 7.0
 var COST_PER_PIXEL = 0.30
 var COST_TIP_EXP   = 0.62
-# Tempo diperlambat (playtest yang sama): siang-malam lebih panjang membuat
-# permainan bernafas — patokannya Terra Nil, bukan arcade.
-var DAY_LEN        = 30.0
-var NIGHT_LEN      = 34.0
+# Tempo diperlambat dua kali (playtest 11 Agustus, dua putaran): siang-malam
+# panjang membuat permainan bernafas — patokannya Terra Nil, bukan arcade.
+var DAY_LEN        = 42.0
+var NIGHT_LEN      = 46.0
+
+# Kartu pergantian fase: permainan berhenti sejenak, kartu besar mengumumkan
+# hari/inspeksi/kedatangan regu. Ini kendaraan pengajaran utama — sistem
+# perhatian dijelaskan TEPAT saat relevan, bukan lewat dinding teks tutorial.
+# Klik untuk melewati.
+var KARTU_DETIK = 2.8
 
 # regu perawatan gedung
 #

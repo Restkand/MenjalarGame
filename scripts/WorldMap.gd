@@ -397,6 +397,35 @@ func rambati(px, py):
 				tutup.set(i, 1)
 
 
+# Kebalikan rambati() — dipanggil saat sulur DIPANGKAS (regu, pemanjat, atau
+# X pemain). Inilah yang membuat hukuman regu TERASA: bar HIJAU dan zona
+# benar-benar mundur, bukan cuma garis di layar yang memendek (playtest 11
+# Agustus: "punishment tidak terasa" — karena dulu tutup permanen).
+# Sel bisa dibangun lagi dengan merambat ulang.
+func hapus_rambatan(px, py):
+	for dy in range(-1, 2):
+		var y = py + dy
+		if y < 0 or y >= Config.H:
+			continue
+		for dx in range(-1, 2):
+			var x = px + dx
+			if x < 0 or x >= Config.W:
+				continue
+			var i = y * Config.W + x
+			if tutup[i] == 0:
+				continue
+			tutup.set(i, 0)
+			var k = grid[i]
+			if k == Config.T_WALL or k == Config.T_WINDOW \
+					or k == Config.T_DOOR or k == Config.T_LEDGE:
+				tutup_luas = max(0, tutup_luas - 1)
+				zona_tutup[_zona(x, y)] = max(0, zona_tutup[_zona(x, y)] - 1)
+				if k == Config.T_WINDOW:
+					tutup_jendela = max(0, tutup_jendela - 1)
+				elif k == Config.T_DOOR:
+					tutup_pintu = max(0, tutup_pintu - 1)
+
+
 # Erosi memanggil ini tiap frame: ambil sel-fasad-baru-tertutup (per petak
 # erosi; satu entri per sel), kosongkan.
 func ambil_rambatan_baru():

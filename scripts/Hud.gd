@@ -14,6 +14,7 @@ var _lbl_res
 var _lbl_cov
 var _lbl_win
 var _overlay
+var _btn
 var _msg = ""
 var _msg_t = 0.0
 
@@ -74,17 +75,30 @@ func _build_overlay():
 	_overlay.add_child(dim)
 
 	var info = Label.new()
-	info.position = Vector2(140, 76)
-	info.text = "TUJUAN    Runtuhkan gedung. Bar STRUKTUR habis = menang.\n\nSIANG     Akar tumbuh. Sebagian ke air, sebagian ke kaki kolom untuk\n          menggerogotinya. Regu perawatan mencabut tanaman di sekitar\n          garis tanah; yang di area terang ditemukan lebih dulu.\n\nMALAM     Regu pulang. Sulur merambat. Dekatkan ujungnya ke sambungan\n          rangka untuk melemahkannya.\n\nENERGI    Bertambah sebesar min(Air, Cahaya), dan HANYA saat siang.\n          Yang lebih kecil ditandai '<' — itu leher botolnya.\n\nRUNTUH    Sambungan lemah menurunkan kapasitas member. Beban yang lewat\n          batas membuatnya gagal dan berpindah ke tetangga — beruntun.\n          Puing yang jatuh MENIMBUN regu di bawahnya.\n\nPEMANJAT  Naik lewat sulur Anda sendiri untuk mencabut dari atas.\n          Tekan X di atas sulur untuk MEMUTUSNYA — dia jatuh, tapi\n          pertumbuhan di atas potongan itu ikut hilang.\n\nPUING     Reruntuhan jadi tanah baru. Tanaman di atasnya menjalar sendiri,\n          dan yang bertahan cukup lama BERAKAR JADI POHON.\n\nPOHON     Permanen, kebal regu, menyumbang air sekaligus cahaya. Klik\n          kanan di dekatnya untuk menumbuhkan jaringan baru dari sana."
+	info.position = Vector2(120, 28)
+	info.text = "LAYAR     Atas = fasad gedung, bawah = bawah tanah. Tiap pane punya\n          kameranya sendiri: WASD menggeser, roda mouse zoom 2x/4x,\n          tahan roda-tengah untuk menyeret. Pane yang dikendalikan adalah\n          yang sedang ditunjuk kursor.\n\nTUJUAN    Runtuhkan gedung. Bar STRUKTUR habis = menang.\n\nSIANG     Akar tumbuh. Sebagian ke air, sebagian ke kaki kolom untuk\n          menggerogotinya. Regu perawatan mencabut tanaman di sekitar\n          garis tanah; yang di area terang ditemukan lebih dulu.\n\nMALAM     Regu pulang. Sulur merambat. Dekatkan ujungnya ke sambungan\n          rangka untuk melemahkannya.\n\nENERGI    Bertambah sebesar min(Air, Cahaya), dan HANYA saat siang.\n          Yang lebih kecil ditandai '<' — itu leher botolnya.\n\nRUNTUH    Sambungan lemah menurunkan kapasitas member. Beban yang lewat\n          batas membuatnya gagal dan berpindah ke tetangga — beruntun.\n          Puing yang jatuh MENIMBUN regu di bawahnya.\n\nPEMANJAT  Naik lewat sulur Anda sendiri untuk mencabut dari atas.\n          Tekan X di atas sulur untuk MEMUTUSNYA — dia jatuh, tapi\n          pertumbuhan di atas potongan itu ikut hilang.\n\nPUING     Reruntuhan jadi tanah baru. Tanaman di atasnya menjalar sendiri,\n          dan yang bertahan cukup lama BERAKAR JADI POHON.\n\nPOHON     Permanen, kebal regu, menyumbang air sekaligus cahaya. Klik\n          kanan di dekatnya untuk menumbuhkan jaringan baru dari sana."
 	_overlay.add_child(info)
 
-	var btn = Button.new()
-	btn.text = "  MULAI  "
-	btn.position = Vector2(430, 570)
-	btn.custom_minimum_size = Vector2(100, 44)
-	btn.focus_mode = Control.FOCUS_NONE
-	btn.pressed.connect(_on_play)
-	_overlay.add_child(btn)
+	_btn = Button.new()
+	_btn.text = "  MULAI  "
+	_btn.position = Vector2(400, 570)
+	_btn.custom_minimum_size = Vector2(160, 44)
+	_btn.focus_mode = Control.FOCUS_NONE
+	_btn.pressed.connect(_on_play)
+	_overlay.add_child(_btn)
+
+
+# Peta cahaya dipanggang dicicil beberapa frame. Tombol MULAI dikunci sampai
+# selesai — kalau tidak, permainan bisa dimulai di atas peta cahaya kosong dan
+# fotosintesis akan salah hitung di detik-detik pertama.
+func set_bake(sibuk, kemajuan):
+	if _btn == null:
+		return
+	_btn.disabled = sibuk
+	if sibuk:
+		_btn.text = "MENYIAPKAN  %d%%" % int(round(kemajuan * 100))
+	else:
+		_btn.text = "  MULAI  "
 
 
 func _on_play():

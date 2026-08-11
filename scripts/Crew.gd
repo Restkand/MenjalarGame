@@ -55,7 +55,7 @@ func _tertimpa(u, structure):
 	if structure.falling.is_empty():
 		return false
 	for p in structure.falling:
-		if p.y < Config.GROUND_Y - 10.0 or p.y > Config.GROUND_Y:
+		if p.y < Config.GROUND_Y - 20.0 or p.y > Config.GROUND_Y:
 			continue
 		if abs(p.x - u.x) <= Config.CREW_LEBAR:
 			return true
@@ -79,7 +79,7 @@ func _sesuaikan_jumlah(structure):
 	n = int(clamp(n, 1, Config.CREW_MAX))
 	while units.size() < n:
 		units.append({
-			"x": randf_range(20.0, Config.W - 20.0),
+			"x": randf_range(40.0, Config.W - 40.0),
 			"dir": 1.0 if randf() < 0.5 else -1.0,
 			"sasaran": null,
 			"kerja": 0.0,
@@ -118,11 +118,11 @@ func _update_unit(u, delta, sim, world):
 
 func _patroli(u, delta):
 	u.x = u.x + u.dir * Config.CREW_SPEED * 0.5 * delta
-	if u.x < 14.0:
-		u.x = 14.0
+	if u.x < 28.0:
+		u.x = 28.0
 		u.dir = 1.0
-	elif u.x > Config.W - 14.0:
-		u.x = Config.W - 14.0
+	elif u.x > Config.W - 28.0:
+		u.x = Config.W - 28.0
 		u.dir = -1.0
 
 

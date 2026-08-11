@@ -134,8 +134,8 @@ func _water(world):
 		if not s.alive or not s.is_root:
 			continue
 		var near_pipe = false
-		for dy in range(-3, 4):
-			for dx in range(-3, 4):
+		for dy in range(-6, 7):
+			for dx in range(-6, 7):
 				if world.at(int(round(s.tip.x)) + dx,
 						int(round(s.tip.y)) + dy) == Config.T_PIPE:
 					near_pipe = true
@@ -194,7 +194,7 @@ func _bisa_dipilih(s, phase):
 
 
 func select_near(m, phase):
-	var best = 9.0
+	var best = Config.PILIH_RADIUS
 	var found = null
 	for s in strands:
 		if not _bisa_dipilih(s, phase):
@@ -281,7 +281,7 @@ func retreat_unsupported(world):
 # Mengembalikan {s, i} supaya pemanggil bisa menjatuhkan pemanjat yang berada
 # di atas titik itu, atau null kalau tidak ada sulur di dekat kursor.
 func sever_at(p):
-	var best = 8.0
+	var best = Config.PUTUS_RADIUS
 	var found = null
 	var found_i = -1
 	for s in strands:
@@ -306,7 +306,7 @@ func sever_at(p):
 	found.angle = found.angle + PI
 	var keep = []
 	for l in found.leaves:
-		if l.pos.distance_to(found.tip) < 40.0:
+		if l.pos.distance_to(found.tip) < 80.0:
 			keep.append(l)
 	found.leaves = keep
 	return {"s": found, "i": found_i}

@@ -12,6 +12,9 @@ var settled            # puing yang sudah mengendap, 0/1 per piksel
 var puing_atas = 0     # baris tertinggi yang sudah tertutup puing
 var solve_order = []   # id member dalam urutan topologis atas-ke-bawah
 
+var _bake_y    = -1    # baris bake berikutnya; -1 = tidak ada bake berjalan
+var _bake_awal = 0     # baris awal bake ini, hanya untuk menghitung kemajuan
+
 
 func build():
 	# Godot 4: Image.create_empty() statis menggantikan Image.new() + create().
@@ -23,16 +26,23 @@ func build():
 	settled = PackedByteArray(); settled.resize(Config.W * Config.H)
 	puing_atas = Config.H
 
+	# TAHAP A: tata letak diskalakan dari dunia 240x160 ke 480x320. Ini
+	# penskalaan setia, bukan rancangan ulang — bawah tanah baru dirombak di
+	# TAHAP C, dan mencampur keduanya membuat perubahan kamera tidak bisa
+	# diverifikasi sendirian.
 	_rect(0, 0, Config.W, Config.GROUND_Y, Config.C_SKY, Config.T_SKY)
 	_rect(0, Config.GROUND_Y, Config.W, Config.H - Config.GROUND_Y,
 			Config.C_SOIL, Config.T_SOIL_DRY)
-	_rect(0, 128, 74, 32, Config.C_SOIL_WET, Config.T_SOIL_WET)
-	_rect(168, 132, 72, 28, Config.C_SOIL_WET, Config.T_SOIL_WET)
-	_rect(60, 120, 26, 12, Config.C_CONCRETE, Config.T_CONCRETE)
-	_rect(198, 142, 22, 5, Config.C_PIPE, Config.T_PIPE)
+	_rect(0, 234, 148, 86, Config.C_SOIL_WET, Config.T_SOIL_WET)
+	_rect(336, 242, 144, 78, Config.C_SOIL_WET, Config.T_SOIL_WET)
+	_rect(120, 214, 52, 24, Config.C_CONCRETE, Config.T_CONCRETE)
+	_rect(396, 268, 44, 8, Config.C_PIPE, Config.T_PIPE)
 
-	# gedung tetangga di kiri — sumber bayangan
-	_rect(0, 34, 40, 78, Config.C_NEIGHBOR, Config.T_NEIGHBOR)
+	# gedung tetangga di kiri — sumber bayangan; matahari datang dari atas-kiri
+	_rect(0, 60, 84, 132, Config.C_NEIGHBOR, Config.T_NEIGHBOR)
+	# tetangga kanan hanya membingkai; terlalu jauh dari arah sinar untuk
+	# membayangi fasad
+	_rect(400, 104, 80, 88, Config.C_NEIGHBOR, Config.T_NEIGHBOR)
 
 	# fasad utama
 	_rect(Config.FACADE_X0, Config.FACADE_Y0,
@@ -42,25 +52,29 @@ func build():
 
 	# jendela — titik tengahnya dicatat supaya lampu malam tahu di mana
 	# harus berdiri, dan supaya lampu bisa dipadamkan saat jendelanya runtuh
+	# 6 baris x 9 kolom = 54 jendela. Barisnya menempati y 40-55, 66-81, 92-107,
+	# 118-133, 144-159, 170-185; ledge dan pipa sengaja diletakkan di sela-sela
+	# itu supaya tidak menimpa satu pun jendela.
 	windows = []
-	for jy in range(22, 100, 20):
-		for jx in range(54, 190, 22):
-			_rect(jx, jy, 10, 12, Config.C_WINDOW, Config.T_WINDOW)
-			windows.append(Vector2(jx + 5, jy + 6))
+	for jy in range(40, 180, 26):
+		for jx in range(110, 372, 30):
+			_rect(jx, jy, 14, 16, Config.C_WINDOW, Config.T_WINDOW)
+			windows.append(Vector2(jx + 7, jy + 8))
 
-	# ledge — penghalang yang harus diputari
-	_rect(46, 58, 60, 3, Config.C_LEDGE, Config.T_LEDGE)
-	_rect(134, 38, 60, 3, Config.C_LEDGE, Config.T_LEDGE)
-	_rect(100, 82, 70, 3, Config.C_LEDGE, Config.T_LEDGE)
+	# ledge — penghalang yang harus diputari. Tebalnya 4 px, bukan 3: sinar
+	# matahari sekarang melangkah 2 unit sekaligus (Config.BAKE_LANGKAH), dan
+	# penghalang setipis 3 px bisa terlewati di antara dua langkah.
+	_rect(100, 110, 110, 4, Config.C_LEDGE, Config.T_LEDGE)
+	_rect(254, 58, 120, 4, Config.C_LEDGE, Config.T_LEDGE)
+	_rect(190, 136, 130, 4, Config.C_LEDGE, Config.T_LEDGE)
 
 	# pintu
-	_rect(108, 92, 24, 20, Config.C_DOOR, Config.T_DOOR)
+	_rect(220, 160, 40, 32, Config.C_DOOR, Config.T_DOOR)
 
 	# jalur pipa vertikal — koridor gelap untuk menyelinap
-	_rect(74, Config.FACADE_Y0, 4, 100, Config.C_LEDGE, Config.T_LEDGE)
+	_rect(156, Config.FACADE_Y0, 6, 168, Config.C_LEDGE, Config.T_LEDGE)
 
-	_bake_light()
-	_bake_vis()
+	bake_mulai(Config.FACADE_Y0)
 	_build_frame()
 
 
@@ -73,43 +87,87 @@ func _rect(x, y, w, h, col, kind):
 			grid.set(j * Config.W + i, kind)
 
 
-func _bake_light():
-	_bake_light_from(Config.FACADE_Y0)
+# ---------------------------------------------------------------------------
+# Bake cahaya & keterlihatan — DICICIL
+#
+# Fasad 288x168 pada kisi 2 px berarti 12.096 sinar. Satu sapuan penuh jauh
+# melewati anggaran satu frame di GDScript, jadi bake dijalankan beberapa baris
+# per frame lewat bake_langkah(). Pemanggilnya (main.gd) menahan permainan
+# selama bake_sibuk() masih true, dan layar MULAI yang sudah ada menyembunyikan
+# seluruh penantian itu.
+#
+# Aman dicicil karena vis[y] hanya membaca light[y] — satu baris tidak pernah
+# bergantung pada baris yang belum dipanggang.
+# ---------------------------------------------------------------------------
 
-
-# Dipanggil ulang setelah tumpukan puing stabil. Hanya baris dari y_awal ke
-# bawah yang dihitung ulang: sinar matahari datang dari atas-kiri, jadi puing
-# hanya bisa membayangi titik yang berada DI BAWAHNYA. Memanggang ulang seluruh
-# fasad berarti 3800 sinar dan itu hitch yang terasa di Intel HD.
-func rebake_light_from(y_awal):
+# Memulai (atau memperluas) bake dari baris y_awal ke bawah.
+#
+# Dipanggil dua kali: sekali saat build(), dan sekali lagi tiap kali tumpukan
+# puing stabil. Yang kedua tidak perlu memanggang seluruh fasad — sinar datang
+# dari atas-kiri, jadi puing hanya bisa membayangi yang berada DI BAWAHNYA.
+func bake_mulai(y_awal):
 	var y0 = int(clamp(y_awal, Config.FACADE_Y0, Config.FACADE_Y1 - 1))
-	# jaga tetap selaras dengan kisi 2 px milik _bake_light_from
+	# tetap selaras dengan kisi 2 px
 	y0 -= (y0 - Config.FACADE_Y0) % 2
-	_bake_light_from(y0)
-	_bake_vis_from(y0)
+	# Bake yang sedang berjalan tidak boleh kehilangan sisanya: ambil yang
+	# paling atas dari keduanya.
+	if _bake_y >= 0:
+		y0 = min(y0, _bake_y)
+	_bake_awal = y0
+	_bake_y = y0
 
 
-func _bake_light_from(y_awal):
-	var y = y_awal
-	while y < Config.FACADE_Y1:
-		var x = Config.FACADE_X0
-		while x < Config.FACADE_X1:
-			var v = 1.0 if _ray_clear(x, y) else 0.16
-			for dy in range(0, 2):
-				for dx in range(0, 2):
-					var i = (y + dy) * Config.W + (x + dx)
-					if i >= 0 and i < light.size():
-						light.set(i, v)
-			x += 2
-		y += 2
+func bake_sibuk():
+	return _bake_y >= 0
 
 
+func bake_kemajuan():
+	if _bake_y < 0:
+		return 1.0
+	var total = Config.FACADE_Y1 - _bake_awal
+	if total <= 0:
+		return 1.0
+	return clamp(float(_bake_y - _bake_awal) / float(total), 0.0, 1.0)
+
+
+func bake_langkah(baris):
+	if _bake_y < 0:
+		return
+	var akhir = min(Config.FACADE_Y1, _bake_y + baris)
+	while _bake_y < akhir:
+		_bake_light_row(_bake_y)
+		_bake_vis_row(_bake_y)
+		_bake_vis_row(_bake_y + 1)
+		_bake_y += 2
+	if _bake_y >= Config.FACADE_Y1:
+		_bake_y = -1
+
+
+# Satu sapuan mendatar mengisi blok 2x2, jadi baris y sekaligus y+1.
+func _bake_light_row(y):
+	var x = Config.FACADE_X0
+	while x < Config.FACADE_X1:
+		var v = 1.0 if _ray_clear(x, y) else 0.16
+		for dy in range(0, 2):
+			for dx in range(0, 2):
+				var i = (y + dy) * Config.W + (x + dx)
+				if i >= 0 and i < light.size():
+					light.set(i, v)
+		x += 2
+
+
+# Melangkah BAKE_LANGKAH unit sekaligus, bukan 1. Separuh biaya, dan penghalang
+# yang perlu dikenali (tetangga, ledge 4 px, tumpukan puing) semuanya lebih
+# tebal daripada satu langkah. Yang bisa terlewat hanya tepi paling tipis
+# sebuah tumpukan puing — bayangannya bocor sedikit, dan itu diterima.
 func _ray_clear(sx, sy):
 	var x = float(sx)
 	var y = float(sy)
-	for _i in range(170):
-		x += Config.SUN_RAY.x
-		y += Config.SUN_RAY.y
+	var dx = Config.SUN_RAY.x * Config.BAKE_LANGKAH
+	var dy = Config.SUN_RAY.y * Config.BAKE_LANGKAH
+	for _i in range(Config.BAKE_MAX):
+		x += dx
+		y += dy
 		if y < 0 or x < 0:
 			return true
 		var k = at(int(round(x)), int(round(y)))
@@ -121,25 +179,22 @@ func _ray_clear(sx, sy):
 	return true
 
 
-func _bake_vis():
-	_bake_vis_from(Config.FACADE_Y0)
-
-
-func _bake_vis_from(y_awal):
-	for y in range(y_awal, Config.FACADE_Y1):
-		for x in range(Config.FACADE_X0, Config.FACADE_X1):
-			var i = y * Config.W + x
-			var h = float(y - Config.FACADE_Y0) \
-					/ float(Config.FACADE_Y1 - Config.FACADE_Y0)
-			var v = 0.20 + 0.48 * light[i] + 0.28 * h
-			var k = grid[i]
-			if k == Config.T_WINDOW:
-				v += 0.30
-			if k == Config.T_DOOR or y > Config.FACADE_Y1 - 14:
-				v += 0.30
-			if k == Config.T_LEDGE:
-				v -= 0.28
-			vis.set(i, clamp(v, 0.0, 1.0))
+func _bake_vis_row(y):
+	if y < Config.FACADE_Y0 or y >= Config.FACADE_Y1:
+		return
+	for x in range(Config.FACADE_X0, Config.FACADE_X1):
+		var i = y * Config.W + x
+		var h = float(y - Config.FACADE_Y0) \
+				/ float(Config.FACADE_Y1 - Config.FACADE_Y0)
+		var v = 0.20 + 0.48 * light[i] + 0.28 * h
+		var k = grid[i]
+		if k == Config.T_WINDOW:
+			v += 0.30
+		if k == Config.T_DOOR or y > Config.FACADE_Y1 - 26:
+			v += 0.30
+		if k == Config.T_LEDGE:
+			v -= 0.28
+		vis.set(i, clamp(v, 0.0, 1.0))
 
 
 # ---------------------------------------------------------------------------

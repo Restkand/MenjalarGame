@@ -3,13 +3,14 @@ extends CanvasLayer
 signal reset_pressed
 
 const SPECS = [
-	["VINE_SPEED",     0.5, 12.0, 0.1],
+	["VINE_SPEED",     1.0, 24.0, 0.2],
+	["GESER_SPEED",   60.0,600.0,10.0],
 	["MAX_TURN",       0.2,  5.0, 0.05],
 	["ENERGY_RATE",    1.0, 20.0, 0.5],
 	["COST_PER_PIXEL", 0.1,  2.0, 0.05],
 	["PUING_LAMBAT",   0.0,  1.0, 0.05],
 	["WEAKEN_RATE",    0.02, 0.6, 0.01],
-	["KAPASITAS_MAX", 310.0,600.0, 5.0],
+	["KAPASITAS_MAX", 560.0,1100.0, 5.0],
 	["CREW_SPEED",     5.0, 60.0, 1.0],
 	["CREW_CABUT",     0.1,  3.0, 0.05],
 	["CREW_MAX",       1.0,  8.0, 1.0],
@@ -98,7 +99,7 @@ func _ready():
 	add_child(help_box)
 
 	_help = Label.new()
-	_help.text = "Klik kiri: pilih & arahkan      Klik kanan / Spasi: bercabang      X: putus sulur di kursor\nTab: panel      R: ulang      Tahan V: peta risiko      Tahan B: rangka"
+	_help.text = "Klik kiri: pilih & arahkan   Klik kanan / Spasi: bercabang   X: putus sulur   WASD / seret roda-tengah: geser kamera   Roda: zoom\nTab: panel      R: ulang      Tahan V: peta risiko      Tahan B: rangka"
 	help_box.add_child(_help)
 
 

@@ -1,4 +1,4 @@
-extends Node2D
+extends Node
 
 # Semua yang menulis piksel ada di sini.
 #
@@ -7,6 +7,15 @@ extends Node2D
 # ImageTexture.update(img), bukan set_data(img). ImageTexture.create_from_image()
 # sekarang STATIS dan mengembalikan tekstur baru; untuk mengarahkan tekstur yang
 # sudah ada ke Image lain, pakai set_image().
+#
+# TAHAP A: node ini tidak lagi Node2D dan tidak lagi memuat sprite sendiri.
+# Ketiga Image tetap satu-satunya sumber kebenaran piksel, tapi tiap pane punya
+# SET SPRITE-NYA SENDIRI yang menunjuk ke ImageTexture YANG SAMA. Jadi satu
+# gambar, dua jendela — biaya tambahannya hanya 3 draw call per pane.
+#
+# Tiap SubViewport punya World2D-nya sendiri, jadi CanvasModulate juga harus
+# ada satu per pane. Lampu jendela TIDAK diduplikasi: jendela semuanya di atas
+# garis tanah, jadi pane bawah tidak pernah membutuhkannya.
 
 var _world_img
 var _world_tex
@@ -14,56 +23,45 @@ var _tree_img
 var _tree_tex
 var _ovl_img
 var _ovl_tex
-var _modulate           # CanvasModulate — peredup kanvas saat malam
+var _panes     = []     # semua pane, untuk getaran dan malam
+var _modulates = []     # satu CanvasModulate per pane
 var _lights    = []     # PointLight2D di jendela yang menyala
 var _lamp_tex           # tekstur falloff bertangga, dibuat sekali
 var _world              # untuk memadamkan lampu saat jendelanya runtuh
-var _shake_t   = 0.0
-var _shake_amp = 0.0
 
 
-func setup(world_img):
+func setup(world_img, panes):
+	_panes = panes
 	_world_img = world_img
 	_world_tex = ImageTexture.create_from_image(_world_img)
-	_add_sprite(_world_tex, 0)
 
 	_tree_img = _blank()
 	_tree_tex = ImageTexture.create_from_image(_tree_img)
-	_add_sprite(_tree_tex, 1)
 
 	_ovl_img = _blank()
 	_ovl_tex = ImageTexture.create_from_image(_ovl_img)
-	_add_sprite(_ovl_tex, 2)
 
-	# CanvasModulate menggantikan ColorRect gelap yang dulu ditempel di
-	# CanvasLayer 5. Ia hanya memengaruhi kanvas layer 0 — HUD (layer 20) dan
-	# panel tuning (layer 10) punya kanvasnya sendiri, jadi keduanya tetap
-	# terang penuh tanpa perlu diatur apa pun.
-	_modulate = CanvasModulate.new()
-	_modulate.color = Color(1, 1, 1)
-	add_child(_modulate)
+	_modulates = []
+	for p in _panes:
+		p.tempel(_sprite(_world_tex, 0))
+		p.tempel(_sprite(_tree_tex, 1))
+		p.tempel(_sprite(_ovl_tex, 2))
+
+		# CanvasModulate hanya memengaruhi kanvas viewport tempat ia berada.
+		# HUD (CanvasLayer 20) dan panel tuning (layer 10) hidup di luar kedua
+		# SubViewport, jadi keduanya tetap terang penuh tanpa diatur apa pun.
+		var cm = CanvasModulate.new()
+		cm.color = Color(1, 1, 1)
+		p.tempel(cm)
+		_modulates.append(cm)
 
 
-# Getaran digeser dalam kelipatan penuh SCALE, jadi kisi pikselnya tetap lurus.
-# Menggeser pecahan piksel layar akan membuat pixel art terlihat kotor.
-# _night, HUD, dan panel ada di CanvasLayer, jadi tidak ikut bergetar.
+# Getaran sekarang menggeser KAMERA tiap pane, bukan sprite. Sprite dipakai
+# bersama dua pane, jadi menggesernya akan mengguncang keduanya dari satu
+# sumber dan tidak bisa disetel per pane.
 func add_shake(amp):
-	_shake_amp = max(_shake_amp, min(Config.SHAKE_MAX, amp))
-	_shake_t = Config.SHAKE_DECAY
-
-
-func _process(delta):
-	if _shake_t <= 0.0:
-		return
-	_shake_t = max(0.0, _shake_t - delta)
-	if _shake_t <= 0.0:
-		_shake_amp = 0.0
-		position = Vector2()
-		return
-	var a = _shake_amp * (_shake_t / Config.SHAKE_DECAY)
-	position = Vector2(
-			round(randf_range(-a, a)) * Config.SCALE,
-			round(randf_range(-a, a)) * Config.SCALE)
+	for p in _panes:
+		p.guncang(amp)
 
 
 # Dipanggil hanya saat piksel dunia benar-benar berubah — member dilubangi
@@ -86,10 +84,10 @@ func set_world_image(world_img):
 # renderer Compatibility (tiap lampu menambah satu lintasan per objek yang
 # disinari), dan gedung yang setiap jendelanya menyala justru terbaca palsu.
 # Langkah tetap, bukan acak, supaya polanya sama tiap kali dimulai ulang.
-func setup_lights(world):
+func setup_lights(world, pane):
 	_world = world
 	for l in _lights:
-		l.queue_free()
+		l.node.queue_free()
 	_lights = []
 
 	if _lamp_tex == null:
@@ -104,12 +102,14 @@ func setup_lights(world):
 		var w = world.windows[i]
 		var l = PointLight2D.new()
 		l.texture = _lamp_tex
-		l.texture_scale = Config.SCALE
+		# Sprite tidak lagi diskalakan, jadi satu texel lampu = satu piksel
+		# dunia dan posisinya langsung koordinat dunia.
+		l.texture_scale = 1.0
 		l.color = Config.C_LAMPU
 		l.energy = 0.0                     # siang: padam
-		l.position = w * Config.SCALE
+		l.position = w
 		l.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		add_child(l)
+		pane.tempel(l)
 		_lights.append({"node": l, "win": w})
 		i += langkah
 
@@ -135,8 +135,9 @@ func _make_lamp_tex():
 
 
 func set_night(a):
-	_modulate.color = Color(1, 1, 1).lerp(Config.C_MALAM,
-			a * Config.NIGHT_GELAP)
+	var c = Color(1, 1, 1).lerp(Config.C_MALAM, a * Config.NIGHT_GELAP)
+	for cm in _modulates:
+		cm.color = c
 	var e = a * Config.LAMPU_ENERGI
 	for l in _lights:
 		# Jendela yang sudah runtuh tidak boleh menyisakan cahaya menggantung
@@ -154,16 +155,18 @@ func _blank():
 	return img
 
 
-func _add_sprite(tex, z):
+# Skala 1: pembesaran ke layar sekarang dikerjakan SubViewportContainer lewat
+# stretch_shrink, jadi koordinat sprite = koordinat dunia. Itu yang membuat
+# posisi lampu, kamera, dan mouse semuanya hidup di satu sistem koordinat.
+func _sprite(tex, z):
 	var s = Sprite2D.new()
 	s.texture = tex
 	s.centered = false
-	s.scale = Vector2(Config.SCALE, Config.SCALE)
 	s.z_index = z
-	# Pengganti flags=0 milik Godot 3. Tanpa ini skala 4x jadi buram dan
+	# Pengganti flags=0 milik Godot 3. Tanpa ini pembesarannya jadi buram dan
 	# seluruh identitas pixel art-nya hilang.
 	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	add_child(s)
+	return s
 
 
 func begin_frame():
@@ -181,7 +184,7 @@ func clear_tree():
 
 
 func draw_strand(s):
-	_paint(s, max(0, s.points.size() - 180))
+	_paint(s, max(0, s.points.size() - Config.STRAND_EKOR))
 
 
 func draw_strand_full(s):
@@ -227,15 +230,18 @@ func draw_tip(p, is_selected, t):
 	var col = Config.C_TIP if fmod(t, 0.6) < 0.3 else Config.C_LEAF
 	_stamp(_ovl_img, p.x, p.y, 0.6, col)
 	if is_selected:
+		# Kotak penanda mengikuti PILIH_RADIUS supaya besarnya jujur: yang
+		# terlihat adalah kira-kira sejauh mana klik masih mengenai ujung ini.
 		var cx = int(round(p.x))
 		var cy = int(round(p.y))
-		for d in range(-3, 4):
-			if abs(d) == 3:
+		var r = 6
+		for d in range(-r, r + 1):
+			if abs(d) == r:
 				continue
-			_put(_ovl_img, cx + d, cy - 3, Config.C_TIP)
-			_put(_ovl_img, cx + d, cy + 3, Config.C_TIP)
-			_put(_ovl_img, cx - 3, cy + d, Config.C_TIP)
-			_put(_ovl_img, cx + 3, cy + d, Config.C_TIP)
+			_put(_ovl_img, cx + d, cy - r, Config.C_TIP)
+			_put(_ovl_img, cx + d, cy + r, Config.C_TIP)
+			_put(_ovl_img, cx - r, cy + d, Config.C_TIP)
+			_put(_ovl_img, cx + r, cy + d, Config.C_TIP)
 
 
 func draw_preview(pts):
@@ -253,9 +259,9 @@ func draw_crew(crew):
 
 		# tertimbun puing — tergeletak, tidak bekerja
 		if u.pingsan > 0.0:
-			for i in range(x - 3, x + 4):
-				_put(_ovl_img, i, y - 1, Config.C_WARDEN)
-				_put(_ovl_img, i, y - 2, Config.C_WARDEN)
+			for i in range(x - 6, x + 7):
+				for j in range(y - 4, y):
+					_put(_ovl_img, i, j, Config.C_WARDEN)
 			continue
 
 		var bekerja = u.kerja > 0.0 and u.sasaran != null
@@ -264,15 +270,16 @@ func draw_crew(crew):
 		# garis ke sasaran digambar dulu supaya badan menutupinya — pemain
 		# harus langsung tahu tanaman mana yang sedang dicabut
 		if bekerja:
-			_line(_ovl_img, x, y - 6,
+			_line(_ovl_img, x, y - 12,
 					int(round(u.sasaran.tip.x)), int(round(u.sasaran.tip.y)),
 					Config.C_ALERT)
 
-		for j in range(y - 9, y):
-			for i in range(x - 1, x + 2):
+		for j in range(y - 18, y):
+			for i in range(x - 2, x + 3):
 				_put(_ovl_img, i, j, c)
-		_put(_ovl_img, x - 2, y - 6, c)
-		_put(_ovl_img, x + 2, y - 6, c)
+		for i in range(x - 5, x - 2):
+			_put(_ovl_img, i, y - 12, c)
+			_put(_ovl_img, i + 8, y - 12, c)
 
 
 func draw_climbers(cl):
@@ -283,10 +290,12 @@ func draw_climbers(cl):
 		var x = int(round(p.x))
 		var y = int(round(p.y))
 		var col = Config.C_ALERT if c.kerja > 0.0 else Config.C_WARDEN
-		for j in range(-3, 1):
+		for j in range(-6, 1):
 			_put(_ovl_img, x, y + j, col)
-		_put(_ovl_img, x - 1, y - 2, col)
-		_put(_ovl_img, x + 1, y - 2, col)
+			_put(_ovl_img, x + 1, y + j, col)
+		for d in range(2, 4):
+			_put(_ovl_img, x - d, y - 4, col)
+			_put(_ovl_img, x + 1 + d, y - 4, col)
 
 
 # Alpha 0.30 dengan kisi 4 px praktis tidak terlihat di atas fasad abu-abu —

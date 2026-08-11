@@ -90,7 +90,7 @@ func grow(delta, steer, t, world, laju = 1.0):
 		points.append(Vector2(tip.x, tip.y))
 		if not is_root:
 			gained = world.vis_at(int(round(tip.x)), int(round(tip.y)))
-		if points.size() > 900:
+		if points.size() > Config.STRAND_MAX_TITIK:
 			points.remove_at(0)
 
 	if not is_root:
@@ -176,7 +176,7 @@ func trim(n):
 	angle = angle + PI
 	var keep = []
 	for l in leaves:
-		if l.pos.distance_to(tip) < 60.0:
+		if l.pos.distance_to(tip) < 120.0:
 			keep.append(l)
 	leaves = keep
 

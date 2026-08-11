@@ -80,6 +80,29 @@ func _pass_down(m):
 		world.members[bid].beban += bagi
 
 
+# Rasio beban terberat saat gedung masih utuh. Inilah angka yang menentukan
+# apakah KAPASITAS_MAX sudah benar: di atas 1.0 gedung runtuh sendiri saat
+# mulai, dan terlalu jauh di bawahnya membuat pelemahan terasa tak berujung.
+# Patokan yang dipertahankan sejak dunia lama: 0.717.
+#
+# Dipakai untuk menyetel ulang KAPASITAS_MAX tiap kali ukuran fasad berubah,
+# supaya nilainya diukur dan bukan ditebak.
+func lapor_stress():
+	var puncak = 0.0
+	var id_puncak = -1
+	for m in world.members:
+		if not m.alive:
+			continue
+		var cap = world.kapasitas(m)
+		if cap <= 0.0:
+			continue
+		var s = m.beban / cap
+		if s > puncak:
+			puncak = s
+			id_puncak = m.id
+	return {"stress": puncak, "member": id_puncak}
+
+
 func _failures():
 	var out = []
 	for m in world.members:
@@ -326,7 +349,9 @@ func _bake_step(delta):
 		return
 	_perlu_bake = false
 	_tenang = 0.0
-	world.rebake_light_from(world.puing_atas - 4)
+	# Sejak TAHAP A bake dicicil beberapa baris per frame, jadi ini tidak lagi
+	# memblokir. Peta cahaya sempat basi selama sekejap; tidak terlihat.
+	world.bake_mulai(world.puing_atas - 4)
 
 
 func _luruh_step(delta):

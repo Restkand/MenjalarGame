@@ -6,6 +6,7 @@ const CycleCls       = preload("res://scripts/Cycle.gd")
 const CrewCls        = preload("res://scripts/Crew.gd")
 const ClimberCls     = preload("res://scripts/Climber.gd")
 const StructureCls   = preload("res://scripts/Structure.gd")
+const PaneCls        = preload("res://scripts/Pane.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
 const HudCls         = preload("res://scripts/Hud.gd")
@@ -20,6 +21,9 @@ var canvas
 var panel
 var hud
 
+var pane_atas
+var pane_bawah
+
 var is_steering = false
 var playing = false
 var won = false
@@ -28,6 +32,11 @@ var show_frame = false
 var _freeze = 0.0
 var _redraw_tree = false
 
+# Pane yang sedang di bawah kursor. Semua perintah kamera dan semua konversi
+# mouse memakai yang ini — tidak perlu klik untuk "memilih" pane.
+var _pane_aktif
+var _geser_drag = false
+
 
 func _ready():
 	randomize()
@@ -35,10 +44,26 @@ func _ready():
 	world = WorldMapCls.new()
 	world.build()
 
+	# Pane dibuat sebelum PixelCanvas: canvas menempelkan sprite-nya ke dalam
+	# viewport masing-masing pane, jadi pane harus sudah ada.
+	pane_atas = PaneCls.new()
+	add_child(pane_atas)
+	pane_atas.siapkan(Vector2(0, 0),
+			Vector2(Config.PANE_LEBAR, Config.PANE_ATAS_TINGGI),
+			0, Config.GROUND_Y)
+
+	pane_bawah = PaneCls.new()
+	add_child(pane_bawah)
+	pane_bawah.siapkan(Vector2(0, Config.PANE_ATAS_TINGGI),
+			Vector2(Config.PANE_LEBAR, Config.PANE_BAWAH_TINGGI),
+			Config.GROUND_Y, Config.H)
+
+	_pane_aktif = pane_atas
+
 	canvas = PixelCanvasCls.new()
 	add_child(canvas)
-	canvas.setup(world.image)
-	canvas.setup_lights(world)
+	canvas.setup(world.image, [pane_atas, pane_bawah])
+	canvas.setup_lights(world, pane_atas)
 
 	structure = StructureCls.new()
 	structure.setup(world)
@@ -73,7 +98,7 @@ func _restart():
 	# dibangun ulang — bukan sekadar mereset pohon.
 	world.build()
 	canvas.set_world_image(world.image)
-	canvas.setup_lights(world)   # grid baru — lampu yang padam menyala lagi
+	canvas.setup_lights(world, pane_atas)   # grid baru — lampu yang padam menyala lagi
 	structure.setup(world)
 	sim.reset()
 	cycle.reset()
@@ -90,13 +115,66 @@ func _restart():
 	hud.show_overlay()
 
 
-func _mouse_sim():
-	return get_viewport().get_mouse_position() / float(Config.SCALE)
+# ---------------------------------------------------------------------------
+# Input — SELURUHNYA di file ini. Pane dan node UI tidak pernah membaca input;
+# mereka hanya dipanggil dari sini.
+# ---------------------------------------------------------------------------
+
+# Godot 4 memecah satu `scancode` milik Godot 3 jadi DUA properti:
+# `keycode` mengikuti layout papan ketik, `physical_keycode` mengikuti posisi
+# fisik ala QWERTY. Salah satunya bisa bernilai 0 tergantung dari mana event
+# itu berasal, jadi memeriksa hanya satu membuat tombol diam saja di sebagian
+# papan ketik. Semua pembacaan tombol lewat sini.
+func _kunci(event, kode):
+	return event.keycode == kode or event.physical_keycode == kode
+
+
+# Versi polling dari _kunci(), untuk tombol yang ditahan (geser kamera).
+# Alasan memeriksa keduanya sama persis.
+func _tekan(kode):
+	return Input.is_key_pressed(kode) or Input.is_physical_key_pressed(kode)
+
+
+func _pane_di(titik_layar):
+	if pane_atas.berisi(titik_layar):
+		return pane_atas
+	if pane_bawah.berisi(titik_layar):
+		return pane_bawah
+	return null
+
+
+# Posisi mouse dalam koordinat DUNIA, lewat kamera pane yang sedang ditunjuk.
+# Menggantikan `mouse / Config.SCALE` — sejak TAHAP A tidak ada lagi satu skala
+# tunggal, karena tiap pane punya zoom dan geserannya sendiri.
+func _mouse_dunia():
+	var s = get_viewport().get_mouse_position()
+	var p = _pane_di(s)
+	if p != null:
+		_pane_aktif = p
+	return _pane_aktif.titik_dunia(s)
+
+
+func _kamera(delta):
+	var v = Vector2()
+	if _tekan(KEY_A) or _tekan(KEY_LEFT):
+		v.x -= 1.0
+	if _tekan(KEY_D) or _tekan(KEY_RIGHT):
+		v.x += 1.0
+	if _tekan(KEY_W) or _tekan(KEY_UP):
+		v.y -= 1.0
+	if _tekan(KEY_S) or _tekan(KEY_DOWN):
+		v.y += 1.0
+	if v == Vector2.ZERO:
+		return
+	# Dibagi tingkat zoom supaya kecepatan geser terasa sama di layar: pada
+	# zoom 4 satu piksel dunia memakan empat piksel layar.
+	_pane_aktif.geser(v.normalized() * Config.GESER_SPEED * delta
+			/ float(_pane_aktif.tingkat_zoom))
 
 
 func _try_branch():
 	# pohon di dekat kursor jadi titik awal baru, kalau ada
-	if sim.branch_at(_mouse_sim()):
+	if sim.branch_at(_mouse_dunia()):
 		return
 	if sim.branch():
 		return
@@ -110,7 +188,16 @@ func _try_branch():
 
 func _process(delta):
 	delta = min(delta, 1.0 / 30.0)
-	var m = _mouse_sim()
+	var m = _mouse_dunia()
+	_kamera(delta)
+
+	# Peta cahaya dipanggang dicicil beberapa baris per frame. Selama belum
+	# selesai, permainan ditahan di layar MULAI — jadi seluruh penantiannya
+	# tersembunyi dan tidak pernah terlihat sebagai hitch.
+	if world.bake_sibuk():
+		world.bake_langkah(Config.BAKE_BARIS_MAIN if playing
+				else Config.BAKE_BARIS_DIAM)
+	hud.set_bake(world.bake_sibuk(), world.bake_kemajuan())
 
 	if _freeze > 0.0:
 		# jeda mikro — simulasi beku, render dan getaran tetap jalan
@@ -165,7 +252,7 @@ func _process(delta):
 	canvas.draw_debris(structure.falling)
 	canvas.draw_dust(structure.dust)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
-		canvas.draw_preview(sim.selected.preview(m, 40, world))
+		canvas.draw_preview(sim.selected.preview(m, 80, world))
 
 	# Menang saat seluruh member gedung gagal. Menggantikan syarat coverage
 	# 55%, yang sudah tidak nyambung sejak konsepnya bergeser ke pembongkaran
@@ -176,15 +263,6 @@ func _process(delta):
 
 	canvas.set_night(cycle.night_amount())
 	hud.refresh(sim, cycle, structure, crew, climbers, won)
-
-
-# Godot 4 memecah satu `scancode` milik Godot 3 jadi DUA properti:
-# `keycode` mengikuti layout papan ketik, `physical_keycode` mengikuti posisi
-# fisik ala QWERTY. Salah satunya bisa bernilai 0 tergantung dari mana event
-# itu berasal, jadi memeriksa hanya satu membuat tombol diam saja di sebagian
-# papan ketik. Semua pembacaan tombol lewat sini.
-func _kunci(event, kode):
-	return event.keycode == kode or event.physical_keycode == kode
 
 
 func _input(event):
@@ -200,7 +278,29 @@ func _input(event):
 
 
 func _unhandled_input(event):
-	# tombol yang selalu aktif, bahkan sebelum MULAI
+	# --- kamera: selalu aktif, bahkan sebelum MULAI --------------------------
+	if event is InputEventMouseButton and event.pressed:
+		var p = _pane_di(event.position)
+		if p != null:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				p.set_tingkat_zoom(p.tingkat_zoom + Config.ZOOM_LANGKAH)
+				return
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				p.set_tingkat_zoom(p.tingkat_zoom - Config.ZOOM_LANGKAH)
+				return
+
+	if event is InputEventMouseButton \
+			and event.button_index == MOUSE_BUTTON_MIDDLE:
+		_geser_drag = event.pressed
+		return
+
+	if _geser_drag and event is InputEventMouseMotion:
+		# dibagi zoom: geseran diberikan dalam piksel layar, kamera hidup di
+		# piksel dunia. Tandanya dibalik supaya dunia ikut kursor.
+		_pane_aktif.geser(-event.relative / float(_pane_aktif.tingkat_zoom))
+		return
+
+	# --- tombol yang selalu aktif -------------------------------------------
 	if event is InputEventKey and event.pressed and not event.echo:
 		if _kunci(event, KEY_R):
 			_restart()
@@ -213,7 +313,7 @@ func _unhandled_input(event):
 	# show_frame supaya tidak bentrok dengan klik-kanan-bercabang.
 	if show_frame and event is InputEventMouseButton and event.pressed \
 			and event.button_index == MOUSE_BUTTON_RIGHT:
-		var id = world.member_at(_mouse_sim(), 6.0)
+		var id = world.member_at(_mouse_dunia(), Config.MEMBER_RADIUS)
 		if id >= 0:
 			structure.fail_member(id)
 		return
@@ -222,7 +322,7 @@ func _unhandled_input(event):
 		return
 
 	if event is InputEventMouseButton and event.pressed:
-		var m = _mouse_sim()
+		var m = _mouse_dunia()
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			sim.select_near(m, cycle.phase)
 			is_steering = true
@@ -235,7 +335,7 @@ func _unhandled_input(event):
 			_try_branch()
 		elif _kunci(event, KEY_X):
 			# putus sulur di kursor — satu-satunya jawaban terhadap pemanjat
-			var potong = sim.sever_at(_mouse_sim())
+			var potong = sim.sever_at(_mouse_dunia())
 			if potong == null:
 				hud.flash_msg("Arahkan kursor ke sulur untuk memutusnya")
 			else:

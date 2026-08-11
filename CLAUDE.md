@@ -238,12 +238,26 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A, R1, R2, dan R3 selesai.** Jalur render R1–R6
-(`docs/09-arsitektur-render-baru.md`) didahulukan atas TAHAP B–G karena
-pemilik proyek memprioritaskan tampilan yang layak untuk pemain umum; tidak
-ada mekanik yang berubah selama jalur R. **Berikutnya: R4** (peta `light` dan
-`vis` pindah ke grid petak 60×40 — bake selesai seketika, mesin cicilan
-dibuang).
+Status: **TAHAP A, R1, R2, dan R3 selesai.** Jalur render dijeda.
+
+**PRIORITAS BERUBAH 11 Agustus 2026, setelah playtest pemilik proyek:**
+gameplay yang terasa masih game pembongkaran lama (musuh spawn terus-menerus,
+pemanjat terasa tidak imbang, tempo arcade) membuat perombakan gameplay
+didahulukan atas sisa jalur render. **Berikutnya: TAHAP B** (Structure →
+Erosi), lalu **TAHAP D** (perhatian & kalender inspeksi), lalu **TAHAP E**
+(regu terjadwal). R4–R6 dilanjutkan setelahnya.
+
+Dari playtest yang sama, sudah dijawab langsung:
+- Layar pembuka "terlalu ramai" → layar judul pekat yang menutup dunia dan
+  panel (judul + tagline + MULAI + satu baris kontrol; dinding teks tutorial
+  dihapus — aturan §6 Konteks berlaku lagi), dan panel tuning mulai tertutup.
+- Akar terlalu cepat / sulur terlalu lambat → `GROWTH_SPEED` 18→12,
+  `VINE_SPEED` 6.4→9.6. Alasan "sulur lambat demi rasa stealth" dicabut:
+  rasa stealth datang dari kalender, bukan kursor lamban.
+- Tempo diperlambat: `DAY_LEN` 30, `NIGHT_LEN` 34.
+- Musuh DIREDAKAN SEMENTARA (`CREW_MAX` 2, `CLIMB_MAX` 1) — bukan perbaikan;
+  sistem spawn-nya memang diganti inspeksi terjadwal di TAHAP D–E. Jangan
+  menyetel-nyetel yang akan dibuang.
 
 R3 yang sudah berdiri — lapisan `tree` DIHAPUS:
 

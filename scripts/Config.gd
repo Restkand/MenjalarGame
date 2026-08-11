@@ -11,15 +11,21 @@ extends Node
 # ambang 0..1, eksponen biaya) dan ekonomi energi. Angka 9.0 di TreeSim dan
 # Structure sengaja dibiarkan — ia sudah dilepas dari GROWTH_SPEED sejak lama,
 # jadi ia konstanta biaya, bukan kecepatan.
-var GROWTH_SPEED   = 18.0
-var VINE_SPEED     = 6.4
+# Playtest 11 Agustus 2026: akar terasa terlalu cepat, sulur terlalu lambat.
+# Keduanya didekatkan — akar turun 18 -> 12, sulur naik 6.4 -> 9.6. Sulur
+# yang "sengaja lambat untuk rasa stealth" tidak berlaku lagi: rasa stealth
+# datang dari kalender inspeksi (TAHAP D), bukan dari kursor yang lamban.
+var GROWTH_SPEED   = 12.0
+var VINE_SPEED     = 9.6
 var MAX_TURN       = 1.1
 var NOISE_AMOUNT   = 0.35
 var ENERGY_RATE    = 7.0
 var COST_PER_PIXEL = 0.30
 var COST_TIP_EXP   = 0.62
-var DAY_LEN        = 22.0
-var NIGHT_LEN      = 24.0
+# Tempo diperlambat (playtest yang sama): siang-malam lebih panjang membuat
+# permainan bernafas — patokannya Terra Nil, bukan arcade.
+var DAY_LEN        = 30.0
+var NIGHT_LEN      = 34.0
 
 # regu perawatan gedung
 #
@@ -32,9 +38,14 @@ var NIGHT_LEN      = 24.0
 # jatuh menimbun mereka. Sengaja sementara, bukan permanen — kalau regu bisa
 # dihabisi, pemain tinggal membersihkan peta lalu bekerja tanpa lawan. Yang
 # sementara justru memberi irama: runtuhkan, dapat jeda aman, mereka kembali.
+# PEREDAAN SEMENTARA (playtest 11 Agustus: musuh terasa terlalu pintar dan
+# tidak imbang, terutama pemanjat): CREW_MAX 4 -> 2, CLIMB_MAX 3 -> 1.
+# Ini BUKAN perbaikan — sistem spawn terus-menerus ini memang dijadwalkan
+# DIGANTI oleh inspeksi terjadwal di TAHAP D-E (docs/06 §4). Jangan buang
+# waktu menyetel yang akan dibuang.
 var CREW_SPEED   = 36.0   # piksel per detik
 var CREW_CABUT   = 0.55   # detik per potongan
-var CREW_MAX     = 4      # jumlah regu saat gedung nyaris rata
+var CREW_MAX     = 2      # jumlah regu saat gedung nyaris rata
 var CREW_PINGSAN = 6.0    # detik tertimbun sebelum bangkit lagi
 
 const CREW_LEBAR = 6.0    # setengah lebar badan, untuk deteksi tertimpa
@@ -60,7 +71,7 @@ var CLIMB_SPEED   = 50.0   # titik sulur yang dilalui per detik
 # itu memberi pemain waktu bereaksi. Memutus sulur lebih awal jauh lebih murah
 # daripada terlambat, karena yang hilang adalah pertumbuhan di atas potongan.
 var CLIMB_CABUT   = 1.2    # detik per potongan setelah sampai di ujung
-var CLIMB_MAX     = 3
+var CLIMB_MAX     = 1      # diredakan dari 3 — lihat catatan peredaan di atas
 var CLIMB_PINGSAN = 8.0    # detik setelah jatuh sebelum mencoba lagi
 
 # Pangkal sulur harus di bawah baris ini supaya bisa dicapai dari tanah.

@@ -3,6 +3,7 @@ extends CanvasLayer
 signal reset_pressed
 
 const SPECS = [
+	["GROWTH_SPEED",   2.0, 30.0, 0.5],
 	["VINE_SPEED",     1.0, 24.0, 0.2],
 	["GESER_SPEED",   60.0,600.0,10.0],
 	["MAX_TURN",       0.2,  5.0, 0.05],
@@ -101,6 +102,10 @@ func _ready():
 	_help = Label.new()
 	_help.text = "Klik kiri: pilih & arahkan   Klik kanan / Spasi: bercabang   X: putus sulur   WASD / seret roda-tengah: geser kamera   Roda: zoom\nTab: panel      R: ulang      Tahan V: peta risiko      Tahan B: rangka"
 	help_box.add_child(_help)
+
+	# Playtest 11 Agustus: layar pembuka "terlalu ramai" — panel tuning ikut
+	# terpampang sejak frame pertama. Sekarang tertutup sampai diminta (Tab).
+	_panel.visible = false
 
 
 func _on_changed(value, key):

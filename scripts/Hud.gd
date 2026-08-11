@@ -64,28 +64,66 @@ func _bar(vb, col):
 	return f
 
 
+# Layar judul — bukan tirai tembus pandang berisi dinding teks.
+#
+# Dulu overlay MULAI menumpuk sembilan paragraf tutorial di atas dunia yang
+# masih terlihat, plus panel tuning yang terbuka — playtest 11 Agustus
+# menyebutnya "terlalu ramai". Sekarang: latar pekat (menutup dunia DAN
+# panel tuning di layer bawah), judul, satu tagline, tombol MULAI, satu
+# baris kontrol. Aturan §6 Konteks berlaku lagi: kalau sebuah gagasan harus
+# ditulis di layar, mekaniknya belum bekerja.
 func _build_overlay():
 	_overlay = Control.new()
 	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_overlay)
 
-	var dim = ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.70)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_overlay.add_child(dim)
+	var latar = ColorRect.new()
+	latar.color = Color(0.10, 0.11, 0.10)
+	latar.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(latar)
 
-	var info = Label.new()
-	info.position = Vector2(120, 28)
-	info.text = "LAYAR     Atas = fasad gedung, bawah = bawah tanah. Tiap pane punya\n          kameranya sendiri: WASD menggeser, roda mouse zoom 2x/4x,\n          tahan roda-tengah untuk menyeret. Pane yang dikendalikan adalah\n          yang sedang ditunjuk kursor.\n\nTUJUAN    Runtuhkan gedung. Bar STRUKTUR habis = menang.\n\nSIANG     Akar tumbuh. Sebagian ke air, sebagian ke kaki kolom untuk\n          menggerogotinya. Regu perawatan mencabut tanaman di sekitar\n          garis tanah; yang di area terang ditemukan lebih dulu.\n\nMALAM     Regu pulang. Sulur merambat. Dekatkan ujungnya ke sambungan\n          rangka untuk melemahkannya.\n\nENERGI    Bertambah sebesar min(Air, Cahaya), dan HANYA saat siang.\n          Yang lebih kecil ditandai '<' — itu leher botolnya.\n\nRUNTUH    Sambungan lemah menurunkan kapasitas member. Beban yang lewat\n          batas membuatnya gagal dan berpindah ke tetangga — beruntun.\n          Puing yang jatuh MENIMBUN regu di bawahnya.\n\nPEMANJAT  Naik lewat sulur Anda sendiri untuk mencabut dari atas.\n          Tekan X di atas sulur untuk MEMUTUSNYA — dia jatuh, tapi\n          pertumbuhan di atas potongan itu ikut hilang.\n\nPUING     Reruntuhan jadi tanah baru. Tanaman di atasnya menjalar sendiri,\n          dan yang bertahan cukup lama BERAKAR JADI POHON.\n\nPOHON     Permanen, kebal regu, menyumbang air sekaligus cahaya. Klik\n          kanan di dekatnya untuk menumbuhkan jaringan baru dari sana."
-	_overlay.add_child(info)
+	var tengah = CenterContainer.new()
+	tengah.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(tengah)
+
+	var vb = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 16)
+	tengah.add_child(vb)
+
+	var judul = Label.new()
+	judul.text = "MENJALAR"
+	judul.add_theme_font_size_override("font_size", 84)
+	judul.add_theme_color_override("font_color", Config.C_LEAF)
+	judul.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(judul)
+
+	var tagline = Label.new()
+	tagline.text = "tumbuh pelan-pelan, hijaukan kotanya"
+	tagline.add_theme_color_override("font_color", Config.C_WINDOW)
+	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(tagline)
+
+	var jarak = Control.new()
+	jarak.custom_minimum_size = Vector2(0, 36)
+	vb.add_child(jarak)
 
 	_btn = Button.new()
 	_btn.text = "  MULAI  "
-	_btn.position = Vector2(400, 570)
-	_btn.custom_minimum_size = Vector2(160, 44)
+	_btn.custom_minimum_size = Vector2(220, 52)
+	_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_btn.focus_mode = Control.FOCUS_NONE
 	_btn.pressed.connect(_on_play)
-	_overlay.add_child(_btn)
+	vb.add_child(_btn)
+
+	var jarak2 = Control.new()
+	jarak2.custom_minimum_size = Vector2(0, 28)
+	vb.add_child(jarak2)
+
+	var kontrol = Label.new()
+	kontrol.text = "klik kiri  arahkan        klik kanan  bercabang        X  putus sulur\nWASD  geser kamera        roda  zoom        Tab  panel tuning"
+	kontrol.add_theme_color_override("font_color", Color(0.48, 0.51, 0.54))
+	kontrol.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(kontrol)
 
 
 # Peta cahaya dipanggang dicicil beberapa frame. Tombol MULAI dikunci sampai

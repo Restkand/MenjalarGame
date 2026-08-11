@@ -10,6 +10,7 @@ var energy   = 0.0
 var water    = 0.0
 var light    = 0.0
 var starved  = false
+var dekat_akuifer = false   # ada akar di akuifer frame ini — gerbang babak I
 var _next_id = 0
 var _world   = null
 
@@ -168,6 +169,7 @@ func _water(world):
 	# Pohon berakar dalam dan berdaun lebar, jadi ia menyumbang ke KEDUA sisi
 	# min(Air, Cahaya). Itulah yang melepas cekikan ekonomi dan membebaskan
 	# akar dari tugas ganda.
+	dekat_akuifer = false
 	var w = 1.0 + trees.size() * Config.POHON_HASIL
 	for s in strands:
 		if not s.alive or not s.is_root:
@@ -181,6 +183,7 @@ func _water(world):
 					near_akuifer = true
 		if near_akuifer:
 			w += 4.0
+			dekat_akuifer = true
 		elif world.at(int(round(s.tip.x)),
 				int(round(s.tip.y))) == Config.T_SOIL_WET:
 			w += 2.0

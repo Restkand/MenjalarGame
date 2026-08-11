@@ -12,6 +12,7 @@ extends RefCounted
 # dan di-set ulang. Nol kerja saat dunia diam.
 
 const FasadViewCls = preload("res://scripts/render/FasadView.gd")
+const PuingTanahViewCls = preload("res://scripts/render/PuingTanahView.gd")
 
 # terrain enum -> kolom atlas terrain_atlas.png
 const ATLAS = {
@@ -25,7 +26,10 @@ const ATLAS = {
 	Config.T_SOIL_WET: 4,
 	Config.T_CONCRETE: 5,
 	Config.T_PIPE: 6,
-	Config.T_PUING: 7,
+	# Puing yang mengendap TIDAK diubinkan — pemetaan mayoritas 8x8
+	# meratakan gundukan jadi balok kaku (playtest 11 Agustus). Ia digambar
+	# per sel oleh PuingTanahView; ubinnya cukup langit di belakangnya.
+	Config.T_PUING: 0,
 	Config.T_AKUIFER: 8,
 	Config.T_HUMUS: 9,
 	Config.T_BATU: 10,
@@ -52,6 +56,12 @@ func setup(pane_atas, pane_bawah, world):
 	_fasad.scale = Vector2.ONE / float(Config.PPU)
 	_fasad.z_index = 0
 	pane_atas.tempel(_fasad)
+
+	# tumpukan puing per sel — di atas ubin & fasad, di bawah batang sulur
+	var puing_tanah = PuingTanahViewCls.new(world)
+	puing_tanah.scale = Vector2.ONE / float(Config.PPU)
+	puing_tanah.z_index = 0
+	pane_atas.tempel(puing_tanah)
 
 	bangun_ulang()
 

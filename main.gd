@@ -6,6 +6,7 @@ const CycleCls       = preload("res://scripts/Cycle.gd")
 const CrewCls        = preload("res://scripts/Crew.gd")
 const ClimberCls     = preload("res://scripts/Climber.gd")
 const ErosiCls       = preload("res://scripts/Erosi.gd")
+const BabakCls       = preload("res://scripts/Babak.gd")
 const PaneCls        = preload("res://scripts/Pane.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
 const TanamanViewCls = preload("res://scripts/render/TanamanView.gd")
@@ -20,11 +21,14 @@ var cycle
 var crew
 var climbers
 var erosi
+var babak
 var canvas
 var tanaman
 var terrain
 var panel
 var hud
+
+var _babak_terakhir = 1
 
 var pane_atas
 var pane_bawah
@@ -98,6 +102,9 @@ func _ready():
 	climbers = ClimberCls.new()
 	climbers.reset()
 
+	babak = BabakCls.new()
+	babak.reset()
+
 	panel = TuningPanelCls.new()
 	add_child(panel)
 	panel.reset_pressed.connect(_restart)
@@ -125,6 +132,8 @@ func _restart():
 	cycle.reset()
 	crew.reset()
 	climbers.reset()
+	babak.reset()
+	_babak_terakhir = 1
 	is_steering = false
 	playing = false
 	won = false
@@ -231,6 +240,16 @@ func _process(delta):
 		if crew.dipotong > 0 or climbers.dipotong > 0:
 			sim.ensure_selection(cycle.phase)
 
+		babak.update(delta, sim, world)
+		if babak.babak != _babak_terakhir:
+			_babak_terakhir = babak.babak
+			if babak.babak == 2:
+				hud.flash_msg("BABAK II — hijaukan TIAP zona sampai %d%%"
+						% int(round(Config.ZONA_TARGET * 100)))
+			else:
+				hud.flash_msg("BABAK III — tumbuhkan %d pohon permanen"
+						% int(Config.BABAK3_POHON))
+
 	tanaman.sinkron()
 	terrain.sinkron()
 	canvas.begin_frame()
@@ -245,15 +264,15 @@ func _process(delta):
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
 		canvas.draw_preview(sim.selected.preview(m, 80, world))
 
-	# Menang INTERIM (sampai TAHAP F): fasad cukup hijau. Menggantikan
-	# "seluruh kolom gagal" — menang lewat kerusakan sudah dibuang bersama
-	# rangka di TAHAP B.
-	if playing and not won and world.tutupan() >= Config.COVERAGE_GOAL:
+	# Permainan usai saat babak III tuntas (menang) atau tanaman kelaparan
+	# sampai mati (kalah). `won` menahan input & simulasi untuk keduanya;
+	# HUD yang membedakan lewat objek babak.
+	if playing and not won and (babak.menang or babak.kalah):
 		won = true
 	canvas.end_frame()
 
 	canvas.set_night(cycle.night_amount())
-	hud.refresh(sim, cycle, world, crew, climbers, won)
+	hud.refresh(sim, cycle, world, crew, climbers, babak)
 
 
 func _input(event):

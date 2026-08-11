@@ -238,9 +238,29 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A, B, C, D, E, R1–R3 selesai.** Perombakan stealth sistemik
-LENGKAP. **Berikutnya: TAHAP F** (target per zona & tiga babak) atau jalur
-render R4–R6 — keputusan pemilik proyek setelah playtest.
+Status: **TAHAP A–F dan R1–R3 selesai — seluruh mekanik docs/06 sudah
+berdiri.** Sisa peta jalan: jalur render R4–R6, lalu TAHAP G (poles).
+
+TAHAP F yang sudah berdiri — tiga babak (`Babak.gd`):
+
+- **I MENYUSUP** — `sim.dekat_akuifer` (ada akar di akuifer) DAN tutupan ≥
+  `BABAK1_PIJAK`. **II MENGHIJAUKAN** — `zona_tutupan(i) >= ZONA_TARGET`
+  untuk KEEMPAT kuadran; bar HUD mengukur zona TERLEMAH, bukan rata-rata.
+  **III MENETAP** — `BABAK3_POHON` pohon permanen → menang. Transisi satu
+  arah; flash pesan saat naik babak.
+- **Kalah = kematian total**: `alive_count()==0` dan tidak ada pohon.
+  BUKAN timer kelaparan — dasar air/cahaya 1.0 (perbaikan anti-buntu lama)
+  menjamin energi selalu pulih di siang hari, jadi timer kelaparan tidak
+  pernah bisa jatuh; jangan coba menghidupkannya lagi.
+- `WorldMap.zona_luas/zona_tutup` + `zona_tutupan(i)` — tutupan per kuadran,
+  diisi `rambati()`. `COVERAGE_GOAL` tinggal untuk skala jumlah regu.
+- HUD baris babak menggantikan "HIJAU x%": tujuan babak berjalan + bar.
+
+Puing yang mengendap DIGAMBAR PER SEL (`render/PuingTanahView.gd`), BUKAN
+ubin — pemetaan mayoritas 8×8 meratakan gundukan falling-sand jadi balok
+kaku (playtest 11 Agustus, dua kali dikeluhkan). `T_PUING` dipetakan ke
+langit di `TerrainView.ATLAS`; view membaca `world.settled` dan redraw hanya
+saat `settled_n` berubah.
 
 TAHAP C yang sudah berdiri — bawah tanah jadi pane sungguhan:
 

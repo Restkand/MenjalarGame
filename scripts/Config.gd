@@ -215,10 +215,24 @@ const DEBU_UMUR      = 1.1
 # pernah terkurung oleh erosinya sendiri.
 const VINE_JEMBATAN = 3
 
-# Kondisi menang SEMENTARA sampai TAHAP F menggantinya dengan target per
-# zona: tutupi sekian bagian fasad dengan rambatan. Angka dari rancangan
-# paling awal (docs/04 §3).
+# Dipakai untuk menskalakan jumlah regu dari tutupan; kondisi menang
+# sesungguhnya sejak TAHAP F adalah tiga babak di bawah.
 const COVERAGE_GOAL = 0.55
+
+# ---------------------------------------------------------------------------
+# Tiga babak (TAHAP F, docs/06 §6) — busur Terra Nil: bangun, penuhi
+# spesifikasi, tinggalkan jejak permanen.
+#
+#   I   MENYUSUP      jangkau akuifer + pijakan di fasad   (kunci: ekonomi)
+#   II  MENGHIJAUKAN  tutupan per ZONA, semua kuadran      (kunci: perhatian)
+#   III MENETAP       pohon permanen                        (kunci: waktu)
+#
+# Target per zona, bukan persentase global: angka global bisa dipenuhi
+# dengan menumpuk semuanya di satu sudut gelap, dan itu membuat peta vis
+# tidak berarti apa-apa.
+var BABAK1_PIJAK = 0.02   # tutupan minimal yang dihitung "punya pijakan"
+var ZONA_TARGET  = 0.45   # tutupan yang harus dicapai TIAP kuadran
+var BABAK3_POHON = 4      # pohon permanen untuk menutup permainan
 
 # ---------------------------------------------------------------------------
 # Perhatian & kalender (TAHAP D, docs/06 §4)
@@ -393,5 +407,7 @@ const C_WARDEN    = Color("3A3F49")
 const C_ALERT     = Color("C25A4A")
 
 const C_PUING     = Color("6B6B64")
+const C_PUING_HL  = Color("7D7D75")   # sisi bongkah yang kena cahaya
+const C_PUING_DK  = Color("55554F")   # celah antar bongkah
 const C_DEBU      = Color("9A9A92")
 const C_RETAK     = Color("3A3A36")

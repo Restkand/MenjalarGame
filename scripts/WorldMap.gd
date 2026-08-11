@@ -11,6 +11,7 @@ var vis
 var windows = []       # titik tengah tiap jendela — dipakai lampu & FasadView
 var fitur   = []       # {jenis, rect} — pintu & ledge, digambar FasadView
 var settled            # puing yang sudah mengendap, 0/1 per piksel
+var settled_n = 0      # jumlah sel mengendap — PuingTanahView redraw saat berubah
 var puing_atas = 0     # baris tertinggi yang sudah tertutup puing
 
 var tile_kotor = {}    # Vector2i petak -> true; diambil TerrainView tiap frame
@@ -36,6 +37,11 @@ var tutup_jendela = 0
 var tutup_pintu   = 0
 var zona_bobot = [0.0, 0.0, 0.0, 0.0]   # indeks = Config.ZONA_NAMA
 
+# Tutupan per kuadran (TAHAP F): sasaran babak II adalah TIAP zona, bukan
+# angka global — menumpuk semuanya di satu sudut gelap tidak lagi menang.
+var zona_luas  = [0, 0, 0, 0]
+var zona_tutup = [0, 0, 0, 0]
+
 var _bake_y    = -1    # baris bake berikutnya; -1 = tidak ada bake berjalan
 var _bake_awal = 0     # baris awal bake ini, hanya untuk menghitung kemajuan
 
@@ -50,6 +56,7 @@ func build():
 	light = PackedFloat32Array(); light.resize(Config.W * Config.H)
 	vis = PackedFloat32Array(); vis.resize(Config.W * Config.H)
 	settled = PackedByteArray(); settled.resize(Config.W * Config.H)
+	settled_n = 0
 	puing_atas = Config.H
 
 	_rect(0, 0, Config.W, Config.GROUND_Y, Config.T_SKY)
@@ -158,11 +165,14 @@ func build():
 	tutup_jendela = 0
 	tutup_pintu = 0
 	zona_bobot = [0.0, 0.0, 0.0, 0.0]
+	zona_luas = [0, 0, 0, 0]
+	zona_tutup = [0, 0, 0, 0]
 	for i in range(grid.size()):
 		var k = grid[i]
 		if k == Config.T_WALL or k == Config.T_WINDOW \
 				or k == Config.T_DOOR or k == Config.T_LEDGE:
 			facade_luas += 1
+			zona_luas[_zona(i % Config.W, i / Config.W)] += 1
 			if k == Config.T_WINDOW:
 				jendela_luas += 1
 			elif k == Config.T_DOOR:
@@ -380,7 +390,9 @@ func rambati(px, py):
 					tutup_jendela += 1
 				elif k == Config.T_DOOR:
 					tutup_pintu += 1
-				zona_bobot[_zona(x, y)] += vis[i]
+				var z = _zona(x, y)
+				zona_bobot[z] += vis[i]
+				zona_tutup[z] += 1
 			elif k == Config.T_PUING:
 				tutup.set(i, 1)
 
@@ -401,6 +413,12 @@ func tutupan():
 	if facade_luas == 0:
 		return 0.0
 	return float(tutup_luas) / float(facade_luas)
+
+
+func zona_tutupan(i):
+	if zona_luas[i] == 0:
+		return 1.0   # kuadran tanpa fasad dianggap selesai
+	return float(zona_tutup[i]) / float(zona_luas[i])
 
 
 func rasio_jendela_tertutup():
@@ -492,11 +510,10 @@ func carve_kotak(x0, y0, sisi):
 
 # Terrain sebuah petak 8x8: mayoritas isi grid-nya. Fitur fasad (jendela,
 # pintu, ledge) dihitung sebagai DINDING — gambarnya urusan FasadView, ubin
-# di belakangnya tetap dinding. Puing menang lebih awal: tumpukan menipis di
-# puncak, dan puncak yang tak tergambar membuat tumpukan terlihat melayang.
+# di belakangnya tetap dinding. Puing di atas tanah digambar per sel oleh
+# PuingTanahView (ubinnya dipetakan ke langit di TerrainView.ATLAS).
 func tile_terrain(tx, ty):
 	var hitung = {}
-	var puing = 0
 	for dy in range(PETAK):
 		var y = ty * PETAK + dy
 		for dx in range(PETAK):
@@ -504,11 +521,7 @@ func tile_terrain(tx, ty):
 			if k == Config.T_WINDOW or k == Config.T_DOOR \
 					or k == Config.T_LEDGE:
 				k = Config.T_WALL
-			if k == Config.T_PUING:
-				puing += 1
 			hitung[k] = hitung.get(k, 0) + 1
-	if puing >= 6:
-		return Config.T_PUING
 	var best = Config.T_SKY
 	var n = -1
 	for k in hitung:
@@ -573,6 +586,8 @@ func settle_many(points):
 				var y = int(p.y) + dy
 				if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 					continue
+				if settled[y * Config.W + x] == 0:
+					settled_n += 1
 				settled.set(y * Config.W + x, 1)
 				grid.set(y * Config.W + x, Config.T_PUING)
 				_tandai_petak(x, y)

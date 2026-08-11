@@ -176,7 +176,7 @@ func flash_msg(text):
 	_msg_t = 1.8
 
 
-func refresh(sim, w, world, crew, climbers, won):
+func refresh(sim, w, world, crew, climbers, babak):
 	var ph = "SIANG" if w.phase == Config.PHASE_DAY else "MALAM"
 	_lbl_phase.text = "HARI %d   %s %d%%" % [w.hari, ph,
 			int(w.progress() * 100)]
@@ -221,18 +221,39 @@ func refresh(sim, w, world, crew, climbers, won):
 	if sim.trees.size() > 0:
 		_lbl_res.text += "    POHON %d" % sim.trees.size()
 
-	# Bar kemajuan: seberapa banyak fasad sudah dirambati. Target interim
-	# COVERAGE_GOAL — TAHAP F menggantinya dengan target per zona.
-	var hijau = world.tutupan()
-	_lbl_cov.text = "HIJAU  %d%%  dari %d%%" % [int(round(hijau * 100)),
-			int(round(Config.COVERAGE_GOAL * 100))]
-	_c_fill.size = Vector2(238.0 * clamp(hijau / Config.COVERAGE_GOAL,
-			0.0, 1.0), 11)
+	# Baris babak: tujuan saat ini + bar kemajuannya. Babak II mengukur zona
+	# TERLEMAH, bukan rata-rata — menumpuk di satu sudut tidak menggerakkan
+	# bar-nya.
+	match babak.babak:
+		1:
+			_lbl_cov.text = "BABAK I  MENYUSUP — jangkau akuifer, sentuh fasad"
+			var maju = 0.0
+			if sim.dekat_akuifer:
+				maju += 0.5
+			if world.tutupan() >= Config.BABAK1_PIJAK:
+				maju += 0.5
+			_c_fill.size = Vector2(238.0 * maju, 11)
+		2:
+			_lbl_cov.text = "BABAK II  ZONA  %d%% %d%% %d%% %d%%  target %d%%" % [
+				int(round(world.zona_tutupan(0) * 100)),
+				int(round(world.zona_tutupan(1) * 100)),
+				int(round(world.zona_tutupan(2) * 100)),
+				int(round(world.zona_tutupan(3) * 100)),
+				int(round(Config.ZONA_TARGET * 100))]
+			_c_fill.size = Vector2(238.0 * clamp(
+					babak.min_zona(world) / Config.ZONA_TARGET, 0.0, 1.0), 11)
+		3:
+			_lbl_cov.text = "BABAK III  MENETAP — pohon %d dari %d" % [
+				sim.trees.size(), int(Config.BABAK3_POHON)]
+			_c_fill.size = Vector2(238.0 * clamp(float(sim.trees.size())
+					/ float(Config.BABAK3_POHON), 0.0, 1.0), 11)
 
 	_msg_t = max(0.0, _msg_t - get_process_delta_time())
 
-	if won:
-		_lbl_win.text = "KOTA MULAI MENGHIJAU     (R untuk ulang)"
+	if babak.menang:
+		_lbl_win.text = "KOTA MENGHIJAU — pohon-pohonnya tinggal   (R untuk ulang)"
+	elif babak.kalah:
+		_lbl_win.text = "SELURUH TANAMAN MATI   (R untuk ulang)"
 	elif _msg_t > 0.0:
 		_lbl_win.text = _msg
 	else:

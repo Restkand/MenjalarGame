@@ -132,6 +132,13 @@ const ZOOM_MIN     = 2
 const ZOOM_MAX     = 4
 const ZOOM_LANGKAH = 2      # 2 -> 4 -> 2; hanya kelipatan bulat
 
+# Piksel per satuan simulasi (docs/09 §2). Simulasi tidak pernah tahu tentang
+# piksel — konversi hanya terjadi di lapis tampilan (scripts/render/), dengan
+# mengalikan posisi satuan dengan PPU. Selama masa transisi R1-R4, node view
+# di-skala balik 1/PPU supaya sejajar dengan lapis PixelCanvas lama yang masih
+# 1 piksel = 1 satuan.
+const PPU = 4
+
 var GESER_SPEED = 220.0     # piksel dunia per detik saat menahan WASD
 
 # ---------------------------------------------------------------------------

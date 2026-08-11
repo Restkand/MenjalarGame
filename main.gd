@@ -8,6 +8,7 @@ const ClimberCls     = preload("res://scripts/Climber.gd")
 const StructureCls   = preload("res://scripts/Structure.gd")
 const PaneCls        = preload("res://scripts/Pane.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
+const TanamanViewCls = preload("res://scripts/render/TanamanView.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
 const HudCls         = preload("res://scripts/Hud.gd")
 
@@ -18,6 +19,7 @@ var crew
 var climbers
 var structure
 var canvas
+var tanaman
 var panel
 var hud
 
@@ -71,6 +73,10 @@ func _ready():
 	sim = TreeSimCls.new()
 	sim.reset()
 
+	# lapis view tanaman: sulur/akar = Line2D, daun = sprite (R1, docs/09)
+	tanaman = TanamanViewCls.new()
+	tanaman.setup(pane_atas, pane_bawah, sim)
+
 	cycle = CycleCls.new()
 	cycle.reset()
 
@@ -101,6 +107,9 @@ func _restart():
 	canvas.setup_lights(world, pane_atas)   # grid baru — lampu yang padam menyala lagi
 	structure.setup(world)
 	sim.reset()
+	# id untai mulai dari 1 lagi setelah reset, jadi view lama WAJIB dibuang
+	# eksplisit — sinkron() tidak bisa membedakannya dari untai baru
+	tanaman.bersih()
 	cycle.reset()
 	crew.reset()
 	climbers.reset()
@@ -240,6 +249,7 @@ func _process(delta):
 	if gambar_penuh:
 		canvas.clear_tree()
 
+	tanaman.sinkron()
 	canvas.begin_frame()
 	sim.render(canvas, gambar_penuh)
 	canvas.draw_cracks(world)

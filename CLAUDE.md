@@ -238,14 +238,32 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A selesai** (split screen, kamera, zoom, dunia 480×320 —
-belum di-commit). **Berikutnya: R1** dari `docs/09-arsitektur-render-baru.md`
-(sulur jadi `Line2D` bertekstur) — jalur render R1–R6 didahulukan atas TAHAP
-B–G karena pemilik proyek memprioritaskan tampilan yang layak untuk pemain
-umum. TAHAP B–G dilanjutkan setelahnya; tidak ada mekanik yang berubah selama
-jalur R.
+Status: **TAHAP A dan R1 selesai.** Jalur render R1–R6
+(`docs/09-arsitektur-render-baru.md`) didahulukan atas TAHAP B–G karena
+pemilik proyek memprioritaskan tampilan yang layak untuk pemain umum; tidak
+ada mekanik yang berubah selama jalur R. **Berikutnya: R2** (TileMapLayer
+untuk fasad dan tanah).
 
-Dua keluhan playtest TAHAP A yang harus dijawab jalur R:
+R1 yang sudah berdiri — sulur/akar = `Line2D`, daun = sprite:
+
+- `scripts/render/` — lapis view: `TanamanView` (manajer + root 1/PPU per
+  pane), `SulurView` (satu untai = satu Line2D; points dibangun ulang HANYA
+  saat jumlah titik berubah, ambil tiap titik ke-3), `DaunView` (semua daun
+  satu `_draw()` batch; redraw hanya saat jumlah berubah / ada daun muda).
+- Daun dimajukan dari R3 atas keputusan pemilik proyek: batang polos tanpa
+  daun terbaca sebagai downgrade. Batang dan daun adalah lapisan TERPISAH —
+  itulah yang memungkinkan tahap kepadatan daun, layu per helai, dan
+  pemangkasan. Jangan pernah membakar daun ke tekstur batang.
+- `aset/` — `sulur_batang.png` & `akar_batang.png` 32×8 (prosedural, tiga
+  pita; PixelLab GAGAL untuk strip polos — kuotanya dipakai untuk objek
+  organik saja), `daun_atlas.png` 96×24 (4 varian dari PixelLab, 48×48
+  diperkecil nearest 2×). PixelLab minimum kanvas 32×32; `Line2D` TILE wajib
+  `texture_repeat = TEXTURE_REPEAT_ENABLED`.
+- Kunci API PixelLab ada di `.mcp.json` (di-gitignore). Tier gratis dihitung
+  per-generation; 422 validasi tidak memakan kuota.
+- Urutan z per pane: world 0, batang 1, pohon+daun 2, overlay 3.
+
+Dua keluhan playtest TAHAP A yang harus dijawab sisa jalur R:
 1. Zoom `stretch_shrink` tidak terasa seperti "dua dunia" — dijawab R5 + §3
    dokumen 09 (tiap pane cabang node sendiri, zoom `Camera2D` bebas).
 2. HUD penuh dan meluber dari tata letak — dijawab R6 + anatomi HUD

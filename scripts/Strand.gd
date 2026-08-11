@@ -126,7 +126,9 @@ func _spawn_leaf(world):
 	var p = tip + off
 	if not world.on_facade(p.x, p.y):
 		p = tip
-	leaves.append({"pos": p, "age": 0.0})
+	# varian dipakai DaunView untuk memilih sprite dari atlas — disimpan di
+	# sini supaya tiap daun tidak berganti bentuk antar frame
+	leaves.append({"pos": p, "age": 0.0, "varian": randi() % 4})
 
 
 func age_leaves(delta):

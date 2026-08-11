@@ -43,9 +43,12 @@ func setup(world_img, panes):
 
 	_modulates = []
 	for p in _panes:
+		# z 1 sengaja dilompati: itu milik lapis view tanaman (Line2D batang
+		# di TanamanView). Urutannya jadi: world, batang sulur, pohon+daun,
+		# overlay.
 		p.tempel(_sprite(_world_tex, 0))
-		p.tempel(_sprite(_tree_tex, 1))
-		p.tempel(_sprite(_ovl_tex, 2))
+		p.tempel(_sprite(_tree_tex, 2))
+		p.tempel(_sprite(_ovl_tex, 3))
 
 		# CanvasModulate hanya memengaruhi kanvas viewport tempat ia berada.
 		# HUD (CanvasLayer 20) dan panel tuning (layer 10) hidup di luar kedua
@@ -183,23 +186,12 @@ func clear_tree():
 	_tree_tex.update(_tree_img)
 
 
-func draw_strand(s):
-	_paint(s, max(0, s.points.size() - Config.STRAND_EKOR))
+# draw_strand / draw_strand_full / _paint / draw_leaves DIHAPUS di R1 —
+# untai kini Line2D (SulurView) dan daun kini sprite (DaunView). Lapisan
+# pohon yang akumulatif sekarang hanya berisi pohon.
 
 
-func draw_strand_full(s):
-	_paint(s, 0)
-
-
-func _paint(s, start):
-	var n = s.points.size()
-	var col = Config.C_ROOT if s.is_root else Config.C_BRANCH
-	for i in range(start, n):
-		var th = 0.6 + min(2.2, (n - i) * 0.015) - s.generation * 0.3
-		_stamp(_tree_img, s.points[i].x, s.points[i].y, max(0.6, th), col)
-
-
-# Pohon digambar ke lapisan pohon yang akumulatif, sama seperti untai. Ia
+# Pohon digambar ke lapisan pohon yang akumulatif, sama seperti dulu. Ia
 # tumbuh dari waktu ke waktu, jadi menggambarnya tiap frame juga berfungsi
 # sebagai cara ia meninggi.
 func draw_tree(t):
@@ -218,12 +210,6 @@ func draw_tree(t):
 		for dx in range(-r, r + 1):
 			if dx * dx + dy * dy <= r * r:
 				_put(_tree_img, bx + dx, cy + dy, Config.C_LEAF)
-
-
-func draw_leaves(s):
-	for l in s.leaves:
-		_stamp(_tree_img, l.pos.x, l.pos.y,
-				0.8 if l.age < 1.5 else 1.2, Config.C_LEAF)
 
 
 func draw_tip(p, is_selected, t):

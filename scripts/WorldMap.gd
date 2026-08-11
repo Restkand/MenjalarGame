@@ -27,6 +27,15 @@ var rambatan_baru = []   # Vector2i petak-erosi yang baru mendapat sel tertutup
 var facade_luas = 0      # sel fasad saat build; penyebut tutupan()
 var tutup_luas  = 0      # sel fasad yang sudah dirambati
 
+# Pengumpan perhatian (TAHAP D): keluhan penghuni datang dari jendela yang
+# tertutup dan pintu yang terambati, dan zona dengan rambatan paling mencolok
+# (berbobot vis) jadi sasaran perawatan yang diumumkan.
+var jendela_luas = 0
+var pintu_luas   = 0
+var tutup_jendela = 0
+var tutup_pintu   = 0
+var zona_bobot = [0.0, 0.0, 0.0, 0.0]   # indeks = Config.ZONA_NAMA
+
 var _bake_y    = -1    # baris bake berikutnya; -1 = tidak ada bake berjalan
 var _bake_awal = 0     # baris awal bake ini, hanya untuk menghitung kemajuan
 
@@ -106,11 +115,20 @@ func build():
 	# nanti gugur oleh erosi tetap dihitung tertutup (bekas rambatannya
 	# tinggal), jadi penyebutnya tidak boleh ikut menyusut.
 	facade_luas = 0
+	jendela_luas = 0
+	pintu_luas = 0
+	tutup_jendela = 0
+	tutup_pintu = 0
+	zona_bobot = [0.0, 0.0, 0.0, 0.0]
 	for i in range(grid.size()):
 		var k = grid[i]
 		if k == Config.T_WALL or k == Config.T_WINDOW \
 				or k == Config.T_DOOR or k == Config.T_LEDGE:
 			facade_luas += 1
+			if k == Config.T_WINDOW:
+				jendela_luas += 1
+			elif k == Config.T_DOOR:
+				pintu_luas += 1
 
 	bake_mulai(Config.FACADE_Y0)
 
@@ -318,6 +336,13 @@ func rambati(px, py):
 				tutup_luas += 1
 				rambatan_baru.append(Vector2i(
 						x / Config.EROSI_PETAK, y / Config.EROSI_PETAK))
+				# pengumpan perhatian: jendela/pintu yang tertutup, dan
+				# bobot zona berbanding nilai vis (mencolok = berat)
+				if k == Config.T_WINDOW:
+					tutup_jendela += 1
+				elif k == Config.T_DOOR:
+					tutup_pintu += 1
+				zona_bobot[_zona(x, y)] += vis[i]
 			elif k == Config.T_PUING:
 				tutup.set(i, 1)
 
@@ -338,6 +363,35 @@ func tutupan():
 	if facade_luas == 0:
 		return 0.0
 	return float(tutup_luas) / float(facade_luas)
+
+
+func rasio_jendela_tertutup():
+	if jendela_luas == 0:
+		return 0.0
+	return float(tutup_jendela) / float(jendela_luas)
+
+
+func rasio_pintu_tertutup():
+	if pintu_luas == 0:
+		return 0.0
+	return float(tutup_pintu) / float(pintu_luas)
+
+
+# Kuadran fasad tempat sebuah sel berada — indeks ke Config.ZONA_NAMA.
+func _zona(x, y):
+	var tx = (Config.FACADE_X0 + Config.FACADE_X1) / 2
+	var ty = (Config.FACADE_Y0 + Config.FACADE_Y1) / 2
+	return (0 if x < tx else 1) + (0 if y < ty else 2)
+
+
+# Zona dengan rambatan paling mencolok — sasaran perawatan yang diumumkan
+# kalender saat inspeksi.
+func zona_teratas():
+	var best = 0
+	for i in range(1, 4):
+		if zona_bobot[i] > zona_bobot[best]:
+			best = i
+	return Config.ZONA_NAMA[best]
 
 
 # Erosi menggugurkan satu petak: lubangi semua sel gedung di kotak itu.

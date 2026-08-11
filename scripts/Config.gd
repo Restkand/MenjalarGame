@@ -221,6 +221,32 @@ const VINE_JEMBATAN = 3
 # paling awal (docs/04 §3).
 const COVERAGE_GOAL = 0.55
 
+# ---------------------------------------------------------------------------
+# Perhatian & kalender (TAHAP D, docs/06 §4)
+#
+# SATU angka untuk seluruh gedung — seberapa sadar pengelola bahwa ada
+# masalah tanaman. BUKAN panas per-sulur; itu dilarang hidup lagi.
+#
+# Naik dari: tumbuh di area terlihat (peta vis — inilah makna vis sekarang),
+# jendela yang tertutup (penghuni mengeluh), rambatan di pintu (pengelola
+# melewatinya tiap hari). Turun dari: waktu.
+#
+# Kalibrasi PERHATIAN_TUMBUH: sulur 9.6 titik/detik pada vis rata-rata 0.5
+# menyumbang ~4.8 "terlihat"/detik; 0.0008 membuat satu malam penuh (34 s)
+# pertumbuhan sembrono menaikkan ~0.13 — dua-tiga hari ceroboh menembus
+# ambang. Tumbuh di bayangan (vis 0.2) 2,5x lebih pelan.
+var PERHATIAN_TUMBUH  = 0.0008   # per satuan "terlihat" saat titik tumbuh
+var PERHATIAN_JENDELA = 0.012    # per detik, saat SEMUA jendela tertutup
+var PERHATIAN_PINTU   = 0.010    # per detik, saat seluruh pintu terambati
+var PERHATIAN_LURUH   = 0.002    # peluruhan per detik (~0.13 per hari)
+
+var AMBANG_RAWAT  = 0.5    # inspeksi menjadwalkan perawatan di atas ini
+var INSPEKSI_TIAP = 3      # inspeksi tiap sekian hari
+var JEDA_RAWAT    = 2      # perawatan datang sekian hari setelah dijadwalkan
+
+# Empat kuadran fasad — sasaran perawatan diumumkan per zona
+const ZONA_NAMA = ["BARAT ATAS", "TIMUR ATAS", "BARAT BAWAH", "TIMUR BAWAH"]
+
 # Pencahayaan 2D.
 #
 # Batasan "tanpa Light2D" DILONGGARKAN 8 Agustus 2026. Alasannya hilang: PC

@@ -161,7 +161,7 @@ res://
     ├── Strand.gd          satu untai: tumbuh, tigmotropisme, pratinjau
     ├── TreeSim.gd         kumpulan untai + ekonomi energi
     ├── Structure.gd       beban, keruntuhan, puing, pelemahan
-    ├── Cycle.gd           jam siklus siang-malam (dulu Warden.gd)
+    ├── Cycle.gd           kalender: hari, perhatian, jadwal inspeksi/rawat
     ├── Pane.gd            satu pane split screen: viewport, kamera, zoom
     ├── PixelCanvas.gd     semua yang menulis piksel
     ├── TuningPanel.gd     slider runtime
@@ -238,12 +238,34 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A, B, R1–R3 selesai.** Jalur render dijeda.
+Status: **TAHAP A, B, D, R1–R3 selesai.** Jalur render dijeda.
 
 **PRIORITAS BERUBAH 11 Agustus 2026, setelah playtest pemilik proyek:**
 gameplay yang terasa masih game pembongkaran lama membuat perombakan gameplay
-didahulukan atas sisa jalur render. **Berikutnya: TAHAP D** (perhatian &
-kalender inspeksi), lalu **TAHAP E** (regu terjadwal). R4–R6 setelahnya.
+didahulukan atas sisa jalur render. **Berikutnya: TAHAP E** (regu dipicu
+kalender, bekerja per zona, lalu pulang). R4–R6 setelahnya.
+
+TAHAP D yang sudah berdiri — perhatian & kalender (`Cycle.gd` naik pangkat):
+
+- **`Cycle.perhatian`** — SATU angka 0..1 untuk seluruh gedung. Naik dari:
+  (1) pertumbuhan di area terlihat — sinyal `terlihat` yang dikembalikan
+  `TreeSim.update` (jumlah vis per titik tumbuh; inilah makna peta `vis`
+  sekarang); (2) jendela tertutup (`rasio_jendela_tertutup`); (3) pintu
+  terambati. Turun: peluruhan waktu. Kalibrasi di komentar Config
+  (PERHATIAN_TUMBUH 0.0008 = satu malam sembrono ≈ +0.13).
+- **Kalender**: `hari` bertambah tiap fajar; tiap `INSPEKSI_TIAP` hari ada
+  INSPEKSI — kalau `perhatian >= AMBANG_RAWAT`, PERAWATAN dijadwalkan
+  `JEDA_RAWAT` hari ke depan dengan sasaran `world.zona_teratas()` (kuadran
+  fasad dengan rambatan paling mencolok, bobot vis, `zona_bobot`).
+- HUD: `HARI n`, baris kalender selalu terlihat ("INSPEKSI dalam N hari" /
+  "PERAWATAN hari N — ZONA", disorot saat ada jadwal), bar PERHATIAN warna
+  jendela dengan garis penanda ambang — TANPA warna merah panik, sengaja
+  (docs/08 §3.1).
+- Di TAHAP D regu BELUM dipanggil kalender — mereka masih sistem interim.
+  TAHAP E yang menyambungkannya.
+- Pertanyaan terbuka: `X` sekarang berarti "putus sulur" (jawaban pemanjat);
+  docs/06 §2.5 juga menyebut "rontokkan daun mencolok" sebagai penurun
+  perhatian. Dua makna ini belum didamaikan — putuskan saat TAHAP E.
 
 TAHAP B yang sudah berdiri — pembongkaran resmi jadi kosmetik:
 

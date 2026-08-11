@@ -8,10 +8,13 @@ signal play_pressed
 
 var _e_fill
 var _c_fill
+var _p_fill
 var _lbl_phase
 var _lbl_energy
 var _lbl_res
 var _lbl_cov
+var _lbl_perhatian
+var _lbl_kalender
 var _lbl_win
 var _overlay
 var _btn
@@ -33,12 +36,25 @@ func _ready():
 	_lbl_phase = Label.new()
 	vb.add_child(_lbl_phase)
 
+	# Kalender — jadwal inspeksi & perawatan, SELALU terlihat. Inilah seluruh
+	# sistem peringatan game ini: ancaman diumumkan sebelum tiba (docs/06 §1
+	# pilar 2), jadi ia tidak boleh disembunyikan.
+	_lbl_kalender = Label.new()
+	vb.add_child(_lbl_kalender)
+
 	_lbl_energy = Label.new()
 	vb.add_child(_lbl_energy)
 	_e_fill = _bar(vb, Config.C_LEAF)
 
 	_lbl_res = Label.new()
 	vb.add_child(_lbl_res)
+
+	_lbl_perhatian = Label.new()
+	vb.add_child(_lbl_perhatian)
+	# Bar perhatian memakai warna JENDELA, bukan merah — palet tidak punya
+	# warna panik, dan itu disengaja: perhatian naik pelan dan diumumkan
+	# lewat kalender (docs/08 §3.1). Garis kecil menandai AMBANG_RAWAT.
+	_p_fill = _bar(vb, Config.C_WINDOW, Config.AMBANG_RAWAT)
 
 	_lbl_cov = Label.new()
 	vb.add_child(_lbl_cov)
@@ -51,7 +67,7 @@ func _ready():
 	_build_overlay()
 
 
-func _bar(vb, col):
+func _bar(vb, col, ambang = -1.0):
 	var bg = ColorRect.new()
 	bg.color = Color(0.11, 0.11, 0.13)
 	bg.custom_minimum_size = Vector2(238, 11)
@@ -61,6 +77,13 @@ func _bar(vb, col):
 	f.color = col
 	f.size = Vector2(0, 11)
 	bg.add_child(f)
+
+	if ambang > 0.0:
+		var garis = ColorRect.new()
+		garis.color = Config.C_TIP
+		garis.position = Vector2(238.0 * ambang, 0)
+		garis.size = Vector2(2, 11)
+		bg.add_child(garis)
 	return f
 
 
@@ -155,7 +178,8 @@ func flash_msg(text):
 
 func refresh(sim, w, world, crew, climbers, won):
 	var ph = "SIANG" if w.phase == Config.PHASE_DAY else "MALAM"
-	_lbl_phase.text = "%s   %d%%" % [ph, int(w.progress() * 100)]
+	_lbl_phase.text = "HARI %d   %s %d%%" % [w.hari, ph,
+			int(w.progress() * 100)]
 	if crew.aktif() > 0:
 		_lbl_phase.text += "   REGU %d" % crew.aktif()
 	if climbers.aktif() > 0:
@@ -166,9 +190,29 @@ func refresh(sim, w, world, crew, climbers, won):
 	else:
 		_lbl_phase.modulate = Color(1, 1, 1)
 
+	# kalender: baris inspeksi selalu ada; baris perawatan hanya saat ada
+	# jadwal, dan disorot — itulah ancaman yang sedang berjalan
+	var sisa = w.inspeksi_dalam()
+	if sisa == 0:
+		_lbl_kalender.text = "INSPEKSI HARI INI"
+	else:
+		_lbl_kalender.text = "INSPEKSI dalam %d hari" % sisa
+	if w.rawat_hari >= 0:
+		if w.hari == w.rawat_hari:
+			_lbl_kalender.text += "\nPERAWATAN HARI INI — %s" % w.rawat_zona
+		else:
+			_lbl_kalender.text += "\nPERAWATAN hari %d — %s" \
+					% [w.rawat_hari, w.rawat_zona]
+		_lbl_kalender.modulate = Config.C_WARN
+	else:
+		_lbl_kalender.modulate = Color(1, 1, 1)
+
 	_e_fill.size = Vector2(238.0 * (sim.energy / Config.ENERGY_MAX), 11)
 	_e_fill.color = Config.C_ALERT if sim.starved else Config.C_LEAF
 	_lbl_energy.text = "ENERGI  %d" % int(sim.energy)
+
+	_lbl_perhatian.text = "PERHATIAN  %d%%" % int(round(w.perhatian * 100))
+	_p_fill.size = Vector2(238.0 * clamp(w.perhatian, 0.0, 1.0), 11)
 
 	var bn = sim.bottleneck()
 	_lbl_res.text = "AIR %d%s    CAHAYA %d%s" % [

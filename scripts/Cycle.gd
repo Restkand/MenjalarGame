@@ -1,23 +1,43 @@
 extends RefCounted
 
-# Jam siklus siang-malam.
+# Kalender & perhatian — jantung stealth sistemik (TAHAP D, docs/06 §4).
 #
-# File ini dulu bernama Warden.gd dan memegang seluruh sistem stealth: kerucut
-# pandang, panas per-sulur, kecurigaan, dan pemangkasan saat fajar. Semuanya
-# dihapus saat konsep bergeser ke pembongkaran. Stealth menuntut pemain lemah
-# dan tersembunyi; pembongkaran menuntut sebaliknya, jadi keduanya saling
-# menarik ke arah berlawanan.
+# File ini dua kali berganti peran: lahir sebagai Warden.gd (stealth lama:
+# kerucut pandang, panas per-sulur — semua dihapus), menyusut jadi jam
+# siang-malam, dan sekarang naik pangkat jadi KALENDER. Satu hari = satu
+# siang + satu malam.
 #
-# Antagonis baru (regu perawatan yang mencabut tanaman dan memanjat sulur
-# pemain) dibangun sebagai sistem terpisah, bukan penerus file ini.
+# Seluruh sistem stealth-nya ada di sini dan bisa dibaca pemain di HUD:
+#
+#   tiap INSPEKSI_TIAP hari  ->  INSPEKSI saat fajar
+#       perhatian >= AMBANG_RAWAT  ->  PERAWATAN dijadwalkan JEDA_RAWAT hari
+#       ke depan, sasarannya zona dengan rambatan paling mencolok
+#
+# Ancaman selalu diumumkan sebelum tiba (pilar 2, docs/06 §1). Ketegangan
+# lahir dari perencanaan — pemain punya jendela waktu untuk mengalihkan
+# pertumbuhan ke bayangan atau merelakan satu zona — bukan dari kaget.
+#
+# `perhatian` adalah SATU angka untuk seluruh gedung. Bukan panas per-sulur;
+# itu dilarang hidup lagi (CLAUDE.md) karena menuntut pengawasan yang
+# mustahil dengan perhatian pemain terbagi dua pane.
 
 var phase = Config.PHASE_DAY
 var t     = 0.0
+var hari  = 1
+
+var perhatian = 0.0
+
+var rawat_hari = -1     # hari kedatangan perawatan; -1 = tidak ada jadwal
+var rawat_zona = ""
 
 
 func reset():
 	phase = Config.PHASE_DAY
 	t = 0.0
+	hari = 1
+	perhatian = 0.0
+	rawat_hari = -1
+	rawat_zona = ""
 
 
 func phase_len():
@@ -35,10 +55,52 @@ func night_amount():
 	return max(0.0, 1.0 - t / 2.5)
 
 
-func update(delta, sim):
+# Berapa hari lagi sampai inspeksi berikutnya. 0 = hari ini hari inspeksi.
+func inspeksi_dalam():
+	var tiap = max(1, int(Config.INSPEKSI_TIAP))
+	return (tiap - (hari % tiap)) % tiap
+
+
+func update(delta, sim, world, terlihat):
+	# --- perhatian -----------------------------------------------------------
+	# pertumbuhan di area terlihat — sinyal `terlihat` dari TreeSim adalah
+	# jumlah nilai vis di tiap titik yang tumbuh frame ini
+	perhatian += terlihat * Config.PERHATIAN_TUMBUH
+	# keluhan yang berjalan terus: jendela tertutup dan pintu terambati
+	perhatian += (world.rasio_jendela_tertutup() * Config.PERHATIAN_JENDELA
+			+ world.rasio_pintu_tertutup() * Config.PERHATIAN_PINTU) * delta
+	perhatian = clamp(perhatian - Config.PERHATIAN_LURUH * delta, 0.0, 1.0)
+
+	# --- jam -----------------------------------------------------------------
 	t += delta
 	if t < phase_len():
 		return
 	t = 0.0
-	phase = Config.PHASE_NIGHT if phase == Config.PHASE_DAY else Config.PHASE_DAY
+	if phase == Config.PHASE_DAY:
+		phase = Config.PHASE_NIGHT
+	else:
+		phase = Config.PHASE_DAY
+		_fajar(world)
 	sim.ensure_selection(phase)
+
+
+func _fajar(world):
+	hari += 1
+
+	# jadwal perawatan yang sudah lewat harinya dibersihkan. Di TAHAP D regu
+	# belum dipanggil — TAHAP E yang menyambungkan kedatangan mereka ke sini.
+	if rawat_hari >= 0 and hari > rawat_hari:
+		rawat_hari = -1
+		rawat_zona = ""
+
+	if inspeksi_dalam() == 0:
+		_inspeksi(world)
+
+
+func _inspeksi(world):
+	if rawat_hari >= 0:
+		return   # sudah ada jadwal berjalan
+	if perhatian < Config.AMBANG_RAWAT:
+		return   # gedung dianggap masih wajar
+	rawat_hari = hari + max(1, int(Config.JEDA_RAWAT))
+	rawat_zona = world.zona_teratas()

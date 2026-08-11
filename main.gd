@@ -221,8 +221,10 @@ func _process(delta):
 	erosi.update(delta)
 
 	if playing and not won:
-		sim.update(delta, is_steering, m, world, cycle.phase)
-		cycle.update(delta, sim)
+		# `terlihat` = jumlah nilai vis di tiap titik yang tumbuh frame ini —
+		# inilah yang menaikkan perhatian pengelola gedung
+		var terlihat = sim.update(delta, is_steering, m, world, cycle.phase)
+		cycle.update(delta, sim, world, terlihat)
 
 		crew.update(delta, sim, world, erosi, cycle.phase)
 		climbers.update(delta, sim, world, cycle.phase)

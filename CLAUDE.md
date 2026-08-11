@@ -238,11 +238,34 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A dan R1 selesai.** Jalur render R1–R6
+Status: **TAHAP A, R1, dan R2 selesai.** Jalur render R1–R6
 (`docs/09-arsitektur-render-baru.md`) didahulukan atas TAHAP B–G karena
 pemilik proyek memprioritaskan tampilan yang layak untuk pemain umum; tidak
-ada mekanik yang berubah selama jalur R. **Berikutnya: R2** (TileMapLayer
-untuk fasad dan tanah).
+ada mekanik yang berubah selama jalur R. **Berikutnya: R3** (sisa lapisan
+piksel — pohon, aktor, puing melayang — jadi view; lapisan `tree`/`overlay`
+menyusut).
+
+R2 yang sudah berdiri — terrain = TileMapLayer, fitur fasad = _draw:
+
+- **`WorldMap.image` DIHAPUS.** Grid satuan adalah satu-satunya kebenaran;
+  `_rect()` tidak lagi menerima warna. Perubahan grid (carve, puing) menandai
+  petak 8×8 lewat `tile_kotor`; `TerrainView.sinkron()` mengambilnya tiap
+  frame dan hanya menghitung ulang petak yang berubah.
+- `scripts/render/TerrainView.gd` — dua `TileMapLayer` (satu per pane, hanya
+  baris zonanya), tileset dibangun dari `aset/terrain_atlas.png` (8 ubin
+  32×32 prosedural, sementara). Skala 1/PPU menjatuhkannya ke ruang satuan.
+- `scripts/render/FasadView.gd` — jendela/pintu/ledge digambar `_draw()` pada
+  posisi satuan persisnya, karena fitur TIDAK duduk di kisi petak (jendela
+  14×16 pitch 30×26) dan menggesernya berarti mengubah gameplay. Fitur yang
+  gridnya sudah runtuh otomatis tidak digambar.
+- `WorldMap.tile_terrain(tx,ty)` — mayoritas isi grid petak; jendela/pintu/
+  ledge dihitung dinding; puing menang dini (≥6 sel) supaya puncak tumpukan
+  tidak melayang.
+- Lubang carve selebar 3–5 satuan TIDAK terlihat di ubin (di bawah mayoritas
+  petak) — diterima, karena TAHAP B membuang carve member sepenuhnya.
+  `vine_ok()` tetap bekerja penuh; ini murni visual.
+- Jangan menamai metode `_set` di kelas mana pun — bentrok dengan
+  `Object._set(property, value)` bawaan dan gagal parse.
 
 R1 yang sudah berdiri — sulur/akar = `Line2D`, daun = sprite:
 

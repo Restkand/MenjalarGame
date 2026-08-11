@@ -1,25 +1,31 @@
 extends RefCounted
 
-var image
+# Sejak R2 dunia TIDAK punya Image lagi — grid satuan adalah satu-satunya
+# kebenaran, dan tampilannya diterjemahkan TerrainView (TileMapLayer) plus
+# FasadView (jendela/pintu/ledge). Perubahan grid ditandai per PETAK 8x8
+# lewat tile_kotor, lalu view yang menggambar ulang petak itu.
+
 var grid
 var light
 var vis
 var members = []
 var joints  = []
 var panels  = []       # massa dinding di antara rangka
-var windows = []       # titik tengah tiap jendela — dipakai lampu malam
+var windows = []       # titik tengah tiap jendela — dipakai lampu & FasadView
+var fitur   = []       # {jenis, rect} — pintu & ledge, digambar FasadView
 var settled            # puing yang sudah mengendap, 0/1 per piksel
 var puing_atas = 0     # baris tertinggi yang sudah tertutup puing
 var solve_order = []   # id member dalam urutan topologis atas-ke-bawah
 
+var tile_kotor = {}    # Vector2i petak -> true; diambil TerrainView tiap frame
+
 var _bake_y    = -1    # baris bake berikutnya; -1 = tidak ada bake berjalan
 var _bake_awal = 0     # baris awal bake ini, hanya untuk menghitung kemajuan
 
+const PETAK = 8        # satuan per petak TileMap (32 px / PPU 4)
+
 
 func build():
-	# Godot 4: Image.create_empty() statis menggantikan Image.new() + create().
-	# lock()/unlock() sudah tidak ada — set_pixel() boleh dipanggil langsung.
-	image = Image.create_empty(Config.W, Config.H, false, Image.FORMAT_RGBA8)
 	grid = PackedByteArray(); grid.resize(Config.W * Config.H)
 	light = PackedFloat32Array(); light.resize(Config.W * Config.H)
 	vis = PackedFloat32Array(); vis.resize(Config.W * Config.H)
@@ -30,60 +36,69 @@ func build():
 	# penskalaan setia, bukan rancangan ulang — bawah tanah baru dirombak di
 	# TAHAP C, dan mencampur keduanya membuat perubahan kamera tidak bisa
 	# diverifikasi sendirian.
-	_rect(0, 0, Config.W, Config.GROUND_Y, Config.C_SKY, Config.T_SKY)
+	_rect(0, 0, Config.W, Config.GROUND_Y, Config.T_SKY)
 	_rect(0, Config.GROUND_Y, Config.W, Config.H - Config.GROUND_Y,
-			Config.C_SOIL, Config.T_SOIL_DRY)
-	_rect(0, 234, 148, 86, Config.C_SOIL_WET, Config.T_SOIL_WET)
-	_rect(336, 242, 144, 78, Config.C_SOIL_WET, Config.T_SOIL_WET)
-	_rect(120, 214, 52, 24, Config.C_CONCRETE, Config.T_CONCRETE)
-	_rect(396, 268, 44, 8, Config.C_PIPE, Config.T_PIPE)
+			Config.T_SOIL_DRY)
+	_rect(0, 234, 148, 86, Config.T_SOIL_WET)
+	_rect(336, 242, 144, 78, Config.T_SOIL_WET)
+	_rect(120, 214, 52, 24, Config.T_CONCRETE)
+	_rect(396, 268, 44, 8, Config.T_PIPE)
 
 	# gedung tetangga di kiri — sumber bayangan; matahari datang dari atas-kiri
-	_rect(0, 60, 84, 132, Config.C_NEIGHBOR, Config.T_NEIGHBOR)
+	_rect(0, 60, 84, 132, Config.T_NEIGHBOR)
 	# tetangga kanan hanya membingkai; terlalu jauh dari arah sinar untuk
 	# membayangi fasad
-	_rect(400, 104, 80, 88, Config.C_NEIGHBOR, Config.T_NEIGHBOR)
+	_rect(400, 104, 80, 88, Config.T_NEIGHBOR)
 
 	# fasad utama
 	_rect(Config.FACADE_X0, Config.FACADE_Y0,
 			Config.FACADE_X1 - Config.FACADE_X0,
 			Config.FACADE_Y1 - Config.FACADE_Y0,
-			Config.C_WALL, Config.T_WALL)
+			Config.T_WALL)
 
-	# jendela — titik tengahnya dicatat supaya lampu malam tahu di mana
-	# harus berdiri, dan supaya lampu bisa dipadamkan saat jendelanya runtuh
+	# jendela — titik tengahnya dicatat supaya lampu malam & FasadView tahu di
+	# mana harus berdiri, dan supaya keduanya padam saat jendelanya runtuh
 	# 6 baris x 9 kolom = 54 jendela. Barisnya menempati y 40-55, 66-81, 92-107,
 	# 118-133, 144-159, 170-185; ledge dan pipa sengaja diletakkan di sela-sela
 	# itu supaya tidak menimpa satu pun jendela.
 	windows = []
 	for jy in range(40, 180, 26):
 		for jx in range(110, 372, 30):
-			_rect(jx, jy, 14, 16, Config.C_WINDOW, Config.T_WINDOW)
+			_rect(jx, jy, 14, 16, Config.T_WINDOW)
 			windows.append(Vector2(jx + 7, jy + 8))
+
+	# Fitur fasad yang digambar FasadView di atas ubin dinding. Grid tetap
+	# memegang bentuk persisnya, jadi tigmotropisme dan vis tidak berubah —
+	# fitur hanyalah gambarnya.
+	fitur = []
 
 	# ledge — penghalang yang harus diputari. Tebalnya 4 px, bukan 3: sinar
 	# matahari sekarang melangkah 2 unit sekaligus (Config.BAKE_LANGKAH), dan
 	# penghalang setipis 3 px bisa terlewati di antara dua langkah.
-	_rect(100, 110, 110, 4, Config.C_LEDGE, Config.T_LEDGE)
-	_rect(254, 58, 120, 4, Config.C_LEDGE, Config.T_LEDGE)
-	_rect(190, 136, 130, 4, Config.C_LEDGE, Config.T_LEDGE)
+	for r in [Rect2i(100, 110, 110, 4), Rect2i(254, 58, 120, 4),
+			Rect2i(190, 136, 130, 4)]:
+		_rect(r.position.x, r.position.y, r.size.x, r.size.y, Config.T_LEDGE)
+		fitur.append({"jenis": "ledge", "rect": r})
 
 	# pintu
-	_rect(220, 160, 40, 32, Config.C_DOOR, Config.T_DOOR)
+	_rect(220, 160, 40, 32, Config.T_DOOR)
+	fitur.append({"jenis": "pintu", "rect": Rect2i(220, 160, 40, 32)})
 
 	# jalur pipa vertikal — koridor gelap untuk menyelinap
-	_rect(156, Config.FACADE_Y0, 6, 168, Config.C_LEDGE, Config.T_LEDGE)
+	_rect(156, Config.FACADE_Y0, 6, 168, Config.T_LEDGE)
+	fitur.append({"jenis": "ledge",
+			"rect": Rect2i(156, Config.FACADE_Y0, 6, 168)})
 
+	tile_kotor = {}   # TerrainView membangun ulang penuh setelah build()
 	bake_mulai(Config.FACADE_Y0)
 	_build_frame()
 
 
-func _rect(x, y, w, h, col, kind):
+func _rect(x, y, w, h, kind):
 	for j in range(y, y + h):
 		for i in range(x, x + w):
 			if i < 0 or i >= Config.W or j < 0 or j >= Config.H:
 				continue
-			image.set_pixel(i, j, col)
 			grid.set(j * Config.W + i, kind)
 
 
@@ -408,11 +423,55 @@ func vine_ok(x, y):
 
 
 # ---------------------------------------------------------------------------
+# Terjemahan grid -> petak TileMap (dipakai TerrainView)
+# ---------------------------------------------------------------------------
+
+# Terrain sebuah petak 8x8: mayoritas isi grid-nya. Fitur fasad (jendela,
+# pintu, ledge) dihitung sebagai DINDING — gambarnya urusan FasadView, ubin
+# di belakangnya tetap dinding. Puing menang lebih awal: tumpukan menipis di
+# puncak, dan puncak yang tak tergambar membuat tumpukan terlihat melayang.
+func tile_terrain(tx, ty):
+	var hitung = {}
+	var puing = 0
+	for dy in range(PETAK):
+		var y = ty * PETAK + dy
+		for dx in range(PETAK):
+			var k = grid[y * Config.W + tx * PETAK + dx]
+			if k == Config.T_WINDOW or k == Config.T_DOOR \
+					or k == Config.T_LEDGE:
+				k = Config.T_WALL
+			if k == Config.T_PUING:
+				puing += 1
+			hitung[k] = hitung.get(k, 0) + 1
+	if puing >= 6:
+		return Config.T_PUING
+	var best = Config.T_SKY
+	var n = -1
+	for k in hitung:
+		if hitung[k] > n:
+			n = hitung[k]
+			best = k
+	return best
+
+
+func _tandai_petak(x, y):
+	tile_kotor[Vector2i(x / PETAK, y / PETAK)] = true
+
+
+# TerrainView memanggil ini tiap frame: ambil semua petak kotor, kosongkan.
+func ambil_tile_kotor():
+	if tile_kotor.is_empty():
+		return []
+	var keluar = tile_kotor.keys()
+	tile_kotor = {}
+	return keluar
+
+
+# ---------------------------------------------------------------------------
 # Perusakan — kebalikan dari _rect()
 # ---------------------------------------------------------------------------
 
-# Menghapus piksel di sepanjang member, menyisakan lubang tembus pandang.
-# image berubah, jadi pemanggil wajib meminta PixelCanvas.refresh_world().
+# Menghapus grid di sepanjang member, menyisakan lubang tembus pandang.
 func carve_member(m):
 	var n = int(max(abs(m.x1 - m.x0), abs(m.y1 - m.y0)))
 	for k in range(n + 1):
@@ -442,8 +501,8 @@ func _carve_px(x, y):
 	if k != Config.T_WALL and k != Config.T_WINDOW \
 			and k != Config.T_DOOR and k != Config.T_LEDGE:
 		return
-	image.set_pixel(x, y, Config.C_SKY)
 	grid.set(y * Config.W + x, Config.T_SKY)
+	_tandai_petak(x, y)
 
 
 # Puing hanya bertumpu pada tanah dan puing lain. Gedung TIDAK menghalangi:
@@ -456,9 +515,9 @@ func blocked(x, y):
 	return settled[y * Config.W + x] != 0
 
 
-# Sekumpulan puing yang mengendap di frame yang sama. Menulis ke image dan
-# settled — dan sejak TAHAP 6 juga ke grid, sehingga puing jadi terrain
-# sungguhan yang bisa ditumbuhi.
+# Sekumpulan puing yang mengendap di frame yang sama. Menulis ke settled dan
+# grid — sejak TAHAP 6 puing adalah terrain sungguhan yang bisa ditumbuhi,
+# dan sejak R2 gambarnya diurus TerrainView lewat petak kotor.
 func settle_many(points):
 	if points.is_empty():
 		return
@@ -472,11 +531,8 @@ func settle_many(points):
 				if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 					continue
 				settled.set(y * Config.W + x, 1)
-				# Puing jadi terrain sungguhan, bukan sekadar piksel di gambar.
-				# Inilah yang membuatnya bisa ditumbuhi dan ikut memberi
-				# bayangan.
 				grid.set(y * Config.W + x, Config.T_PUING)
-				image.set_pixel(x, y, Config.C_PUING)
+				_tandai_petak(x, y)
 				if y < puing_atas:
 					puing_atas = y
 

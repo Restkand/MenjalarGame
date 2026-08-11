@@ -16,7 +16,6 @@ var falling    = []      # puing yang masih melayang
 var dust       = []      # debu yang naik lalu memudar
 var luruh      = []      # panel yang sedang runtuh: {p, y}
 var collapsing = false
-var dirty_img  = false   # world.image berubah — minta canvas.refresh_world()
 var last_wave  = 0       # jumlah member yang gagal di gelombang terakhir
 
 # Dibaca lalu dinolkan oleh main.gd untuk memicu getaran dan jeda mikro.
@@ -41,7 +40,6 @@ func setup(w):
 	dust = []
 	luruh = []
 	collapsing = false
-	dirty_img = false
 	last_wave = 0
 	wave_panjang = 0.0
 	wave_index = 0
@@ -288,7 +286,6 @@ func _kill(m):
 	world.carve_member(m)
 	_spawn_debris(m)
 	_spawn_dust(m)
-	dirty_img = true
 
 
 # ---------------------------------------------------------------------------
@@ -365,7 +362,6 @@ func _luruh_step(delta):
 		if sampai >= dari:
 			world.carve_rows(l.p, dari, sampai)
 			_spawn_debris_baris(l.p, dari, min(sampai, l.p.y1))
-			dirty_img = true
 		if l.y < float(l.p.y1 + 1):
 			sisa.append(l)
 	luruh = sisa
@@ -476,6 +472,5 @@ func _debris_step(delta):
 	falling = sisa
 	if not mengendap.is_empty():
 		world.settle_many(mengendap)
-		dirty_img = true
 		_perlu_bake = true
 		_tenang = 0.0

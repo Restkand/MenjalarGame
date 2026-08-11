@@ -8,17 +8,16 @@ extends Node
 # sekarang STATIS dan mengembalikan tekstur baru; untuk mengarahkan tekstur yang
 # sudah ada ke Image lain, pakai set_image().
 #
-# TAHAP A: node ini tidak lagi Node2D dan tidak lagi memuat sprite sendiri.
-# Ketiga Image tetap satu-satunya sumber kebenaran piksel, tapi tiap pane punya
-# SET SPRITE-NYA SENDIRI yang menunjuk ke ImageTexture YANG SAMA. Jadi satu
-# gambar, dua jendela — biaya tambahannya hanya 3 draw call per pane.
+# R2: lapis world sudah pindah ke TerrainView (TileMapLayer) + FasadView.
+# Yang tersisa di sini dua Image: `tree` (akumulatif — sekarang hanya pohon)
+# dan `overlay` (dibersihkan tiap frame — ujung, pratinjau, aktor, puing
+# melayang, debu, retakan, peta debug). Tiap pane punya SET SPRITE-NYA
+# SENDIRI yang menunjuk ke ImageTexture YANG SAMA.
 #
 # Tiap SubViewport punya World2D-nya sendiri, jadi CanvasModulate juga harus
 # ada satu per pane. Lampu jendela TIDAK diduplikasi: jendela semuanya di atas
 # garis tanah, jadi pane bawah tidak pernah membutuhkannya.
 
-var _world_img
-var _world_tex
 var _tree_img
 var _tree_tex
 var _ovl_img
@@ -30,10 +29,8 @@ var _lamp_tex           # tekstur falloff bertangga, dibuat sekali
 var _world              # untuk memadamkan lampu saat jendelanya runtuh
 
 
-func setup(world_img, panes):
+func setup(panes):
 	_panes = panes
-	_world_img = world_img
-	_world_tex = ImageTexture.create_from_image(_world_img)
 
 	_tree_img = _blank()
 	_tree_tex = ImageTexture.create_from_image(_tree_img)
@@ -43,10 +40,9 @@ func setup(world_img, panes):
 
 	_modulates = []
 	for p in _panes:
-		# z 1 sengaja dilompati: itu milik lapis view tanaman (Line2D batang
-		# di TanamanView). Urutannya jadi: world, batang sulur, pohon+daun,
+		# z 0 milik TerrainView/FasadView, z 1 milik batang sulur
+		# (TanamanView). Urutannya: terrain+fasad, batang, pohon+daun,
 		# overlay.
-		p.tempel(_sprite(_world_tex, 0))
 		p.tempel(_sprite(_tree_tex, 2))
 		p.tempel(_sprite(_ovl_tex, 3))
 
@@ -65,19 +61,6 @@ func setup(world_img, panes):
 func add_shake(amp):
 	for p in _panes:
 		p.guncang(amp)
-
-
-# Dipanggil hanya saat piksel dunia benar-benar berubah — member dilubangi
-# atau puing mengendap — bukan tiap frame.
-func refresh_world():
-	_world_tex.update(_world_img)
-
-
-# world.build() membuat Image baru, jadi setelah reset teksturnya harus
-# diarahkan ulang ke objek yang baru.
-func set_world_image(world_img):
-	_world_img = world_img
-	_world_tex.set_image(_world_img)
 
 
 # Lampu jendela. Dipanggil ulang tiap kali dunia dibangun ulang (reset),

@@ -9,6 +9,7 @@ const StructureCls   = preload("res://scripts/Structure.gd")
 const PaneCls        = preload("res://scripts/Pane.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
 const TanamanViewCls = preload("res://scripts/render/TanamanView.gd")
+const TerrainViewCls = preload("res://scripts/render/TerrainView.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
 const HudCls         = preload("res://scripts/Hud.gd")
 
@@ -20,6 +21,7 @@ var climbers
 var structure
 var canvas
 var tanaman
+var terrain
 var panel
 var hud
 
@@ -62,9 +64,14 @@ func _ready():
 
 	_pane_aktif = pane_atas
 
+	# terrain dulu baru canvas: keduanya z-eksplisit, tapi urutan tempel
+	# menentukan siapa yang menang saat z sama (FasadView di atas ubin)
+	terrain = TerrainViewCls.new()
+	terrain.setup(pane_atas, pane_bawah, world)
+
 	canvas = PixelCanvasCls.new()
 	add_child(canvas)
-	canvas.setup(world.image, [pane_atas, pane_bawah])
+	canvas.setup([pane_atas, pane_bawah])
 	canvas.setup_lights(world, pane_atas)
 
 	structure = StructureCls.new()
@@ -100,10 +107,10 @@ func _on_play():
 
 
 func _restart():
-	# Keruntuhan mengubah grid dan image secara permanen, jadi dunianya harus
-	# dibangun ulang — bukan sekadar mereset pohon.
+	# Keruntuhan mengubah grid secara permanen, jadi dunianya harus dibangun
+	# ulang — bukan sekadar mereset pohon.
 	world.build()
-	canvas.set_world_image(world.image)
+	terrain.bangun_ulang()
 	canvas.setup_lights(world, pane_atas)   # grid baru — lampu yang padam menyala lagi
 	structure.setup(world)
 	sim.reset()
@@ -227,10 +234,6 @@ func _process(delta):
 				_redraw_tree = true
 				sim.ensure_selection(cycle.phase)
 
-		if structure.dirty_img:
-			structure.dirty_img = false
-			canvas.refresh_world()
-
 		if playing and not won:
 			sim.update(delta, is_steering, m, world, cycle.phase)
 			cycle.update(delta, sim)
@@ -250,6 +253,7 @@ func _process(delta):
 		canvas.clear_tree()
 
 	tanaman.sinkron()
+	terrain.sinkron()
 	canvas.begin_frame()
 	sim.render(canvas, gambar_penuh)
 	canvas.draw_cracks(world)

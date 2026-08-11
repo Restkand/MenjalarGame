@@ -5,7 +5,7 @@ const TreeSimCls     = preload("res://scripts/TreeSim.gd")
 const CycleCls       = preload("res://scripts/Cycle.gd")
 const CrewCls        = preload("res://scripts/Crew.gd")
 const ClimberCls     = preload("res://scripts/Climber.gd")
-const StructureCls   = preload("res://scripts/Structure.gd")
+const ErosiCls       = preload("res://scripts/Erosi.gd")
 const PaneCls        = preload("res://scripts/Pane.gd")
 const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
 const TanamanViewCls = preload("res://scripts/render/TanamanView.gd")
@@ -19,7 +19,7 @@ var sim
 var cycle
 var crew
 var climbers
-var structure
+var erosi
 var canvas
 var tanaman
 var terrain
@@ -33,8 +33,6 @@ var is_steering = false
 var playing = false
 var won = false
 var show_risk = false
-var show_frame = false
-var _freeze = 0.0
 
 # Pane yang sedang di bawah kursor. Semua perintah kamera dan semua konversi
 # mouse memakai yang ini — tidak perlu klik untuk "memilih" pane.
@@ -74,12 +72,12 @@ func _ready():
 	canvas.setup([pane_atas, pane_bawah])
 	canvas.setup_lights(world, pane_atas)
 
-	structure = StructureCls.new()
-	structure.setup(world)
+	erosi = ErosiCls.new()
+	erosi.setup(world)
 
 	# puing melayang & debu — hanya pane atas; blocked() menghentikan puing
 	# di garis tanah, jadi ia tidak pernah masuk zona bawah
-	var puing_view = PuingViewCls.new(structure)
+	var puing_view = PuingViewCls.new(erosi)
 	puing_view.scale = Vector2.ONE / float(Config.PPU)
 	puing_view.z_index = 2
 	pane_atas.tempel(puing_view)
@@ -119,7 +117,7 @@ func _restart():
 	world.build()
 	terrain.bangun_ulang()
 	canvas.setup_lights(world, pane_atas)   # grid baru — lampu yang padam menyala lagi
-	structure.setup(world)
+	erosi.setup(world)
 	sim.reset()
 	# id untai mulai dari 1 lagi setelah reset, jadi view lama WAJIB dibuang
 	# eksplisit — sinkron() tidak bisa membedakannya dari untai baru
@@ -131,8 +129,6 @@ func _restart():
 	playing = false
 	won = false
 	show_risk = false
-	show_frame = false
-	_freeze = 0.0
 	hud.show_overlay()
 
 
@@ -220,57 +216,39 @@ func _process(delta):
 				else Config.BAKE_BARIS_DIAM)
 	hud.set_bake(world.bake_sibuk(), world.bake_kemajuan())
 
-	if _freeze > 0.0:
-		# jeda mikro — simulasi beku, render dan getaran tetap jalan
-		_freeze = max(0.0, _freeze - delta)
-	else:
-		# berjalan juga sebelum MULAI, supaya uji klik-kanan bisa dilakukan
-		structure.update(delta)
+	# erosi berjalan juga sebelum MULAI — puing yang masih melayang setelah
+	# reset harus tetap jatuh
+	erosi.update(delta)
 
-		if structure.wave_panjang > 0.0:
-			canvas.add_shake(structure.wave_panjang * Config.SHAKE_PER_PANJANG)
-			if structure.wave_index == 1:
-				_freeze = Config.FREEZE_TIME
-			structure.wave_panjang = 0.0
-			# fasad baru saja berlubang — ujung yang kehilangan pijakan
-			# mundur. SulurView melihat jumlah titiknya berubah dan membangun
-			# ulang garisnya sendiri.
-			if sim.retreat_unsupported(world) > 0:
-				sim.ensure_selection(cycle.phase)
+	if playing and not won:
+		sim.update(delta, is_steering, m, world, cycle.phase)
+		cycle.update(delta, sim)
 
-		if playing and not won:
-			sim.update(delta, is_steering, m, world, cycle.phase)
-			cycle.update(delta, sim)
-			sim.spend(structure.weaken(sim, delta, cycle.phase))
-
-			crew.update(delta, sim, world, structure, cycle.phase)
-			climbers.update(delta, sim, structure, cycle.phase)
-			if crew.dipotong > 0 or climbers.dipotong > 0:
-				sim.ensure_selection(cycle.phase)
+		crew.update(delta, sim, world, erosi, cycle.phase)
+		climbers.update(delta, sim, world, cycle.phase)
+		if crew.dipotong > 0 or climbers.dipotong > 0:
+			sim.ensure_selection(cycle.phase)
 
 	tanaman.sinkron()
 	terrain.sinkron()
 	canvas.begin_frame()
 	sim.render(canvas)
-	canvas.draw_cracks(world)
 	if show_risk:
 		canvas.draw_risk(world)
-	if show_frame:
-		canvas.draw_frame(world)
 	canvas.draw_crew(crew)
 	canvas.draw_climbers(climbers)
 	if playing and is_steering and sim.selected != null and sim.selected.alive:
 		canvas.draw_preview(sim.selected.preview(m, 80, world))
 
-	# Menang saat seluruh member gedung gagal. Menggantikan syarat coverage
-	# 55%, yang sudah tidak nyambung sejak konsepnya bergeser ke pembongkaran
-	# dan bar HUD diganti integritas struktur.
-	if playing and not won and structure.hancur():
+	# Menang INTERIM (sampai TAHAP F): fasad cukup hijau. Menggantikan
+	# "seluruh kolom gagal" — menang lewat kerusakan sudah dibuang bersama
+	# rangka di TAHAP B.
+	if playing and not won and world.tutupan() >= Config.COVERAGE_GOAL:
 		won = true
 	canvas.end_frame()
 
 	canvas.set_night(cycle.night_amount())
-	hud.refresh(sim, cycle, structure, crew, climbers, won)
+	hud.refresh(sim, cycle, world, crew, climbers, won)
 
 
 func _input(event):
@@ -280,9 +258,6 @@ func _input(event):
 
 	if event is InputEventKey and _kunci(event, KEY_V):
 		show_risk = event.pressed
-
-	if event is InputEventKey and _kunci(event, KEY_B):
-		show_frame = event.pressed
 
 
 func _unhandled_input(event):
@@ -316,15 +291,6 @@ func _unhandled_input(event):
 		elif _kunci(event, KEY_TAB):
 			panel.toggle()
 			return
-
-	# uji keruntuhan: tahan B lalu klik kanan pada member. Disyaratkan
-	# show_frame supaya tidak bentrok dengan klik-kanan-bercabang.
-	if show_frame and event is InputEventMouseButton and event.pressed \
-			and event.button_index == MOUSE_BUTTON_RIGHT:
-		var id = world.member_at(_mouse_dunia(), Config.MEMBER_RADIUS)
-		if id >= 0:
-			structure.fail_member(id)
-		return
 
 	if not playing or won:
 		return

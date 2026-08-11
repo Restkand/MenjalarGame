@@ -8,16 +8,24 @@ extends RefCounted
 var grid
 var light
 var vis
-var members = []
-var joints  = []
-var panels  = []       # massa dinding di antara rangka
 var windows = []       # titik tengah tiap jendela — dipakai lampu & FasadView
 var fitur   = []       # {jenis, rect} — pintu & ledge, digambar FasadView
 var settled            # puing yang sudah mengendap, 0/1 per piksel
 var puing_atas = 0     # baris tertinggi yang sudah tertutup puing
-var solve_order = []   # id member dalam urutan topologis atas-ke-bawah
 
 var tile_kotor = {}    # Vector2i petak -> true; diambil TerrainView tiap frame
+
+# Peta rambatan (TAHAP B). tutup[i] = 1 berarti sel itu pernah dirambati
+# sulur. Tiga peran sekaligus:
+#   1. pijakan KEKAL — vine_ok() menerimanya, jadi sulur tidak kehilangan
+#      pijakan saat fasad di bawahnya gugur oleh erosi
+#   2. bahan bakar erosi — sel fasad baru yang tertutup dilaporkan ke Erosi
+#      lewat rambatan_baru
+#   3. kemajuan pemain — tutupan() = sel fasad tertutup / luas fasad
+var tutup
+var rambatan_baru = []   # Vector2i petak-erosi yang baru mendapat sel tertutup
+var facade_luas = 0      # sel fasad saat build; penyebut tutupan()
+var tutup_luas  = 0      # sel fasad yang sudah dirambati
 
 var _bake_y    = -1    # baris bake berikutnya; -1 = tidak ada bake berjalan
 var _bake_awal = 0     # baris awal bake ini, hanya untuk menghitung kemajuan
@@ -27,6 +35,9 @@ const PETAK = 8        # satuan per petak TileMap (32 px / PPU 4)
 
 func build():
 	grid = PackedByteArray(); grid.resize(Config.W * Config.H)
+	tutup = PackedByteArray(); tutup.resize(Config.W * Config.H)
+	rambatan_baru = []
+	tutup_luas = 0
 	light = PackedFloat32Array(); light.resize(Config.W * Config.H)
 	vis = PackedFloat32Array(); vis.resize(Config.W * Config.H)
 	settled = PackedByteArray(); settled.resize(Config.W * Config.H)
@@ -90,8 +101,18 @@ func build():
 			"rect": Rect2i(156, Config.FACADE_Y0, 6, 168)})
 
 	tile_kotor = {}   # TerrainView membangun ulang penuh setelah build()
+
+	# luas fasad — penyebut tutupan(). Dihitung SEKALI di sini: sel yang
+	# nanti gugur oleh erosi tetap dihitung tertutup (bekas rambatannya
+	# tinggal), jadi penyebutnya tidak boleh ikut menyusut.
+	facade_luas = 0
+	for i in range(grid.size()):
+		var k = grid[i]
+		if k == Config.T_WALL or k == Config.T_WINDOW \
+				or k == Config.T_DOOR or k == Config.T_LEDGE:
+			facade_luas += 1
+
 	bake_mulai(Config.FACADE_Y0)
-	_build_frame()
 
 
 func _rect(x, y, w, h, kind):
@@ -212,160 +233,6 @@ func _bake_vis_row(y):
 		vis.set(i, clamp(v, 0.0, 1.0))
 
 
-# ---------------------------------------------------------------------------
-# Rangka struktural
-#
-# Lapisan data murni di atas grid terrain. grid, image, light, dan vis tidak
-# tersentuh sama sekali. Belum ada perhitungan beban dan belum ada keruntuhan
-# — itu TAHAP 3.
-#
-# Kolom dan balok disimpan sebagai RUAS antar-joint, bukan satu member utuh,
-# supaya beban punya kisi untuk mengalir. Di layar tetap tampak 4 kolom dan
-# 5 balok.
-#
-# _kolom_id() dan _balok_id() menghitung id dari koordinat kisi, jadi urutan
-# pembuatan di _build_frame() mengikat: SELURUH ruas kolom dibuat lebih dulu,
-# baru seluruh ruas balok.
-# ---------------------------------------------------------------------------
-
-func _build_frame():
-	members = []
-	joints = []
-	panels = []
-	solve_order = []
-
-	var cx = []   # x tiap garis kolom
-	for i in range(Config.FRAME_COLS):
-		cx.append(Config.FACADE_X0 + int(round(
-				float(i) * float(Config.FACADE_X1 - 1 - Config.FACADE_X0)
-				/ float(Config.FRAME_COLS - 1))))
-
-	var ry = []   # y tiap level balok
-	for j in range(Config.FRAME_ROWS):
-		ry.append(Config.FACADE_Y0 + int(round(
-				float(j) * float(Config.FACADE_Y1 - 1 - Config.FACADE_Y0)
-				/ float(Config.FRAME_ROWS - 1))))
-
-	# joint di tiap perpotongan — id = j * FRAME_COLS + i
-	for j in range(Config.FRAME_ROWS):
-		for i in range(Config.FRAME_COLS):
-			joints.append({
-				"id": joints.size(),
-				"x": cx[i],
-				"y": ry[j],
-				"col": i,
-				"row": j,
-				"member_terhubung": [],
-				"integritas": 1.0,
-			})
-
-	# ruas kolom — wajib dibuat lebih dulu, lihat _kolom_id()
-	for i in range(Config.FRAME_COLS):
-		for j in range(Config.FRAME_ROWS - 1):
-			_add_member(Config.M_KOLOM, cx[i], ry[j], cx[i], ry[j + 1],
-					_joint_id(i, j), _joint_id(i, j + 1))
-
-	# ruas balok
-	for j in range(Config.FRAME_ROWS):
-		for i in range(Config.FRAME_COLS - 1):
-			_add_member(Config.M_BALOK, cx[i], ry[j], cx[i + 1], ry[j],
-					_joint_id(i, j), _joint_id(i + 1, j))
-
-	_link_supports()
-	_build_solve_order()
-
-	# Panel dinding di antara rangka. INI massa gedung yang sebenarnya.
-	# Member cuma garis selebar 3 piksel, jadi tanpa panel, menghancurkan
-	# seluruh rangka nyaris tidak mengubah apa pun di layar — persis yang
-	# terjadi di playtest: STRUKTUR 0% tapi gedungnya masih berdiri utuh.
-	# Empat member yang mengurung tiap panel dicatat sebagai penopangnya.
-	for j in range(Config.FRAME_ROWS - 1):
-		for i in range(Config.FRAME_COLS - 1):
-			panels.append({
-				"x0": cx[i], "y0": ry[j],
-				"x1": cx[i + 1], "y1": ry[j + 1],
-				"alive": true,
-				"rangka": [
-					_balok_id(i, j), _balok_id(i, j + 1),
-					_kolom_id(i, j), _kolom_id(i + 1, j),
-				],
-			})
-
-
-# Urutan topologis: di tiap level, balok dulu baru ruas kolom. Keduanya hanya
-# menyuapi ruas di bawahnya, jadi satu sapuan atas-ke-bawah sudah cukup — tidak
-# perlu algoritma graf. Structure.gd memakai daftar ini dan karenanya tidak
-# perlu tahu apa pun tentang bentuk kisinya.
-func _build_solve_order():
-	solve_order = []
-	for j in range(Config.FRAME_ROWS):
-		for i in range(Config.FRAME_COLS - 1):
-			solve_order.append(_balok_id(i, j))
-		for i in range(Config.FRAME_COLS):
-			var kid = _kolom_id(i, j)
-			if kid >= 0:
-				solve_order.append(kid)
-
-
-func _add_member(tipe, x0, y0, x1, y1, ja, jb):
-	var m = {
-		"id": members.size(),
-		"x0": x0, "y0": y0,
-		"x1": x1, "y1": y1,
-		"tipe": tipe,
-		"panjang": Vector2(x1 - x0, y1 - y0).length(),
-		"alive": true,
-		"integritas": 1.0,
-		"beban": 0.0,
-		"member_bawah": [],
-		"joint_a": ja,
-		"joint_b": jb,
-	}
-	members.append(m)
-	joints[ja].member_terhubung.append(m.id)
-	joints[jb].member_terhubung.append(m.id)
-	return m.id
-
-
-func _link_supports():
-	# Ruas kolom ditopang ruas kolom di bawahnya. Yang paling bawah berdiri di
-	# pondasi, jadi member_bawah-nya kosong.
-	for i in range(Config.FRAME_COLS):
-		for j in range(Config.FRAME_ROWS - 1):
-			var below = _kolom_id(i, j + 1)
-			if below >= 0:
-				members[_kolom_id(i, j)].member_bawah.append(below)
-
-	# Ruas balok ditopang ruas kolom yang menggantung di bawah kedua joint
-	# ujungnya. Di level paling bawah tidak ada kolom di bawahnya — pondasi.
-	for j in range(Config.FRAME_ROWS):
-		for i in range(Config.FRAME_COLS - 1):
-			var b = members[_balok_id(i, j)]
-			for k in [i, i + 1]:
-				var kid = _kolom_id(k, j)
-				if kid >= 0:
-					b.member_bawah.append(kid)
-
-
-func _joint_id(i, j):
-	return j * Config.FRAME_COLS + i
-
-
-func _kolom_id(i, j):
-	# ruas kolom pada garis kolom i, antara level balok j dan j+1
-	if i < 0 or i >= Config.FRAME_COLS or j < 0 or j >= Config.FRAME_ROWS - 1:
-		return -1
-	return i * (Config.FRAME_ROWS - 1) + j
-
-
-func _balok_id(i, j):
-	# ruas balok pada level j, antara garis kolom i dan i+1
-	if i < 0 or i >= Config.FRAME_COLS - 1 or j < 0 or j >= Config.FRAME_ROWS:
-		return -1
-	return Config.FRAME_COLS * (Config.FRAME_ROWS - 1) \
-			+ j * (Config.FRAME_COLS - 1) + i
-
-
 func at(x, y):
 	if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 		return Config.T_NEIGHBOR
@@ -396,17 +263,17 @@ func on_facade(x, y):
 # Permukaan yang bisa dipijak sulur. Inilah predikat yang dipakai pertumbuhan,
 # BUKAN on_facade() mentah.
 #
-# Lubang hasil keruntuhan hanya selebar 3 piksel. Kalau sulur tidak bisa
-# menyeberanginya, fasad terpotong jadi panel-panel terpisah dan sulur
-# terkurung selamanya — persis yang terjadi di playtest. Jadi sulur boleh
-# merentang sejauh VINE_JEMBATAN piksel, seperti sulur sungguhan melewati
-# retakan.
+# Tiga lapis, berurutan dari yang termurah:
+#   1. fasad/puing biasa
+#   2. BEKAS RAMBATAN (tutup) — pijakan kekal. Fasad yang gugur oleh erosi
+#      tetap bisa dipijak sulur yang pernah merambatinya; tanpa ini erosi
+#      menghukum pemain justru karena berhasil menutup fasad
+#   3. jembatan VINE_JEMBATAN piksel melewati celah sempit
 #
-# Hanya arah sumbu yang dipindai, bukan kotak penuh: member selalu tegak atau
-# mendatar, jadi celahnya pasti sejajar sumbu. 8 lookup, bukan 25 — penting
-# karena normal_at() memanggil solid_at() 24 kali per tabrakan.
-#
-# Dibatasi ke dalam kotak fasad supaya sulur tidak melayang keluar siluet.
+# Hanya arah sumbu yang dipindai untuk jembatan, bukan kotak penuh — 8
+# lookup, bukan 25; penting karena normal_at() memanggil solid_at() 24 kali
+# per tabrakan. Dibatasi ke dalam kotak fasad supaya sulur tidak melayang
+# keluar siluet.
 func vine_ok(x, y):
 	var ix = int(round(x))
 	var iy = int(round(y))
@@ -415,11 +282,78 @@ func vine_ok(x, y):
 	if ix < Config.FACADE_X0 or ix >= Config.FACADE_X1 \
 			or iy < Config.FACADE_Y0 or iy >= Config.FACADE_Y1:
 		return false
+	if tutup[iy * Config.W + ix] == 1:
+		return true
 	for d in range(1, Config.VINE_JEMBATAN + 1):
 		if on_facade(ix + d, iy) or on_facade(ix - d, iy) \
 				or on_facade(ix, iy + d) or on_facade(ix, iy - d):
 			return true
 	return false
+
+
+# ---------------------------------------------------------------------------
+# Rambatan (TAHAP B) — dipanggil Strand tiap kali sulur mencatat titik baru
+# ---------------------------------------------------------------------------
+
+# Tandai 3x3 di sekitar titik sulur sebagai "pernah dirambati" — kira-kira
+# selebar badan sulur. Sel fasad yang baru tertutup dilaporkan ke Erosi
+# (per petak-erosi) dan dihitung ke tutupan. Sel puing hanya diberi pijakan
+# kekal, tanpa erosi dan tanpa hitungan tutupan.
+func rambati(px, py):
+	for dy in range(-1, 2):
+		var y = py + dy
+		if y < 0 or y >= Config.H:
+			continue
+		for dx in range(-1, 2):
+			var x = px + dx
+			if x < 0 or x >= Config.W:
+				continue
+			var i = y * Config.W + x
+			if tutup[i] == 1:
+				continue
+			var k = grid[i]
+			if k == Config.T_WALL or k == Config.T_WINDOW \
+					or k == Config.T_DOOR or k == Config.T_LEDGE:
+				tutup.set(i, 1)
+				tutup_luas += 1
+				rambatan_baru.append(Vector2i(
+						x / Config.EROSI_PETAK, y / Config.EROSI_PETAK))
+			elif k == Config.T_PUING:
+				tutup.set(i, 1)
+
+
+# Erosi memanggil ini tiap frame: ambil sel-fasad-baru-tertutup (per petak
+# erosi; satu entri per sel), kosongkan.
+func ambil_rambatan_baru():
+	if rambatan_baru.is_empty():
+		return []
+	var keluar = rambatan_baru
+	rambatan_baru = []
+	return keluar
+
+
+# Bagian fasad yang sudah dirambati, 0..1. Kemajuan pemain — dan kondisi
+# menang sementara sampai TAHAP F menggantinya dengan target per zona.
+func tutupan():
+	if facade_luas == 0:
+		return 0.0
+	return float(tutup_luas) / float(facade_luas)
+
+
+# Erosi menggugurkan satu petak: lubangi semua sel gedung di kotak itu.
+# Mengembalikan true kalau memang ada yang terlubangi.
+func carve_kotak(x0, y0, sisi):
+	var ada = false
+	for y in range(y0, y0 + sisi):
+		for x in range(x0, x0 + sisi):
+			if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
+				continue
+			var k = grid[y * Config.W + x]
+			if k == Config.T_WALL or k == Config.T_WINDOW \
+					or k == Config.T_DOOR or k == Config.T_LEDGE:
+				_carve_px(x, y)
+				ada = true
+	return ada
 
 
 # ---------------------------------------------------------------------------
@@ -471,27 +405,6 @@ func ambil_tile_kotor():
 # Perusakan — kebalikan dari _rect()
 # ---------------------------------------------------------------------------
 
-# Menghapus grid di sepanjang member, menyisakan lubang tembus pandang.
-func carve_member(m):
-	var n = int(max(abs(m.x1 - m.x0), abs(m.y1 - m.y0)))
-	for k in range(n + 1):
-		var t = float(k) / float(max(1, n))
-		var px = int(round(m.x0 + (m.x1 - m.x0) * t))
-		var py = int(round(m.y0 + (m.y1 - m.y0) * t))
-		for dy in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
-			for dx in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
-				_carve_px(px + dx, py + dy)
-
-
-# Sepotong panel, dari baris ya sampai yb. Panel diluruhkan sedikit demi
-# sedikit dari atas ke bawah, bukan dihapus sekaligus, supaya pemain melihat
-# dindingnya jatuh alih-alih menghilang begitu saja.
-func carve_rows(p, ya, yb):
-	for y in range(max(p.y0, ya), min(p.y1, yb) + 1):
-		for x in range(p.x0, p.x1 + 1):
-			_carve_px(x, y)
-
-
 # Hanya melubangi bagian gedung. Tanah, pipa, dan beton bawah tanah tidak
 # tersentuh walau kuas melebar melewati garis tanah.
 func _carve_px(x, y):
@@ -535,76 +448,3 @@ func settle_many(points):
 				_tandai_petak(x, y)
 				if y < puing_atas:
 					puing_atas = y
-
-
-# Member hanya sekuat sambungan terlemahnya. Satu-satunya sumber kebenaran
-# untuk kapasitas — dipakai deteksi gagal, warna debug, dan retakan.
-func kapasitas(m):
-	return m.integritas * min(joints[m.joint_a].integritas,
-			joints[m.joint_b].integritas) * Config.KAPASITAS_MAX
-
-
-# Joint terdekat yang masih layak diserang: belum habis, dan setidaknya satu
-# member yang menempel padanya masih hidup.
-func nearest_joint(p, radius):
-	var best = radius
-	var found = null
-	for j in joints:
-		if j.integritas <= 0.0:
-			continue
-		var hidup = false
-		for mid in j.member_terhubung:
-			if members[mid].alive:
-				hidup = true
-				break
-		if not hidup:
-			continue
-		var d = p.distance_to(Vector2(j.x, j.y))
-		if d < best:
-			best = d
-			found = j
-	return found
-
-
-# Kaki gedung terdekat — ruas KOLOM paling bawah. Sasaran akar.
-#
-# Sengaja bukan "semua member ber-member_bawah kosong": balok level dasar juga
-# memenuhi syarat itu, padahal tidak ada yang bertumpu padanya, jadi
-# meruntuhkannya tidak memicu apa pun. Lebih buruk, akar lahir 2 piksel di
-# bawah balok dasar dan akan menggerogotinya sia-sia sejak frame pertama.
-# Ruas kolom bawahlah yang memikul seluruh gedung.
-func foundation_at(p, radius):
-	var best = radius
-	var found = null
-	for m in members:
-		if not m.alive or m.tipe != Config.M_KOLOM or m.integritas <= 0.0:
-			continue
-		if m.member_bawah.size() > 0:
-			continue
-		var d = _dist_seg(p, Vector2(m.x0, m.y0), Vector2(m.x1, m.y1))
-		if d < best:
-			best = d
-			found = m
-	return found
-
-
-func member_at(p, radius):
-	var best = radius
-	var found = -1
-	for m in members:
-		if not m.alive:
-			continue
-		var d = _dist_seg(p, Vector2(m.x0, m.y0), Vector2(m.x1, m.y1))
-		if d < best:
-			best = d
-			found = m.id
-	return found
-
-
-func _dist_seg(p, a, b):
-	var ab = b - a
-	var l2 = ab.length_squared()
-	if l2 < 0.0001:
-		return p.distance_to(a)
-	var t = clamp((p - a).dot(ab) / l2, 0.0, 1.0)
-	return p.distance_to(a + ab * t)

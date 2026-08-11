@@ -238,14 +238,35 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A, R1, R2, dan R3 selesai.** Jalur render dijeda.
+Status: **TAHAP A, B, R1–R3 selesai.** Jalur render dijeda.
 
 **PRIORITAS BERUBAH 11 Agustus 2026, setelah playtest pemilik proyek:**
-gameplay yang terasa masih game pembongkaran lama (musuh spawn terus-menerus,
-pemanjat terasa tidak imbang, tempo arcade) membuat perombakan gameplay
-didahulukan atas sisa jalur render. **Berikutnya: TAHAP B** (Structure →
-Erosi), lalu **TAHAP D** (perhatian & kalender inspeksi), lalu **TAHAP E**
-(regu terjadwal). R4–R6 dilanjutkan setelahnya.
+gameplay yang terasa masih game pembongkaran lama membuat perombakan gameplay
+didahulukan atas sisa jalur render. **Berikutnya: TAHAP D** (perhatian &
+kalender inspeksi), lalu **TAHAP E** (regu terjadwal). R4–R6 setelahnya.
+
+TAHAP B yang sudah berdiri — pembongkaran resmi jadi kosmetik:
+
+- **`Structure.gd` DIHAPUS**, diganti `Erosi.gd` (~190 baris): rangka
+  member/joint, aliran beban, keruntuhan berantai, panel, `weaken()`, dan
+  menang-lewat-kerusakan semuanya lenyap. Puing jatuh, debu, dan bake-ulang
+  cahaya dibawa utuh.
+- **`WorldMap.tutup`** — peta bekas rambatan, diisi `rambati()` dari
+  `Strand.grow` (3×3 per titik sulur). Tiga peran: (1) pijakan KEKAL —
+  `vine_ok()` menerimanya, jadi erosi TIDAK PERNAH membuat sulur kehilangan
+  pijakan atas keberhasilannya sendiri; (2) bahan bakar erosi per petak 4×4
+  (`LAPUK_LAJU`, berbobot luas tutupan petak); (3) kemajuan pemain lewat
+  `tutupan()`.
+- **Menang interim** (sampai TAHAP F per zona): `tutupan() >= COVERAGE_GOAL`
+  (0.55) — angka dari rancangan paling awal. Bar HUD: `HIJAU x% dari 55%`.
+- Jumlah regu/pemanjat interim diskalakan dari `tutupan()`, bukan integritas —
+  diganti total oleh perhatian saat TAHAP E.
+- Ikut terhapus karena kehilangan pemanggil: `retreat_to_facade`/
+  `retreat_unsupported`, `_tarik_joint` (tigmotropisme ke joint), debug rangka
+  (tahan B), `draw_cracks`/`draw_frame`, mekanisme freeze/shake keruntuhan.
+- `Crew.update(delta, sim, world, erosi, phase)`;
+  `Climber.update(delta, sim, world, phase)`;
+  `Hud.refresh(sim, cycle, world, ...)`.
 
 Dari playtest yang sama, sudah dijawab langsung:
 - Layar pembuka "terlalu ramai" → layar judul pekat yang menutup dunia dan

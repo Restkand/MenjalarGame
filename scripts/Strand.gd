@@ -51,7 +51,6 @@ func grow(delta, steer, t, world, laju = 1.0):
 	var target = angle
 	if steer != null:
 		target = steer
-	target = _tarik_joint(target, steer, tip, world)
 	target += sin(t * 2.7 + id * 13.0) * Config.NOISE_AMOUNT * delta
 
 	var d = wrapf(target - angle, -PI, PI)
@@ -90,6 +89,8 @@ func grow(delta, steer, t, world, laju = 1.0):
 		points.append(Vector2(tip.x, tip.y))
 		if not is_root:
 			gained = world.vis_at(int(round(tip.x)), int(round(tip.y)))
+			# jejak rambatan: pijakan kekal + bahan bakar erosi + tutupan
+			world.rambati(int(round(tip.x)), int(round(tip.y)))
 		if points.size() > Config.STRAND_MAX_TITIK:
 			points.remove_at(0)
 
@@ -100,22 +101,6 @@ func grow(delta, steer, t, world, laju = 1.0):
 			_spawn_leaf(world)
 
 	return gained
-
-
-# Tigmotropisme ke arah sambungan struktur. Hanya sulur — akar tidak mencari
-# joint. Saat pemain sedang mengarahkan, deviasinya dibatasi JOINT_TARIK_MAX
-# supaya tetap terasa mengusulkan, bukan kehilangan kendali (Logika §5.1).
-func _tarik_joint(target, steer, p, world):
-	if is_root:
-		return target
-	var j = world.nearest_joint(p, Config.JOINT_TARIK_RADIUS)
-	if j == null:
-		return target
-	var ke_joint = atan2(j.y - p.y, j.x - p.x)
-	if steer == null:
-		return ke_joint
-	return steer + clamp(wrapf(ke_joint - steer, -PI, PI),
-			-Config.JOINT_TARIK_MAX, Config.JOINT_TARIK_MAX)
 
 
 func _spawn_leaf(world):
@@ -136,36 +121,7 @@ func age_leaves(delta):
 		l.age = min(1.5, l.age + delta)
 
 
-# Fasad di bawah ujung runtuh. Mundur ke titik terakhir yang masih menempel,
-# buang bagian yang kini menggantung di atas lubang, lalu lanjut hidup.
-# Mengembalikan true kalau untai ini memang terdampak.
-func retreat_to_facade(world):
-	# Pakai vine_ok(), bukan on_facade() — kalau tidak, sulur yang sedang
-	# merentang di atas celah sempit akan dianggap kehilangan pijakan dan
-	# ditarik mundur, membatalkan kemampuan menjembatani itu sendiri.
-	if is_root or world.vine_ok(tip.x, tip.y):
-		return false
-
-	var i = points.size() - 1
-	while i >= 0 and not world.vine_ok(points[i].x, points[i].y):
-		i -= 1
-
-	if i < 1:
-		alive = false   # tidak ada pijakan tersisa sama sekali
-		return true
-
-	points.resize(i + 1)
-	tip = Vector2(points[i].x, points[i].y)
-	angle = angle + PI   # menghadap balik, menjauh dari lubang
-	_acc = 0.0
-	_leaf_acc = 0.0
-
-	var keep = []
-	for l in leaves:
-		if world.on_facade(l.pos.x, l.pos.y):
-			keep.append(l)
-	leaves = keep
-	return true
+# retreat_to_facade() dihapus di TAHAP B — lihat catatan di TreeSim.
 
 
 func trim(n):
@@ -191,13 +147,8 @@ func preview(mouse, length, world):
 	var turn_px = Config.MAX_TURN / max(0.001, spd)
 	for _i in range(int(length)):
 		var a2 = a
-		var st = null
 		if p.distance_to(mouse) > Config.DEAD_ZONE:
-			st = atan2(mouse.y - p.y, mouse.x - p.x)
-			a2 = st
-		# pratinjau harus memakai aturan yang sama, termasuk tarikan joint,
-		# supaya menunjukkan ke mana sulur benar-benar tumbuh (Logika §11)
-		a2 = _tarik_joint(a2, st, p, world)
+			a2 = atan2(mouse.y - p.y, mouse.x - p.x)
 		var d = wrapf(a2 - a, -PI, PI)
 		a += clamp(d, -turn_px, turn_px)
 		var q = Vector2(p.x + cos(a), p.y + sin(a))

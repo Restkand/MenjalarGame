@@ -248,68 +248,6 @@ func draw_risk(world):
 		y += 3
 
 
-# Member diwarnai menurut RASIO BEBAN, bukan integritas — itu yang perlu
-# dilihat saat menyetel KAPASITAS_MAX. Hijau = santai, merah = di ambang.
-# Joint tetap diwarnai menurut integritas (baru berubah di TAHAP 5).
-func draw_frame(world):
-	for m in world.members:
-		if not m.alive:
-			continue
-		var cap = world.kapasitas(m)
-		var stress = 1.0 if cap <= 0.0 else clamp(m.beban / cap, 0.0, 1.0)
-		_line(_ovl_img, m.x0, m.y0, m.x1, m.y1,
-				Config.C_FRAME_OK.lerp(Config.C_FRAME_BAD, stress))
-	# joint digambar belakangan supaya duduk di atas member
-	for j in world.joints:
-		var hidup = false
-		for mid in j.member_terhubung:
-			if world.members[mid].alive:
-				hidup = true
-				break
-		if not hidup:
-			continue
-		var c = Config.C_FRAME_BAD.lerp(Config.C_JOINT, j.integritas)
-		for dy in range(-1, 2):
-			for dx in range(-1, 2):
-				_put(_ovl_img, j.x + dx, j.y + dy, c)
-
-
-# Retakan tumbuh menurut RASIO BEBAN, bukan integritas mentah. Rasionya adalah
-# beban / (integritas * KAPASITAS_MAX), jadi ia ikut naik saat integritas turun
-# — yang baru terjadi mulai TAHAP 5 saat tanaman melemahkan sambungan.
-# Selalu digambar, bukan hanya saat mode debug: ini umpan balik untuk pemain.
-func draw_cracks(world):
-	for m in world.members:
-		if not m.alive:
-			continue
-		var cap = world.kapasitas(m)
-		if cap <= 0.0:
-			continue
-		var stress = m.beban / cap
-		if stress < Config.RETAK_AMBANG:
-			continue
-		var f = clamp((stress - Config.RETAK_AMBANG)
-				/ max(0.01, 1.0 - Config.RETAK_AMBANG), 0.0, 1.0)
-		var dx = m.x1 - m.x0
-		var dy = m.y1 - m.y0
-		var n = int(max(abs(dx), abs(dy)))
-		if n <= 0:
-			continue
-		var pl = Vector2(-dy, dx).normalized()   # tegak lurus member
-		for k in range(int(n * f) + 1):
-			var t = float(k) / float(n)
-			# jitter tetap per member supaya retakan tidak berkedip tiap frame
-			var off = round(_hash(m.id * 7.3 + k * 1.7) * 2.0) - 1.0
-			_put(_ovl_img,
-					int(round(m.x0 + dx * t + pl.x * off)),
-					int(round(m.y0 + dy * t + pl.y * off)),
-					Config.C_RETAK)
-
-
-func _hash(n):
-	var s = sin(n * 127.1) * 43758.5453
-	return s - floor(s)
-
 
 func _stamp(img, cx, cy, r, col):
 	var ir = int(ceil(r))

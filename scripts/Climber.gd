@@ -25,7 +25,7 @@ func reset():
 	dipotong = 0
 
 
-func update(delta, sim, structure, phase):
+func update(delta, sim, world, phase):
 	dipotong = 0
 
 	# Ikut pulang bersama regu darat saat malam.
@@ -34,7 +34,7 @@ func update(delta, sim, structure, phase):
 		return
 
 	_bersihkan()
-	_sesuaikan_jumlah(sim, structure)
+	_sesuaikan_jumlah(sim, world)
 	for c in units:
 		_update_unit(c, delta)
 
@@ -80,13 +80,14 @@ func _bersihkan():
 	units = sisa
 
 
-func _sesuaikan_jumlah(sim, structure):
+func _sesuaikan_jumlah(sim, world):
 	# slider boleh diturunkan ke 0 untuk mematikan pemanjat saat menyetel
 	if Config.CLIMB_MAX < 1:
 		units = []
 		return
 
-	var n = 1 + int((1.0 - structure.integritas_total())
+	# interim TAHAP B: skala dari tutupan, sama seperti regu darat
+	var n = 1 + int(clamp(world.tutupan() / Config.COVERAGE_GOAL, 0.0, 1.0)
 			* float(Config.CLIMB_MAX - 1))
 	n = int(clamp(n, 1, Config.CLIMB_MAX))
 

@@ -153,7 +153,7 @@ func flash_msg(text):
 	_msg_t = 1.8
 
 
-func refresh(sim, w, st, crew, climbers, won):
+func refresh(sim, w, world, crew, climbers, won):
 	var ph = "SIANG" if w.phase == Config.PHASE_DAY else "MALAM"
 	_lbl_phase.text = "%s   %d%%" % [ph, int(w.progress() * 100)]
 	if crew.aktif() > 0:
@@ -177,15 +177,18 @@ func refresh(sim, w, st, crew, climbers, won):
 	if sim.trees.size() > 0:
 		_lbl_res.text += "    POHON %d" % sim.trees.size()
 
-	# Bar ini menyusut saat gedung dilemahkan dan diruntuhkan.
-	var integ = st.integritas_total()
-	_lbl_cov.text = "STRUKTUR  %d%%" % int(round(integ * 100))
-	_c_fill.size = Vector2(238.0 * clamp(integ, 0.0, 1.0), 11)
+	# Bar kemajuan: seberapa banyak fasad sudah dirambati. Target interim
+	# COVERAGE_GOAL — TAHAP F menggantinya dengan target per zona.
+	var hijau = world.tutupan()
+	_lbl_cov.text = "HIJAU  %d%%  dari %d%%" % [int(round(hijau * 100)),
+			int(round(Config.COVERAGE_GOAL * 100))]
+	_c_fill.size = Vector2(238.0 * clamp(hijau / Config.COVERAGE_GOAL,
+			0.0, 1.0), 11)
 
 	_msg_t = max(0.0, _msg_t - get_process_delta_time())
 
 	if won:
-		_lbl_win.text = "GEDUNG RUNTUH     (R untuk ulang)"
+		_lbl_win.text = "KOTA MULAI MENGHIJAU     (R untuk ulang)"
 	elif _msg_t > 0.0:
 		_lbl_win.text = _msg
 	else:

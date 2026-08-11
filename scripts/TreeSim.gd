@@ -246,23 +246,9 @@ func spend(amount):
 	energy = max(0.0, energy - amount)
 
 
-# Sulur menempel pada fasad. Kalau fasad di bawah ujungnya lenyap karena
-# keruntuhan, ujung itu MUNDUR ke titik terakhir yang masih menempel, bukan
-# mati.
-#
-# Versi pertama mematikannya, dan itu membuat permainan buntu: satu keruntuhan
-# berantai melubangi sampai 20 dari 31 member sekaligus, jadi hampir semua
-# sulur mati serentak — padahal sulur adalah satu-satunya alat untuk
-# melemahkan joint. Mundur tetap menghukum (pertumbuhan hilang, pijakan
-# menyempit) tanpa menghabisi permainannya.
-func retreat_unsupported(world):
-	var n = 0
-	for s in strands:
-		if not s.alive or s.is_root:
-			continue
-		if s.retreat_to_facade(world):
-			n += 1
-	return n
+# retreat_unsupported() dihapus di TAHAP B: satu-satunya yang melenyapkan
+# fasad sekarang adalah erosi, dan bekas rambatan (world.tutup) adalah
+# pijakan kekal — sulur tidak pernah kehilangan tempat berdiri.
 
 
 # Memutus sulur di titik terdekat kursor. Seluruh bagian di atas potongan

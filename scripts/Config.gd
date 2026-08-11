@@ -108,7 +108,6 @@ const STRAND_EKOR      = 360
 # Radius pencarian klik, dalam piksel dunia.
 const PILIH_RADIUS  = 18.0   # memilih ujung
 const PUTUS_RADIUS  = 16.0   # memutus sulur dengan X
-const MEMBER_RADIUS = 12.0   # klik kanan pada member saat mode rangka (B)
 const COST_BRANCH = 15.0
 const ENERGY_MAX = 200.0
 const ENERGY_START = 120.0
@@ -179,107 +178,48 @@ const BAKE_BARIS_MAIN = 2
 const BAKE_LANGKAH    = 2.0    # panjang satu langkah sinar
 const BAKE_MAX        = 220    # langkah maksimal sebelum sinar dianggap lolos
 
-# rangka struktural
-const M_KOLOM = 0
-const M_BALOK = 1
-
-const FRAME_COLS = 4
-const FRAME_ROWS = 5
-
-# beban & keruntuhan
+# ---------------------------------------------------------------------------
+# Erosi — pembongkaran sebagai KOSMETIK (TAHAP B, docs/06 §5)
 #
-# KAPASITAS_MAX adalah angka paling menentukan di sistem ini. Dengan
-# BERAT_PER_PIKSEL = 1.0, beban ruas kolom paling bawah saat gedung utuh adalah
-# 199 / 301 / 301 / 199, jadi ambang harus di atas 301 atau gedung runtuh
-# sendiri saat mulai. Perilaku terukur:
+# Seluruh sistem rangka/beban/keruntuhan-berantai/pelemahan DIBUANG. Fasad
+# yang lama dirambati sulur melapuk sepetak (EROSI_PETAK x EROSI_PETAK
+# satuan) demi sepetak, gugur jadi puing, mengendap jadi tanah baru. Ia
+# hadiah visual atas ketekunan — BUKAN jalan menang.
 #
-#   350  runtuh berantai besar: satu serangan menjatuhkan 20 dari 31 member.
-#        Terlalu mudah — playtest menunjukkan gedung roboh setelah menjalar
-#        sedikit saja.
-#   420  Terkurung: satu serangan menjatuhkan satu garis kolom (4 member) tanpa
-#        merambat ke tetangga, jadi butuh 4 serangan berhasil untuk menang.
-#        Margin gedung utuh 28% (stress terberat 0.717).
-#
-# TAHAP A: fasad membesar dari 152x100 ke 288x168, jadi tiap member lebih
-# panjang dan bebannya ikut naik. Nilai baru dipilih supaya STRESS TERBERAT
-# TETAP 0.717 — perilaku keruntuhannya identik, cuma skalanya yang berubah.
-# Diukur, bukan ditebak: lihat Structure.lapor_stress().
-#   765  DIPAKAI. Diukur: beban ruas kolom dalam paling bawah (member 7) =
-#        549.0, jadi 549/765 = 0.7176 — rasio lama dipertahankan persis.
-var BERAT_PER_PIKSEL = 1.0
-var KAPASITAS_MAX    = 765.0
-var COLLAPSE_STEP    = 0.15
+# LAPUK_LAJU: laju lapuk per detik pada petak yang penuh tertutup rambatan.
+# 0.015 berarti fasad gugur setelah ~67 detik dirambati penuh — cukup lama
+# untuk terasa "sudah lama di sini", cukup cepat untuk terlihat dalam satu
+# sesi. Kalau pemain mulai sengaja menumbuhkan demi meruntuhkan, angka ini
+# terlalu tinggi.
+var LAPUK_LAJU = 0.015
 
-const COLLAPSE_MAX_ITER = 20
-const MEMBER_TEBAL      = 2
-const PUING_PER_PIKSEL  = 0.6
+const EROSI_PETAK = 4    # sisi petak lapuk, satuan
+const EROSI_PUING = 3    # bongkah puing per petak yang gugur
+const EROSI_DEBU  = 8    # debu per petak yang gugur
+
 const PUING_GRAVITASI   = 240.0
 const PUING_MAX         = 3000
 
-# Panel dinding jatuh saat sekian dari 4 member yang mengurungnya sudah gagal.
-# 3, bukan 2: dengan 2, satu serangan menjatuhkan hampir seluruh dinding
-# sekaligus dan gedung terasa rapuh.
-const PANEL_AMBANG   = 3
-
-# Panel luruh baris demi baris dari atas, bukan lenyap seketika. Tanpa ini,
-# dindingnya hilang dalam satu frame dan yang tersisa cuma awan titik — pemain
-# tidak melihat massa apa pun jatuh.
-const PANEL_LURUH    = 170.0 # baris per detik
-# Luas panel naik 4x di dunia 2x, jadi angkanya digandakan agar jumlah bongkah
-# tidak ikut naik 4x. Tumpukan jadi sedikit lebih renggang; itu diterima,
-# karena seluruh sistem panel ini dibuang di TAHAP B.
-const PUING_PER_LUAS = 28    # satu bongkah puing tiap sekian piksel persegi
-
-# juice keruntuhan
-#
-# RETAK_AMBANG 0.65 dipilih supaya dua ruas kolom dalam paling bawah (rasio
-# beban 301/420 = 0.717) menunjukkan retakan sepanjang 19% sejak awal. Itu
-# memberi tahu pemain di mana jalur bebannya terberat tanpa satu pun teks.
-# Kolom terluar (0.474) tidak menampilkan apa pun. Naikkan ke 0.75 kalau
-# retakan hanya boleh muncul sebagai peringatan menjelang gagal.
+# getaran kamera — dipakai Pane.guncang(); sejak keruntuhan berantai dibuang
+# tidak ada yang memicunya, tapi mekanismenya disimpan untuk gempa/peristiwa
+# nanti
 var SHAKE_MAX        = 6.0    # piksel dunia
 var SHAKE_DECAY      = 0.30   # detik sampai reda
-var FREEZE_TIME      = 0.08
-var RETAK_AMBANG     = 0.65
 
-const SHAKE_PER_PANJANG = 0.06
-const DEBU_MIN       = 20
-const DEBU_MAX       = 40
 const DEBU_MAX_TOTAL = 400
 const DEBU_NAIK      = 18.0
 const DEBU_UMUR      = 1.1
 
-# melemahkan struktur
-#
-# Kapasitas member = integritas_member * min(integritas kedua joint)
-#                    * KAPASITAS_MAX
-# Member hanya sekuat sambungan terlemahnya.
-#
-# WEAKEN_RATE adalah knob pacing utama. Dengan kapasitas 420:
-#
-#   KOLOM1.3 (beban 301)  joint harus turun ke 0.717  ->  5,7 detik kontak
-#   KOLOM0.3 (beban 199)  joint harus turun ke 0.474  -> 10,5 detik kontak
-#
-# Menyerang titik paling terbebani otomatis paling cepat, dan itu mengajarkan
-# jalur beban tanpa satu pun teks.
-#
-# Nilai lama 0.12 hanya butuh 1,2 detik dan itu terlalu mudah. Setelah satu
-# garis kolom habis, tetangganya melonjak ke stress 0.955 sehingga serangan
-# berikutnya cuma perlu 0,9 detik — kurva kesulitannya menurun sendiri, dan
-# endgame memuncak bersamaan dengan bertambahnya regu perawatan.
-var WEAKEN_RATE = 0.05
-
-# Seberapa lebar celah yang masih bisa direntang sulur. Lubang hasil
-# carve_member kini selebar 5 piksel (MEMBER_TEBAL 2), jadi titik tengahnya
-# berjarak 3 piksel dari fasad di kedua sisi — nilai 3 pas untuk
-# menyeberanginya. Kawasan yang benar-benar runtuh tetap tidak bisa
-# diseberangi. Nilai ini WAJIB mengikuti MEMBER_TEBAL: rumusnya
-# MEMBER_TEBAL + 1.
+# Seberapa lebar celah yang masih bisa direntang sulur. Sejak TAHAP B satu-
+# satunya lubang adalah petak erosi 4 satuan — lebih lebar dari jembatan ini,
+# TAPI bekas rambatan (world.tutup) adalah pijakan kekal, jadi sulur tidak
+# pernah terkurung oleh erosinya sendiri.
 const VINE_JEMBATAN = 3
 
-const JOINT_RADIUS       = 6.0     # jangkauan melemahkan
-const JOINT_TARIK_RADIUS = 24.0    # jangkauan tigmotropisme ke joint
-const JOINT_TARIK_MAX    = 0.262   # 15 derajat, batas deviasi dari arah pemain
+# Kondisi menang SEMENTARA sampai TAHAP F menggantinya dengan target per
+# zona: tutupi sekian bagian fasad dengan rambatan. Angka dari rancangan
+# paling awal (docs/04 §3).
+const COVERAGE_GOAL = 0.55
 
 # Pencahayaan 2D.
 #
@@ -392,8 +332,3 @@ const C_ALERT     = Color("C25A4A")
 const C_PUING     = Color("6B6B64")
 const C_DEBU      = Color("9A9A92")
 const C_RETAK     = Color("3A3A36")
-
-# debug rangka (tahan B)
-const C_FRAME_OK  = Color("5EC24A")
-const C_FRAME_BAD = Color("C25A4A")
-const C_JOINT     = Color("B8E986")

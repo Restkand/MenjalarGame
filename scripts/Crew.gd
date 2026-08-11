@@ -24,7 +24,7 @@ func reset():
 	ditimpa = 0
 
 
-func update(delta, sim, world, structure, phase):
+func update(delta, sim, world, erosi, phase):
 	dipotong = 0
 	ditimpa = 0
 
@@ -34,12 +34,12 @@ func update(delta, sim, world, structure, phase):
 		units = []
 		return
 
-	_sesuaikan_jumlah(structure)
+	_sesuaikan_jumlah(world)
 	for u in units:
 		if u.pingsan > 0.0:
 			u.pingsan = max(0.0, u.pingsan - delta)
 			continue
-		if _tertimpa(u, structure):
+		if _tertimpa(u, erosi):
 			u.pingsan = Config.CREW_PINGSAN
 			u.sasaran = null
 			u.kerja = 0.0
@@ -49,12 +49,12 @@ func update(delta, sim, world, structure, phase):
 
 
 # Puing yang jatuh melewati ketinggian badan menimbun regu di bawahnya.
-# Inilah jawaban pemain: waktukan keruntuhan saat mereka sedang berada di
+# Inilah jawaban pemain: waktukan gugurnya fasad saat mereka berada di
 # bawah reruntuhan.
-func _tertimpa(u, structure):
-	if structure.falling.is_empty():
+func _tertimpa(u, erosi):
+	if erosi.falling.is_empty():
 		return false
-	for p in structure.falling:
+	for p in erosi.falling:
 		if p.y < Config.GROUND_Y - 20.0 or p.y > Config.GROUND_Y:
 			continue
 		if abs(p.x - u.x) <= Config.CREW_LEBAR:
@@ -71,10 +71,12 @@ func aktif():
 	return n
 
 
-# Tekanan naik seiring kerusakan, jadi justru saat pemain hampir menang
+# Tekanan naik seiring TUTUPAN, jadi justru saat pemain hampir menang
 # situasinya paling genting. Itu memberi permainan busur, bukan garis datar.
-func _sesuaikan_jumlah(structure):
-	var n = 1 + int((1.0 - structure.integritas_total())
+# (Interim TAHAP B — sistem spawn ini seluruhnya diganti inspeksi terjadwal
+# di TAHAP E; jumlahnya nanti ditentukan tingkat perhatian saat inspeksi.)
+func _sesuaikan_jumlah(world):
+	var n = 1 + int(clamp(world.tutupan() / Config.COVERAGE_GOAL, 0.0, 1.0)
 			* float(Config.CREW_MAX - 1))
 	n = int(clamp(n, 1, Config.CREW_MAX))
 	while units.size() < n:

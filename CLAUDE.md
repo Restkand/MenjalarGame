@@ -1,7 +1,8 @@
 # Menjalar — konteks proyek
 
 Game 2D pixel art. Pemain adalah tanaman merambat yang tumbuh di fasad gedung
-kota. Simulasi berjalan di 240×160 piksel, ditampilkan 960×640.
+kota. Dunia berukuran 480×320 piksel dan LEBIH BESAR daripada layar; ia dilihat
+lewat dua pane split screen di jendela 960×640, masing-masing berkamera sendiri.
 
 ---
 
@@ -57,6 +58,27 @@ ia menjaga game tetap murah, dan sudah membentuk seluruh identitas visualnya.
 - **Draw call harus minimal.** Jumlah `Sprite2D` di scene dijaga tetap kecil.
 - **Light2D BOLEH** — batasan ini dicabut 8 Agustus 2026, lihat di bawah.
 
+## ARSITEKTUR RENDER DIGANTI — baca ini dulu
+
+**11 Agustus 2026: `docs/09-arsitektur-render-baru.md` memisahkan simulasi
+dari tampilan.** Simulasi tetap 480×320 satuan float; tampilan pindah ke node
+Godot biasa (`Line2D`, `TileMapLayer`, `Sprite2D`, `Control`) dengan aset PNG
+32–64 px ditampilkan 1:1, `Config.PPU = 4`, jendela 1920×1080. Dikerjakan
+bertahap R1–R6 (§9 dokumen 09); gameplay harus tetap berjalan di setiap tahap.
+
+Akibatnya, tiga kelompok aturan di bawah punya masa berlaku terbatas:
+
+- **"Pencahayaan 2D"** (falloff bertangga, nearest wajib) — berlaku sampai R6.
+  Setelah itu falloff halus boleh; larangan shader DICABUT.
+- **"Aturan render"** (Image + ImageTexture, tiga lapis, texture.update) —
+  berlaku selama `PixelCanvas.gd` masih hidup; ia dihapus bertahap R1–R4.
+- **Larangan zoom pecahan** — hanya berlaku selama piksel diperbesar. Setelah
+  aset tampil 1:1, `Camera2D.zoom` bebas.
+
+Yang TIDAK ikut berubah: tanpa physics engine, input hanya di `main.gd`,
+`Config.gd` nol fungsi, simulasi float, dan identitas warna — **kota abu-abu
+dan tidak jenuh; tanaman satu-satunya yang berwarna.**
+
 ## Pencahayaan 2D — boleh, dengan dua syarat
 
 Siang-malam memakai `CanvasModulate` (meredupkan kanvas layer 0) plus
@@ -93,18 +115,31 @@ Semua yang menulis piksel ada di `scripts/PixelCanvas.gd`.
   Tanpa ini pixel art-nya jadi buram saat diskalakan 4×.
 - Perbarui tekstur dengan **`texture.update(img)`** tiap frame. Jangan pernah
   membuat `ImageTexture` baru per frame.
-- Tiga lapis Image, masing-masing satu Sprite: `world` (statis, sekali saat
-  load), `tree` (akumulatif, hanya titik terbaru yang digambar ulang), dan
-  `overlay` (dibersihkan tiap frame).
-- Skala 4× lewat **`Sprite.scale`**, bukan stretch viewport — supaya UI tetap
-  tajam sementara game tetap pixel art keras.
+- Tiga lapis Image: `world` (statis, sekali saat load), `tree` (akumulatif,
+  hanya titik terbaru yang digambar ulang), dan `overlay` (dibersihkan tiap
+  frame). Tiap pane punya SET SPRITE-nya sendiri yang menunjuk ke
+  `ImageTexture` yang SAMA — satu gambar, dua jendela, 3 draw call per pane.
+- **Pembesaran ke layar lewat `SubViewportContainer.stretch_shrink`**, bukan
+  `Sprite.scale` dan bukan `Camera2D.zoom`. `stretch_shrink` adalah bilangan
+  bulat, jadi ia menjamin pembesaran kelipatan bulat yang bebas pengambilan
+  sampel sub-piksel. `Camera2D` di dalam tiap pane HANYA menggeser, zoom-nya
+  tetap 1. Posisi kamera dibulatkan ke piksel dunia penuh (`Pane._terapkan`) —
+  posisi pecahan menggeser seluruh kisi piksel setengah texel.
+- Tiap `SubViewport` punya `World2D` sendiri, jadi `CanvasModulate` harus ada
+  satu per pane. `PointLight2D` TIDAK diduplikasi: jendela semuanya di atas
+  garis tanah, jadi pane bawah tidak pernah membutuhkannya.
 
 ## Aturan simulasi
 
 - **Simulasi memakai float; pembulatan ke integer hanya saat render.**
   Menyimpan posisi sebagai integer membuat pertumbuhan tersendat dan bersudut.
-- Ukuran dunia: `Config.W = 240`, `Config.H = 160`, `Config.SCALE = 4`.
-- Konversi mouse: `get_viewport().get_mouse_position() / float(Config.SCALE)`.
+- Ukuran dunia: `Config.W = 480`, `Config.H = 320`, `Config.GROUND_Y = 192`.
+  **`Config.SCALE` sudah DIHAPUS** — tidak ada lagi satu skala tunggal, karena
+  tiap pane punya zoom dan geserannya sendiri.
+- Konversi mouse lewat `main._mouse_dunia()`, yang memakai kamera pane di bawah
+  kursor. Jangan pernah membagi posisi mouse dengan sebuah konstanta.
+- Zoom hanya boleh **bilangan bulat** (2 dan 4). Zoom pecahan membuat piksel
+  berkedip dan buram.
 
 ## Aturan struktur kode
 
@@ -127,6 +162,7 @@ res://
     ├── TreeSim.gd         kumpulan untai + ekonomi energi
     ├── Structure.gd       beban, keruntuhan, puing, pelemahan
     ├── Cycle.gd           jam siklus siang-malam (dulu Warden.gd)
+    ├── Pane.gd            satu pane split screen: viewport, kamera, zoom
     ├── PixelCanvas.gd     semua yang menulis piksel
     ├── TuningPanel.gd     slider runtime
     └── Hud.gd             bar energi/tertutup/terlihat + overlay MULAI
@@ -155,50 +191,69 @@ Diambil dari `docs/04-status-proyek.md` §9.
 | Tombol tidak bereaksi setelah pindah ke Godot 4 | satu `scancode` milik Godot 3 pecah jadi `keycode` (ikut layout) dan `physical_keycode` (posisi fisik); salah satunya bisa 0 tergantung asal event | `main._kunci(event, kode)` memeriksa **keduanya**. Semua pembacaan tombol wajib lewat helper itu, jangan bandingkan `event.keycode` langsung |
 | Peta risiko (V) dikira rusak padahal jalan | alpha 0.30 pada kisi 4 px praktis tak terlihat di atas fasad abu-abu — terbaca sebagai derau, bukan peta | dinaikkan ke alpha 0.55 kisi 3 px. Sebelum memburu bug render, buktikan dulu piksel benar-benar tertulis (hitung piksel non-transparan di `_ovl_img`) |
 | Panel tuning terpotong di tepi bawah | font bawaan Godot 4 lebih besar daripada Godot 3, jadi daftar slider yang dulu pas jadi meluber | `ScrollContainer` setinggi `Config.PANEL_TINGGI`. Menambah slider baru tidak akan pernah lagi memotong yang di bawahnya |
+| Menekan R (ulang) melempar error di `setup_lights` | `_lights` berisi `{"node":…, "win":…}`, tapi kode pembersihnya memanggil `l.queue_free()` — itu memanggil metode Node pada sebuah Dictionary | `l.node.queue_free()`. Kalau sebuah array diisi dict pembungkus, SETIAP tempat yang menyapunya harus ikut dibongkar |
+| Bake cahaya jadi hitch setelah dunia diperbesar | fasad 4× lebih luas berarti 12.096 sinar dalam satu frame | bake DICICIL: `WorldMap.bake_langkah(baris)` dipanggil tiap frame, dengan dua anggaran (`BAKE_BARIS_DIAM` 16 di balik layar MULAI, `BAKE_BARIS_MAIN` 2 saat bermain). Aman dicicil karena `vis[y]` hanya membaca `light[y]`. Tombol MULAI dikunci sampai selesai, supaya fotosintesis tidak pernah jalan di atas peta cahaya kosong |
+| Nilai ambang keruntuhan ditebak setelah ukuran fasad berubah | beban member sebanding panjangnya, jadi memperbesar fasad menaikkan seluruh beban sekaligus | `Structure.lapor_stress()` mengukur rasio beban terberat. Patokannya 0.717; setelah dunia 480×320 beban puncaknya 549, jadi `KAPASITAS_MAX = 765`. **Ukur, jangan tebak** — tiap kali geometri fasad berubah, jalankan ulang |
 
 ---
 
 ## Arah saat ini
 
-**Menjalar adalah game pembongkaran.** Inspirasinya Rampage, dibalut isu
-lingkungan: pemain adalah alam yang merebut kembali kota, dan regu perawatan
-gedung melawan.
+**Arah berubah lagi pada 10 Agustus 2026. Rancangan yang berlaku sekarang ada
+di `docs/06-desain-stealth-splitscreen.md`. Baca itu sebelum menyentuh mekanik
+apa pun.** Ringkasnya:
 
-**Sistem stealth sudah DIHAPUS seluruhnya** — heat per-sulur, kerucut pandang,
-kecurigaan, pemangkasan fajar. Stealth menuntut pemain lemah dan tersembunyi,
-pembongkaran menuntut sebaliknya; keduanya saling menarik ke arah berlawanan.
-Jangan hidupkan lagi. `Warden.gd` sudah dihapus, sisanya jadi `Cycle.gd` yang
-hanya memegang jam siang-malam.
+**Menjalar adalah game stealth sistemik dengan layar terbagi dua.** Patokan
+kualitasnya Terra Nil — tenang, sistemik, tanpa refleks. BUKAN lagi game
+pembongkaran ala Rampage.
 
-Antagonis baru yang sedang dibangun (menggantikan TAHAP 7 di dokumen):
+- **Split screen.** Pane atas = fasad gedung, pane bawah = bawah tanah.
+  Masing-masing punya kamera sendiri: scroll bebas, zoom diskrit 2× dan 4×.
+  Dunia jadi 480×320, lebih besar daripada layar.
+- **Perhatian adalah sumber daya.** Pemain hanya bisa mengarahkan satu ujung
+  pada satu waktu; yang lain tumbuh liar. Memilih pane berarti memilih apa yang
+  lepas dari pengawasan.
+- **Stealth kembali, tapi TERJADWAL.** Satu angka `perhatian` untuk seluruh
+  gedung, inspeksi berkala, jadwal perawatan yang diumumkan lebih dulu. Regu
+  datang hanya saat dipanggil jadwal. Tekanan dari perencanaan, bukan kaget.
+- **Pembongkaran turun pangkat jadi kosmetik.** Fasad yang lama dirambati gugur
+  sepetak demi sepetak jadi puing. Ia BUKAN jalan menang.
 
-- Regu darat menggali akar di sekitar kaki gedung — tepat di titik yang paling
-  ingin dikuasai pemain untuk menggerogoti kolom.
-- Pemanjat **menaiki sulur pemain sendiri**. Jalur musuh adalah bangunan
-  pemain, jadi tiap keputusan menumbuhkan juga keputusan soal mobilitas dia.
-  Ini yang membuatnya tidak pernah jadi pola hafalan.
-- Pemain bisa memutus sulurnya sendiri untuk menjatuhkan pemanjat, dengan
-  harga pertumbuhan di atas potongan itu.
-- Jumlah regu bertambah seiring `STRUKTUR` turun, jadi tekanan memuncak justru
-  saat pemain hampir menang.
+Kenapa stealth boleh hidup lagi padahal dulu dihapus: alasan penghapusannya
+adalah benturan dengan pembongkaran (stealth menuntut pemain lemah dan
+tersembunyi, pembongkaran menuntut sebaliknya). Pembongkaran sudah turun jadi
+kosmetik, jadi benturan itu tidak ada lagi. Yang tetap TIDAK boleh hidup lagi:
+**panas per-sulur** dan **kerucut pandang real-time** — keduanya menuntut
+pengawasan terus-menerus yang mustahil dengan perhatian terbagi dua pane.
 
-Peta `vis` tetap dipakai, tapi maknanya bergeser dari "pemain tak terlihat"
-jadi "regu menemukannya lebih lambat". Bayangan tetap berguna tanpa jadi
-stealth.
+Peta `vis` tetap dipakai. Maknanya sekarang: seberapa cepat sesuatu menaikkan
+`perhatian`.
 
-Riwayat: proyek bergeser dari stealth-coverage ke pembongkaran struktural.
+Riwayat arah: stealth-coverage → pembongkaran struktural → stealth sistemik
+split screen. Dua yang pertama sudah selesai dibangun dan berjalan; yang ketiga
+baru dimulai.
 
-Konsep lama: sulur menutupi 55% fasad tanpa ketahuan tukang kebun.
-Konsep baru: gedung punya rangka (kolom, balok, sambungan) dengan aliran beban.
-Tanaman melemahkan sambungan sampai struktur runtuh berantai. Puing yang jatuh
-jadi tanah baru untuk dipanjat.
+Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
+(TAHAP A sampai TAHAP G). `docs/05-prompt-pivot-pembongkaran.md` disimpan hanya
+sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
+tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Urutan kerja bertahap ada di **`docs/05-prompt-pivot-pembongkaran.md`**
-(TAHAP 0 sampai TAHAP 8). Kerjakan **satu tahap per sesi**, commit tiap tahap
-yang sudah terverifikasi jalan.
+Status: **TAHAP A selesai** (split screen, kamera, zoom, dunia 480×320 —
+belum di-commit). **Berikutnya: R1** dari `docs/09-arsitektur-render-baru.md`
+(sulur jadi `Line2D` bertekstur) — jalur render R1–R6 didahulukan atas TAHAP
+B–G karena pemilik proyek memprioritaskan tampilan yang layak untuk pemain
+umum. TAHAP B–G dilanjutkan setelahnya; tidak ada mekanik yang berubah selama
+jalur R.
 
-Status pivot: **TAHAP 0–6 selesai. Berikutnya: pohon dari sulur yang runtuh
-bersama gedung, lalu pemanjat, lalu banyak gedung + kamera geser.**
+Dua keluhan playtest TAHAP A yang harus dijawab jalur R:
+1. Zoom `stretch_shrink` tidak terasa seperti "dua dunia" — dijawab R5 + §3
+   dokumen 09 (tiap pane cabang node sendiri, zoom `Camera2D` bebas).
+2. HUD penuh dan meluber dari tata letak — dijawab R6 + anatomi HUD
+   `docs/08-arah-visual.md` §3 (dua pita, nol elemen di atas kanvas).
+
+Mekanik di bawah ini masih versi pembongkaran dan berjalan tanpa error di
+dalam kerangka kamera yang baru — jangan anggap rusak hanya karena tidak cocok
+dengan rancangan baru.
 
 Catatan yang jangan hilang: akar TIDAK pernah bertemu puing. Puing selalu
 mengendap di atas `GROUND_Y` karena `blocked()` menghentikannya di sana,
@@ -214,32 +269,35 @@ jadi panel-panel terpisah, dan sulur tidak bisa menyeberanginya karena bagi
 sulur "solid" berarti bukan-fasad. TAHAP 6 (puing jadi terrain baru) yang
 seharusnya membuka jalur lagi.
 
-Sistem yang sudah ada dari pivot:
+Sistem yang sudah ada dari pivot. Tanda **[BUANG]** = dihapus di TAHAP B,
+**[TETAP]** = dipertahankan apa adanya, **[UBAH]** = bertahan tapi pemicunya
+diganti. Rinciannya di `docs/06-desain-stealth-splitscreen.md` §5 dan §4.3.
 
-- `WorldMap.members` / `.joints` — rangka 4 kolom × 5 balok, disimpan sebagai
+- **[BUANG]** `WorldMap.members` / `.joints` — rangka 4 kolom × 5 balok, disimpan sebagai
   31 ruas antar-joint. `solve_order` sudah topologis atas-ke-bawah.
-- `WorldMap.kapasitas(m)` — satu-satunya sumber kebenaran kapasitas:
+- **[BUANG]** `WorldMap.kapasitas(m)` — satu-satunya sumber kebenaran kapasitas:
   `integritas_member * min(integritas kedua joint) * KAPASITAS_MAX`.
-- `WorldMap.panels` — 12 panel dinding di antara rangka. **Inilah massa gedung
+- **[BUANG]** `WorldMap.panels` — 12 panel dinding di antara rangka. **Inilah massa gedung
   yang sebenarnya**; member cuma garis selebar 3 px. Panel jatuh saat
   `PANEL_AMBANG` dari 4 member yang mengurungnya sudah gagal.
-- `Structure.gd` — solve beban, keruntuhan berantai per gelombang, puing,
-  debu, panel, dan pelemahan oleh tanaman.
-- Sulur menyerang joint, akar menyerang ruas kolom paling bawah.
-- `WorldMap.vine_ok()` — predikat pijakan sulur, mengizinkan rentangan
+- **[SEBAGIAN]** `Structure.gd` — solve beban, keruntuhan berantai per gelombang, puing,
+  debu, panel, dan pelemahan oleh tanaman. Beban/rangka/pelemahan dibuang;
+  puing, debu, dan bake-ulang cahaya tetap. Jadi `Erosi.gd`, ~150 baris.
+- **[BUANG]** Sulur menyerang joint, akar menyerang ruas kolom paling bawah.
+- **[TETAP]** `WorldMap.vine_ok()` — predikat pijakan sulur, mengizinkan rentangan
   `VINE_JEMBATAN` px melewati celah sempit.
-- `T_PUING` — puing yang mengendap ditulis ke `grid`, bukan cuma ke `image`,
+- **[TETAP]** `T_PUING` — puing yang mengendap ditulis ke `grid`, bukan cuma ke `image`,
   jadi ia terrain sungguhan: bisa ditumbuhi sulur dan ikut melempar bayangan.
   Peta cahaya dipanggang ulang sekali setelah puing diam (`PUING_TENANG`), dan
   hanya dari baris puncak tumpukan ke bawah — sinar datang dari atas-kiri jadi
   puing hanya membayangi yang di bawahnya. Hemat ~66% dibanding panggang penuh.
-- `Crew.gd` — regu perawatan, antagonis darat. Jangkauannya hanya pita di
+- **[UBAH]** `Crew.gd` — regu perawatan, antagonis darat. Jangkauannya hanya pita di
   sekitar garis tanah; sulur tinggi belum ada yang mengancam. Jawaban pemain
   terhadap mereka adalah **menimbun mereka dengan puing yang jatuh**
   (`CREW_PINGSAN`) — sengaja sementara, karena regu yang bisa dihabisi berarti
   peta bisa dibersihkan lalu pemain bekerja tanpa lawan sama sekali.
 
-- `TreeSim.trees` — sulur yang bertahan di atas puing berakar jadi **pohon**.
+- **[TETAP]** `TreeSim.trees` — sulur yang bertahan di atas puing berakar jadi **pohon**.
   Satu-satunya hal permanen: gedung runtuh, sulur dipangkas regu, pohon
   tinggal. Pembagian peran yang harus dijaga — **pohon = ekonomi, sulur dan
   akar = senjata.** Pohon menyumbang ke air DAN cahaya (menaikkan lantai
@@ -248,13 +306,18 @@ Sistem yang sudah ada dari pivot:
   dari sana — itu titik awal terpisah, prasyarat agar pemanjat nanti punya
   lawan.
 
-Kondisi menang: `Structure.hancur()` — tidak ada KOLOM tersisa. Sengaja bukan
-"semua member mati", karena balok level dasar berdiri di pondasi sehingga tidak
-pernah gagal karena kehilangan tumpuan, dan tidak terjangkau akar maupun sulur
-setelah fasadnya lenyap. Syarat coverage 55% sudah dihapus seluruhnya.
+Kondisi menang kode saat ini: `Structure.hancur()` — tidak ada KOLOM tersisa.
+**[BUANG]** — diganti target tutupan per zona dalam tiga babak, lihat
+`docs/06-desain-stealth-splitscreen.md` §6.
 
 Dokumen `docs/01-konteks-game.md` dan `docs/02-logika-game.md` adalah rancangan
-prototipe asli. Yang masih berlaku dari keduanya: palet warna, teknik render
-240×160 skala 4×, prinsip float-untuk-simulasi, batas kecepatan belok
-(`MAX_TURN`), dan ekonomi `min(Air, Cahaya)`. Tata letak level dan daftar
-konstanta di sana **sudah tidak berlaku** — lihat `docs/04-status-proyek.md` §2.
+prototipe asli. Yang masih berlaku dari keduanya: palet warna, prinsip
+float-untuk-simulasi, batas kecepatan belok (`MAX_TURN`), tigmotropisme, ekonomi
+`min(Air, Cahaya)`, dan menembus beton (§7 Logika — belum pernah dibangun,
+dijadwalkan TAHAP C). Tata letak level dan daftar konstanta di sana **sudah
+tidak berlaku**. Pilar "satu tangan di mouse" (§7 Konteks) **dicabut** — kamera
+independen menuntut papan ketik dan roda mouse.
+
+`docs/04-status-proyek.md` sudah usang seluruhnya (masih era stealth lama,
+masih menyebut `Warden.gd` dan `driver_name = GLES2`). Jangan dipakai sebagai
+sumber kebenaran; CLAUDE.md dan `docs/06` yang berlaku.

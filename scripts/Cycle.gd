@@ -27,8 +27,10 @@ var hari  = 1
 
 var perhatian = 0.0
 
-var rawat_hari = -1     # hari kedatangan perawatan; -1 = tidak ada jadwal
-var rawat_zona = ""
+var rawat_hari     = -1    # hari kedatangan perawatan; -1 = tidak ada jadwal
+var rawat_zona     = ""
+var rawat_zona_idx = -1    # indeks Config.ZONA_NAMA; 0-1 = zona ATAS
+var rawat_kekuatan = 0.0   # perhatian saat inspeksi — menentukan jumlah regu
 
 
 func reset():
@@ -38,6 +40,12 @@ func reset():
 	perhatian = 0.0
 	rawat_hari = -1
 	rawat_zona = ""
+	rawat_zona_idx = -1
+	rawat_kekuatan = 0.0
+
+
+func rawat_hari_ini():
+	return rawat_hari == hari
 
 
 func phase_len():
@@ -87,11 +95,16 @@ func update(delta, sim, world, terlihat):
 func _fajar(world):
 	hari += 1
 
-	# jadwal perawatan yang sudah lewat harinya dibersihkan. Di TAHAP D regu
-	# belum dipanggil — TAHAP E yang menyambungkan kedatangan mereka ke sini.
+	# Hari perawatan sudah lewat: pengelola menganggap masalahnya tertangani.
+	# Perhatian dan bobot zona turun separuh — kalau pemain terus mencolok,
+	# keduanya akan naik lagi dan siklusnya berulang.
 	if rawat_hari >= 0 and hari > rawat_hari:
 		rawat_hari = -1
 		rawat_zona = ""
+		rawat_zona_idx = -1
+		perhatian *= Config.PERHATIAN_SETELAH_RAWAT
+		for i in range(4):
+			world.zona_bobot[i] *= 0.5
 
 	if inspeksi_dalam() == 0:
 		_inspeksi(world)
@@ -103,4 +116,6 @@ func _inspeksi(world):
 	if perhatian < Config.AMBANG_RAWAT:
 		return   # gedung dianggap masih wajar
 	rawat_hari = hari + max(1, int(Config.JEDA_RAWAT))
-	rawat_zona = world.zona_teratas()
+	rawat_zona_idx = world.zona_teratas_idx()
+	rawat_zona = Config.ZONA_NAMA[rawat_zona_idx]
+	rawat_kekuatan = perhatian

@@ -238,12 +238,30 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A, B, D, R1–R3 selesai.** Jalur render dijeda.
+Status: **TAHAP A, B, D, E, R1–R3 selesai.** Perombakan stealth sistemik
+LENGKAP — game pembongkaran lama sudah tidak ada. **Berikutnya: playtest
+pemilik proyek**, lalu pilih: TAHAP C (bawah tanah jadi pane sungguhan),
+TAHAP F (target per zona & babak), atau lanjut jalur render R4–R6.
 
-**PRIORITAS BERUBAH 11 Agustus 2026, setelah playtest pemilik proyek:**
-gameplay yang terasa masih game pembongkaran lama membuat perombakan gameplay
-didahulukan atas sisa jalur render. **Berikutnya: TAHAP E** (regu dipicu
-kalender, bekerja per zona, lalu pulang). R4–R6 setelahnya.
+TAHAP E yang sudah berdiri — regu dipicu kalender:
+
+- Regu HANYA muncul saat `cycle.rawat_hari_ini()` dan siang; selain itu
+  `units = []`. Terverifikasi harness: 0 frame regu di luar jadwal, dan ada
+  jendela reaksi 2 hari penuh antara pengumuman dan kedatangan.
+- Jumlah = `1 + rawat_kekuatan * (CREW_MAX-1)` — `rawat_kekuatan` adalah
+  perhatian saat inspeksi. Masuk dari tepi layar sisi zona.
+- Bekerja HANYA di paruh dunia milik zona terjadwal (barat/timur). Zona
+  bersih → `pulang = true`, berjalan ke tepi, hilang. TIDAK ADA patroli.
+- Pemanjat: hanya untuk zona ATAS (idx 0–1), memanjat sulur yang ujungnya
+  di paruh zona itu; jumlah dari `rawat_kekuatan` juga.
+- Setelah hari perawatan lewat: `perhatian *= PERHATIAN_SETELAH_RAWAT` dan
+  `zona_bobot` separuh — siklusnya bisa berulang.
+- **Makna ganda X DIDAMAIKAN**: memutus sulur merontokkan daunnya =
+  pemangkasan sukarela; `perhatian -= PERHATIAN_PANGKAS`. Satu tombol,
+  jawaban pemanjat sekaligus perapian diri sebelum inspeksi.
+- `Crew.update(delta, sim, world, erosi, cycle)`;
+  `Climber.update(delta, sim, world, cycle)`. `CREW_CARI` dihapus — regu
+  dipanggil ke zona, tidak ada batas jarak cari di dalamnya.
 
 TAHAP D yang sudah berdiri — perhatian & kalender (`Cycle.gd` naik pangkat):
 

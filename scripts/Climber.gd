@@ -25,16 +25,19 @@ func reset():
 	dipotong = 0
 
 
-func update(delta, sim, world, phase):
+func update(delta, sim, world, cycle):
 	dipotong = 0
 
-	# Ikut pulang bersama regu darat saat malam.
-	if phase != Config.PHASE_DAY:
+	# TAHAP E: pemanjat juga terjadwal — dan HANYA untuk zona ATAS (indeks
+	# 0-1), karena regu darat tidak bisa meraih fasad tinggi. Zona bawah
+	# cukup diurus regu darat.
+	if cycle.phase != Config.PHASE_DAY or not cycle.rawat_hari_ini() \
+			or cycle.rawat_zona_idx >= 2 or cycle.rawat_zona_idx < 0:
 		units = []
 		return
 
 	_bersihkan()
-	_sesuaikan_jumlah(sim, world)
+	_sesuaikan_jumlah(sim, cycle)
 	for c in units:
 		_update_unit(c, delta)
 
@@ -80,14 +83,14 @@ func _bersihkan():
 	units = sisa
 
 
-func _sesuaikan_jumlah(sim, world):
+func _sesuaikan_jumlah(sim, cycle):
 	# slider boleh diturunkan ke 0 untuk mematikan pemanjat saat menyetel
 	if Config.CLIMB_MAX < 1:
 		units = []
 		return
 
-	# interim TAHAP B: skala dari tutupan, sama seperti regu darat
-	var n = 1 + int(clamp(world.tutupan() / Config.COVERAGE_GOAL, 0.0, 1.0)
+	# jumlah dari perhatian saat inspeksi, sama seperti regu darat
+	var n = 1 + int(clamp(cycle.rawat_kekuatan, 0.0, 1.0)
 			* float(Config.CLIMB_MAX - 1))
 	n = int(clamp(n, 1, Config.CLIMB_MAX))
 
@@ -96,15 +99,22 @@ func _sesuaikan_jumlah(sim, world):
 	if units.size() >= n:
 		return
 
-	var s = _cari_sulur(sim)
+	var s = _cari_sulur(sim, cycle.rawat_zona_idx)
 	if s == null:
 		return
 	units.append({"s": s, "idx": 0.0, "kerja": 0.0, "pingsan": 0.0})
 
 
-func _cari_sulur(sim):
+# Sulur yang bisa dipanjat DAN ujungnya berada di paruh dunia milik zona
+# yang dijadwalkan — pemanjat datang untuk zona itu, bukan berburu bebas.
+func _cari_sulur(sim, zona_idx):
+	var barat = zona_idx % 2 == 0
 	for s in sim.strands:
 		if not _bisa_dipanjat(s):
+			continue
+		if barat and s.tip.x >= Config.W / 2.0:
+			continue
+		if not barat and s.tip.x < Config.W / 2.0:
 			continue
 		var terpakai = false
 		for c in units:

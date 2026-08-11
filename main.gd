@@ -226,8 +226,8 @@ func _process(delta):
 		var terlihat = sim.update(delta, is_steering, m, world, cycle.phase)
 		cycle.update(delta, sim, world, terlihat)
 
-		crew.update(delta, sim, world, erosi, cycle.phase)
-		climbers.update(delta, sim, world, cycle.phase)
+		crew.update(delta, sim, world, erosi, cycle)
+		climbers.update(delta, sim, world, cycle)
 		if crew.dipotong > 0 or climbers.dipotong > 0:
 			sim.ensure_selection(cycle.phase)
 
@@ -310,12 +310,16 @@ func _unhandled_input(event):
 		if _kunci(event, KEY_SPACE):
 			_try_branch()
 		elif _kunci(event, KEY_X):
-			# putus sulur di kursor — satu-satunya jawaban terhadap pemanjat
+			# putus sulur di kursor — menjatuhkan pemanjat di atasnya, DAN
+			# merontokkan daun-daunnya: pemangkasan sukarela yang menurunkan
+			# perhatian (pendamaian dua makna X, lihat Config.PERHATIAN_PANGKAS)
 			var potong = sim.sever_at(_mouse_dunia())
 			if potong == null:
 				hud.flash_msg("Arahkan kursor ke sulur untuk memutusnya")
 			else:
 				var n = climbers.jatuhkan(potong.s, potong.i)
+				cycle.perhatian = max(0.0,
+						cycle.perhatian - Config.PERHATIAN_PANGKAS)
 				sim.ensure_selection(cycle.phase)
 				if n > 0:
 					hud.flash_msg("Pemanjat jatuh: %d" % n)

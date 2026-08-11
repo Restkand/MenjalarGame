@@ -386,12 +386,12 @@ func _zona(x, y):
 
 # Zona dengan rambatan paling mencolok — sasaran perawatan yang diumumkan
 # kalender saat inspeksi.
-func zona_teratas():
+func zona_teratas_idx():
 	var best = 0
 	for i in range(1, 4):
 		if zona_bobot[i] > zona_bobot[best]:
 			best = i
-	return Config.ZONA_NAMA[best]
+	return best
 
 
 # Erosi menggugurkan satu petak: lubangi semua sel gedung di kotak itu.

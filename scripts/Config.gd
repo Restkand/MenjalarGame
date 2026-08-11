@@ -38,14 +38,14 @@ var NIGHT_LEN      = 34.0
 # jatuh menimbun mereka. Sengaja sementara, bukan permanen — kalau regu bisa
 # dihabisi, pemain tinggal membersihkan peta lalu bekerja tanpa lawan. Yang
 # sementara justru memberi irama: runtuhkan, dapat jeda aman, mereka kembali.
-# PEREDAAN SEMENTARA (playtest 11 Agustus: musuh terasa terlalu pintar dan
-# tidak imbang, terutama pemanjat): CREW_MAX 4 -> 2, CLIMB_MAX 3 -> 1.
-# Ini BUKAN perbaikan — sistem spawn terus-menerus ini memang dijadwalkan
-# DIGANTI oleh inspeksi terjadwal di TAHAP D-E (docs/06 §4). Jangan buang
-# waktu menyetel yang akan dibuang.
+# TAHAP E: regu tidak lagi spawn terus-menerus — mereka HANYA datang pada
+# hari perawatan yang diumumkan kalender, sebanyak 1 + perhatian-saat-
+# inspeksi * (MAX-1), bekerja di zona yang dijadwalkan, lalu pulang begitu
+# zonanya bersih. MAX kembali normal karena tekanannya kini berjadwal, bukan
+# banjir.
 var CREW_SPEED   = 36.0   # piksel per detik
 var CREW_CABUT   = 0.55   # detik per potongan
-var CREW_MAX     = 2      # jumlah regu saat gedung nyaris rata
+var CREW_MAX     = 3      # regu terbanyak dalam satu hari perawatan
 var CREW_PINGSAN = 6.0    # detik tertimbun sebelum bangkit lagi
 
 const CREW_LEBAR = 6.0    # setengah lebar badan, untuk deteksi tertimpa
@@ -71,7 +71,7 @@ var CLIMB_SPEED   = 50.0   # titik sulur yang dilalui per detik
 # itu memberi pemain waktu bereaksi. Memutus sulur lebih awal jauh lebih murah
 # daripada terlambat, karena yang hilang adalah pertumbuhan di atas potongan.
 var CLIMB_CABUT   = 1.2    # detik per potongan setelah sampai di ujung
-var CLIMB_MAX     = 1      # diredakan dari 3 — lihat catatan peredaan di atas
+var CLIMB_MAX     = 2      # pemanjat terbanyak; hanya untuk zona ATAS
 var CLIMB_PINGSAN = 8.0    # detik setelah jatuh sebelum mencoba lagi
 
 # Pangkal sulur harus di bawah baris ini supaya bisa dicapai dari tanah.
@@ -81,7 +81,6 @@ const CLIMB_BASIS     = 140.0
 const CLIMB_MIN_TITIK = 80   # sulur harus cukup panjang untuk dipanjat
 
 const CREW_JANGKAUAN  = 10.0    # sedekat apa untuk mulai mencabut
-const CREW_CARI       = 240.0   # sejauh apa mereka mencari sasaran
 const CREW_PANJANG    = 28      # titik yang dipotong tiap potongan
 const CREW_BAND_ATAS  = 45.0    # setinggi apa di fasad mereka bisa meraih
 const CREW_BAND_BAWAH = 48.0    # sedalam apa mereka bisa menggali
@@ -243,6 +242,15 @@ var PERHATIAN_LURUH   = 0.002    # peluruhan per detik (~0.13 per hari)
 var AMBANG_RAWAT  = 0.5    # inspeksi menjadwalkan perawatan di atas ini
 var INSPEKSI_TIAP = 3      # inspeksi tiap sekian hari
 var JEDA_RAWAT    = 2      # perawatan datang sekian hari setelah dijadwalkan
+
+# Setelah hari perawatan lewat, pengelola menganggap masalahnya tertangani —
+# perhatian dikalikan ini (dan bobot zona ikut separuh).
+var PERHATIAN_SETELAH_RAWAT = 0.5
+# Memutus sulur (X) merontokkan daun-daunnya — pemangkasan sukarela yang
+# menurunkan perhatian. Inilah pendamaian dua makna X di docs/06 §2.5:
+# satu tombol, jawaban terhadap pemanjat SEKALIGUS cara merapikan diri
+# sebelum inspeksi.
+var PERHATIAN_PANGKAS = 0.04
 
 # Empat kuadran fasad — sasaran perawatan diumumkan per zona
 const ZONA_NAMA = ["BARAT ATAS", "TIMUR ATAS", "BARAT BAWAH", "TIMUR BAWAH"]

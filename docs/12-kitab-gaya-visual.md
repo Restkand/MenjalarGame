@@ -190,6 +190,15 @@ Dicatat per gelombang: tanggal, jumlah generasi terpakai, seed ubin terpilih.
 | 12 Agu | 6 — banner layar judul | 2 | 29 / 2000 (angka resmi get_balance) |
 | 12 Agu | 5 — karakter Regu Perawat + 6 animasi (26 frame) | 10 | 39 / 2000 |
 | 12 Agu | polish playtest kelima (pintu transparan, tetangga, 4 tanah, bunga) | 7 | 46 / 2000 |
+| 12 Agu | playtest keenam: jalan v3 (leher template melar) | 2 | 48 / 2000 |
+
+Pelajaran playtest keenam: animasi TEMPLATE me-retarget skeleton generik ke
+karakter — di karakter gempal berkepala besar, lehernya bisa melar
+menyeramkan. Untuk karakter kanon ini, animasi gerak dasar pun lebih aman
+lewat v3 (`action_description` + "normal head and neck proportions").
+walking-6-frames di §6.2 DIGANTI: regu_jalan kini v3 "walking calmly to
+the side with relaxed short steps, arms swinging naturally, normal head
+and neck proportions, steady upright posture".
 
 Pelajaran pass polish: (1) ubin varian papan catur harus PUNYA NILAI TERANG
 SAMA — dua generasi berbeda hampir selalu beda nilai dan malah membentuk

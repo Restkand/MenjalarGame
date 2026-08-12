@@ -40,20 +40,33 @@ func _process(_delta):
 
 func _draw():
 	var cam = pane.cam.position
-
-	# langit terkunci ke kamera — selalu menutup seluruh pandangan
-	draw_rect(Rect2(cam - Vector2(2600, 2600), Vector2(5200, 5200)),
-			Config.C_SKY)
-
+	var kiri = cam.x - 2600.0
 	var horizon = float(Config.GROUND_Y * Config.PPU)
+
+	# Langit BERTANGGA (playtest keenam, gaya acuan Kingdom): tiga pita yang
+	# makin terang mendekati horizon. Bertangga, bukan gradien halus — aturan
+	# tanpa-gradien docs/01 §5 dipertahankan sebagai gaya (preseden lampu).
+	draw_rect(Rect2(kiri, horizon - 3400.0, 5200.0, 2840.0), Color("828E9C"))
+	draw_rect(Rect2(kiri, horizon - 560.0, 5200.0, 320.0), Color("8B96A3"))
+	draw_rect(Rect2(kiri, horizon - 240.0, 5200.0, 240.0), Color("97A1AD"))
+
 	for l in _lapis:
 		var geser = cam.x * (1.0 - l.f)
 		var w = l.tex.get_width() * l.skala
 		var h = l.tex.get_height() * l.skala
 		# mulai dari ubin strip pertama yang masih masuk pandangan kiri
-		var kiri = cam.x - 1400.0
-		var mulai = floor((kiri - geser) / w) * w + geser
+		var mulai = floor((cam.x - 1400.0 - geser) / w) * w + geser
 		var x = mulai
 		while x < cam.x + 1400.0:
 			draw_texture_rect(l.tex, Rect2(x, horizon - h, w, h), false)
 			x += w
+
+	# Di bawah horizon BUKAN langit — itu jalan raya (playtest keenam:
+	# "bagian bawah abu-abu"). Aspal gelap + marka putus-putus yang ikut
+	# dunia (bukan kamera), supaya terasa jalanan sungguhan saat digeser.
+	draw_rect(Rect2(kiri, horizon, 5200.0, 3000.0), Color("50555A"))
+	draw_rect(Rect2(kiri, horizon, 5200.0, 5.0), Color("3E4247"))
+	var mx = floor(kiri / 96.0) * 96.0
+	while mx < cam.x + 2600.0:
+		draw_rect(Rect2(mx, horizon + 30.0, 48.0, 6.0), Color("8D9299"))
+		mx += 96.0

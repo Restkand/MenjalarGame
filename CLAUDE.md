@@ -297,8 +297,20 @@ di bar perhatian HUD ikut bergeser), `faktor_gergaji()` regu 8% lebih cepat
 per tingkat, dan mulai tingkat 2 pemanjat melayani SEMUA zona (bukan hanya
 ATAS). Kenaikan diumumkan lewat baris tambahan di kartu fajar + "WASPADA n"
 di kalender — eskalasi pun tunduk pilar "ancaman selalu diumumkan".
-**Paket "menarik sampai menit 30" (G4–G6) TUNTAS. Berikutnya: G7** (pass
-audio — butuh file suara; freesound/jsfxr).
+**Paket "menarik sampai menit 30" (G4–G6) TUNTAS.**
+
+**G7 SELESAI** — pass audio, SELURUHNYA prosedural (scratchpad
+`gen_suara.gd` → `aset/suara/*.wav`, 22050 Hz mono 16-bit via
+`AudioStreamWAV.save_to_wav`; timpa dengan suara kurasi kapan saja tanpa
+mengubah kode). `scripts/Suara.gd`: ambience siang/malam silang-pudar
+mengikuti `night_amount()`, loop gergaji/bor hidup hanya selama kerjanya
+berlangsung (gergaji = PERINGATAN AUDIO untuk pemangkasan di luar layar),
+kolam 5 pemutar sfx bergilir. Peristiwa: sting kartu, potong (gergaji
+regu & X), daun (tunas ulang), thunk (perkuat), pohon (tanam & menang),
+puing mendarat (debum, cooldown 0,35 dtk). Pemutar WAJIB di-stop di
+`_exit_tree` — playback yang masih hidup saat engine berhenti bocor di
+ObjectDB. Volume konservatif (-9 s/d -16 dB). **Berikutnya: G8** (goyang
+daun, parallax, transisi malam bertahap).
 
 HUD dua-pita (docs/08 §3, dibangun setelah R6):
 

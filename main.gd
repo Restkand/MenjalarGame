@@ -9,6 +9,7 @@ const ErosiCls       = preload("res://scripts/Erosi.gd")
 const BabakCls       = preload("res://scripts/Babak.gd")
 const PaneCls        = preload("res://scripts/Pane.gd")
 const SuasanaCls     = preload("res://scripts/Suasana.gd")
+const SuaraCls       = preload("res://scripts/Suara.gd")
 const TanamanViewCls = preload("res://scripts/render/TanamanView.gd")
 const TerrainViewCls = preload("res://scripts/render/TerrainView.gd")
 const PuingViewCls   = preload("res://scripts/render/PuingView.gd")
@@ -26,6 +27,9 @@ var climbers
 var erosi
 var babak
 var suasana
+var suara
+var _settled_prev = 0     # untuk debum puing mendarat
+var _puing_cooldown = 0.0
 var tanaman
 var terrain
 var panel
@@ -145,6 +149,9 @@ func _ready():
 	add_child(hud)
 	hud.play_pressed.connect(_on_play)
 
+	suara = SuaraCls.new()
+	add_child(suara)
+
 
 func _on_play():
 	playing = true
@@ -170,6 +177,8 @@ func _restart():
 	_kartu_t = 0.0
 	_jeda = false
 	_laju_waktu = 1.0
+	_settled_prev = 0
+	_puing_cooldown = 0.0
 	hud.sembunyikan_kartu()
 	is_steering = false
 	playing = false
@@ -240,6 +249,7 @@ func _kamera(delta):
 # lewat tembok teks tutorial.
 func _kartu_fase():
 	_kartu_t = Config.KARTU_DETIK
+	suara.mainkan("sting")
 	# momen penting tidak boleh terlewat dipercepat: hari perawatan selalu
 	# menarik waktu kembali ke kecepatan normal
 	if cycle.rawat_hari_ini():
@@ -306,6 +316,7 @@ func _try_branch(m, ada_ujung):
 	if ada_ujung and sim.branch():
 		return
 	if sim.tunas_di(m, world):
+		suara.mainkan("daun")
 		hud.flash_msg("Tunas baru dari bekas rambatan  (-%d energi)"
 				% int(Config.COST_TUNAS))
 		return
@@ -360,6 +371,7 @@ func _process(delta):
 			# hukuman harus TERLIHAT: sekali per beberapa detik, umumkan
 			if _flash_potong <= 0.0:
 				_flash_potong = 4.0
+				suara.mainkan("potong")
 				hud.flash_msg("Sulur digergaji! Bangkainya mengering — sambung dengan klik kanan sebelum habis")
 		_flash_potong = max(0.0, _flash_potong - delta)
 
@@ -391,6 +403,7 @@ func _process(delta):
 	if playing and not won and (babak.menang or babak.kalah):
 		won = true
 		_kartu_t = Config.KARTU_DETIK * 2.0
+		suara.mainkan("pohon" if babak.menang else "sting")
 		if babak.menang:
 			hud.tampil_kartu("KOTA MENGHIJAU",
 					"gedungnya tetap berdiri — pohon-pohonnya yang tinggal\ntekan R untuk memulai kota baru")
@@ -399,6 +412,29 @@ func _process(delta):
 					"tidak ada untai hidup dan tidak ada pohon\ntekan R untuk mencoba lagi")
 
 	suasana.set_night(cycle.night_amount())
+
+	# --- audio (G7): ambience mengikuti fase, loop kerja mengikuti keadaan --
+	suara.set_malam(cycle.night_amount())
+	var ada_gergaji = false
+	for u in crew.units:
+		if u.pingsan <= 0.0 and u.kerja > 0.0:
+			ada_gergaji = true
+			break
+	suara.set_gergaji(playing and not _jeda and ada_gergaji)
+	var ada_bor = false
+	if cycle.phase == Config.PHASE_DAY:
+		for s in sim.strands:
+			if s.alive and s.tembus >= 0.0:
+				ada_bor = true
+				break
+	suara.set_bor(playing and not _jeda and ada_bor)
+	# debum saat puing baru mendarat, diredam supaya hujan puing tidak drum
+	_puing_cooldown = max(0.0, _puing_cooldown - delta)
+	if world.settled_n > _settled_prev and _puing_cooldown <= 0.0:
+		suara.mainkan("puing")
+		_puing_cooldown = 0.35
+	_settled_prev = world.settled_n
+
 	hud.set_waktu(_jeda, _laju_waktu)
 	hud.refresh(sim, cycle, world, crew, climbers, babak)
 
@@ -492,6 +528,7 @@ func _unhandled_input(event):
 			match hasil:
 				"":
 					sim.ensure_selection(cycle.phase)
+					suara.mainkan("pohon")
 					hud.flash_msg("Pohon ditanam — permanen, kebal regu  (-%d energi)"
 							% int(Config.COST_TANAM))
 				"pilih":
@@ -508,6 +545,7 @@ func _unhandled_input(event):
 		elif _kunci(event, KEY_F):
 			# perkuat pangkal sulur terpilih (G2)
 			if sim.perkuat():
+				suara.mainkan("thunk")
 				hud.flash_msg("Pangkal diperkuat — gergaji regu butuh 2x lebih lama  (-%d energi)"
 						% int(Config.COST_KOKOH))
 			elif sim.selected == null or not sim.selected.alive \
@@ -526,6 +564,7 @@ func _unhandled_input(event):
 			if potong == null:
 				hud.flash_msg("Arahkan kursor ke sulur untuk memutusnya")
 			else:
+				suara.mainkan("potong")
 				var n = climbers.jatuhkan(potong.s, potong.i)
 				cycle.perhatian = max(0.0,
 						cycle.perhatian - Config.PERHATIAN_PANGKAS)

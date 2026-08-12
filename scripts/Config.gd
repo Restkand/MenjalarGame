@@ -346,6 +346,10 @@ var NIGHT_GELAP  = 1.0     # 0 = malam tidak menggelap sama sekali
 var LAMPU_ENERGI = 0.55    # kecerahan tiap jendela yang menyala
 
 const C_MALAM       = Color(0.20, 0.24, 0.40)   # warna kanvas saat malam penuh
+# Senja (G8, angka docs/08 §8.2): pemberhentian antara siang dan malam —
+# biru ditahan lebih tinggi supaya beton mendingin tapi hijau daun tidak
+# ikut mati. Tanpa tahap ini malam datang seperti sakelar.
+const C_SENJA       = Color(0.72, 0.70, 0.80)
 const C_LAMPU       = Color("FFD9A0")           # cahaya hangat dari dalam
 # TAHAP A: radius digandakan bersama dunia, dan `texture_scale` turun dari
 # SCALE (4) ke 1 — sprite tidak lagi diskalakan, jadi satu texel lampu = satu

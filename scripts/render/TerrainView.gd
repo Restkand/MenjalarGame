@@ -114,4 +114,9 @@ func sinkron():
 
 func _set_petak(layer, tx, ty):
 	var k = _world.tile_terrain(tx, ty)
+	# langit pane atas milik LatarView (parallax, G8) — ubinnya dikosongkan
+	# supaya siluet kota di belakangnya terlihat
+	if k == Config.T_SKY and layer == _atas:
+		layer.erase_cell(Vector2i(tx, ty))
+		return
 	layer.set_cell(Vector2i(tx, ty), 0, Vector2i(ATLAS[k], 0))

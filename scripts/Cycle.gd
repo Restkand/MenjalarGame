@@ -84,10 +84,12 @@ func progress():
 
 
 # 0 saat siang bolong, 1 saat malam penuh. Dipakai untuk menggelapkan layar.
+# Landai 5 detik (G8) — senja dan fajar harus terasa seperti langit yang
+# berubah, bukan sakelar.
 func night_amount():
 	if phase == Config.PHASE_NIGHT:
-		return min(1.0, t / 2.5)
-	return max(0.0, 1.0 - t / 2.5)
+		return min(1.0, t / 5.0)
+	return max(0.0, 1.0 - t / 5.0)
 
 
 # Berapa hari lagi sampai inspeksi berikutnya. 0 = hari ini hari inspeksi.

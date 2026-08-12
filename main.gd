@@ -16,6 +16,7 @@ const PuingViewCls   = preload("res://scripts/render/PuingView.gd")
 const AktorViewCls   = preload("res://scripts/render/AktorView.gd")
 const UjungViewCls   = preload("res://scripts/render/UjungView.gd")
 const RisikoViewCls  = preload("res://scripts/render/RisikoView.gd")
+const LatarViewCls   = preload("res://scripts/render/LatarView.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
 const HudCls         = preload("res://scripts/Hud.gd")
 
@@ -85,6 +86,11 @@ func _ready():
 			Config.GROUND_Y, Config.H)
 
 	_pane_aktif = pane_atas
+
+	# latar parallax di bawah segalanya (G8) — langit + siluet kota jauh
+	var latar = LatarViewCls.new(pane_atas)
+	latar.z_index = -1
+	pane_atas.tempel(latar)
 
 	# terrain paling dulu: z-nya eksplisit, tapi urutan tempel menentukan
 	# siapa yang menang saat z sama (FasadView di atas ubin)

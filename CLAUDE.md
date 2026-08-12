@@ -309,8 +309,27 @@ kolam 5 pemutar sfx bergilir. Peristiwa: sting kartu, potong (gergaji
 regu & X), daun (tunas ulang), thunk (perkuat), pohon (tanam & menang),
 puing mendarat (debum, cooldown 0,35 dtk). Pemutar WAJIB di-stop di
 `_exit_tree` — playback yang masih hidup saat engine berhenti bocor di
-ObjectDB. Volume konservatif (-9 s/d -16 dB). **Berikutnya: G8** (goyang
-daun, parallax, transisi malam bertahap).
+ObjectDB. Volume konservatif (-9 s/d -16 dB).
+
+**G8 SELESAI** — kohesi visual & gerak, semuanya prosedural (nol kuota):
+
+- **`render/LatarView.gd`** — parallax pane atas: rect langit terkunci ke
+  kamera + dua lapis siluet kota jauh (f 0.25/0.50, rng.seed tetap 7, rentang
+  x −1400..3600, horizon `GROUND_Y*PPU`); redraw hanya saat kamera bergeser.
+  `TerrainView._set_petak` kini MENGHAPUS sel langit di layer atas
+  (`erase_cell`) supaya latarnya terlihat; z_index latar −1.
+- **Angin**: DaunView redraw TIAP frame (gerbang daun-muda dibuang), rotasi
+  tiap daun +`sin(_t*1.3 + pos.x*0.11 + pos.y*0.07)*0.055` — fase dari posisi
+  jadi gelombang menyapu kanopi, bukan serempak. PohonView berayun
+  `sin(_t*0.8 + x*0.05)*0.014` berjangkar pangkal; tanpa pohon nol kerja.
+- **Senja dua tahap** (docs/08 §8.2): `Config.C_SENJA` (0.72, 0.70, 0.80);
+  `Suasana.set_night` lerp putih→C_SENJA→C_MALAM berpotongan di aa=0.5, dan
+  landai `Cycle.night_amount` diperpanjang 2.5→5 dtk — malam datang seperti
+  langit berubah, bukan sakelar.
+
+**Berikutnya: G9** (hari pertama terpandu — kamera terkunci di bibit, satu
+tujuan per jendela, pane bawah & HUD terbuka setelah tonggak; tanpa tembok
+teks).
 
 HUD dua-pita (docs/08 §3, dibangun setelah R6):
 

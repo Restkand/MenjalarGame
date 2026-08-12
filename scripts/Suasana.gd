@@ -85,7 +85,14 @@ func _make_lamp_tex():
 
 
 func set_night(a):
-	var c = Color(1, 1, 1).lerp(Config.C_MALAM, a * Config.NIGHT_GELAP)
+	# dua tahap (G8): siang -> SENJA -> malam. Perhentian senja menahan biru
+	# supaya transisinya terasa seperti langit, bukan sakelar lampu.
+	var aa = clamp(a * Config.NIGHT_GELAP, 0.0, 1.0)
+	var c
+	if aa < 0.5:
+		c = Color(1, 1, 1).lerp(Config.C_SENJA, aa * 2.0)
+	else:
+		c = Config.C_SENJA.lerp(Config.C_MALAM, (aa - 0.5) * 2.0)
 	for cm in _modulates:
 		cm.color = c
 	var e = a * Config.LAMPU_ENERGI

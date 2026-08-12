@@ -6,12 +6,11 @@ extends Node2D
 # pangkal batang), bukan diregangkan tingginya — meregangkan sprite merusak
 # gambarnya, sedangkan pohon muda yang utuh-tapi-kecil justru terlihat wajar.
 #
-# Redraw hanya selama ada pohon yang masih meninggi (atau jumlahnya berubah);
-# hutan yang sudah dewasa tidak menggambar ulang apa pun.
+# Sejak G8 redraw berjalan selama ada pohon — mereka berayun pelan ditiup
+# angin. Tanpa pohon, nol kerja.
 
 var sim
-var _n = -1
-var _tumbuh = false
+var _t = 0.0
 var _tex
 
 
@@ -21,17 +20,10 @@ func _init(s):
 	_tex = load("res://aset/pohon.png")
 
 
-func _process(_delta):
-	var tumbuh = false
-	for t in sim.trees:
-		if t.tinggi < Config.POHON_TINGGI:
-			tumbuh = true
-			break
-	# _tumbuh lama ikut memicu: frame pertama SETELAH berhenti tumbuh masih
-	# perlu satu redraw penutup pada tinggi finalnya
-	if sim.trees.size() != _n or tumbuh or _tumbuh:
-		_n = sim.trees.size()
-		_tumbuh = tumbuh
+func _process(delta):
+	# G8: pohon berayun pelan ditiup angin — redraw terus selama ada pohon
+	_t += delta
+	if not sim.trees.is_empty():
 		queue_redraw()
 
 
@@ -44,6 +36,8 @@ func _draw():
 	for t in sim.trees:
 		var f = clamp(float(t.tinggi) / float(Config.POHON_TINGGI), 0.0, 1.0)
 		var s = (0.22 + 0.78 * f) * penuh
-		draw_set_transform(Vector2(t.x, t.y) * ppu, 0.0, Vector2(s, s))
+		# ayunan halus berjangkar di pangkal batang; fase dari posisi
+		var angin = sin(_t * 0.8 + t.x * 0.05) * 0.014
+		draw_set_transform(Vector2(t.x, t.y) * ppu, angin, Vector2(s, s))
 		draw_texture(_tex, Vector2(-48.0, -128.0))
 	draw_set_transform_matrix(Transform2D())

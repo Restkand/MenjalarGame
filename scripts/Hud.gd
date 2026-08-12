@@ -353,6 +353,16 @@ func _build_overlay():
 	vb.add_theme_constant_override("separation", 16)
 	tengah.add_child(vb)
 
+	# banner PixelLab (gelombang 6, docs/12): fasad kelabu, sulur satu-satunya
+	# warna — ditampilkan 2x nearest supaya pikselnya tetap tegas
+	var banner = TextureRect.new()
+	banner.texture = load("res://aset/judul_banner.png")
+	banner.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	banner.custom_minimum_size = Vector2(800, 368)
+	banner.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	banner.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vb.add_child(banner)
+
 	var judul = Label.new()
 	judul.text = "MENJALAR"
 	judul.add_theme_font_size_override("font_size", 84)

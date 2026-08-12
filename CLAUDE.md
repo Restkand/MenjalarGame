@@ -391,8 +391,12 @@ R6 yang sudah berdiri — `PixelCanvas` MATI, semua visual adalah view:
   jawaban untuk "warna & ukuran antar frame tidak konsisten". Sprite
   pemanjat TIDAK boleh berisi tali/tiang (ia memanjat sulur pemain; tali
   membuat normalisasi mengecilkan karakternya).
-- Kuota PixelLab terpakai 35/40. Sisa 5 — untuk TAHAP G, prioritaskan
-  varian pohon kedua & ikon HUD; jangan buang untuk tekstur polos.
+- Kuota PixelLab: pemilik proyek berlangganan **Tier 1 (2000 generasi/bulan)**
+  sejak 12 Agustus — kuota gratis 40 tidak berlaku lagi. SEMUA generasi wajib
+  tunduk `docs/12-kitab-gaya-visual.md` (palet terkunci, parameter terkunci,
+  snap palet pasca-proses); log pemakaian dicatat di §6 dokumen itu.
+  Pass aset gelombang 1-4+6 selesai (29 generasi): ubin terrain, jendela+pintu
+  sprite, siluet latar, batang organik, pohon2, banner judul.
 - Urutan z pane atas: terrain+fasad+puing-tanah 0, tanaman 1, puing
   melayang 2, aktor 3, ujung/risiko 4.
 

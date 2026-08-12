@@ -109,6 +109,13 @@ Dicatat per gelombang: tanggal, jumlah generasi terpakai, seed ubin terpilih.
 | 12 Agu | 2 — jendela + pintu | 3 | 21 / 2000 |
 | 12 Agu | 3 — dua strip siluet latar | 2 | 23 / 2000 |
 | 12 Agu | 4 — batang sulur/akar + pohon varian 2 | 4 | 27 / 2000 |
+| 12 Agu | 6 — banner layar judul | 2 | 29 / 2000 (angka resmi get_balance) |
+
+Gelombang 5 (aktor) DITUNDA dengan sengaja: aktor sudah seragam lewat
+normalisasi prosedural dan sudah diterima pemilik proyek; batch edit_image
+butuh ~15rb karakter base64 inline yang rawan korup di jalur MCP, dan
+biayanya 20-40 generasi per panggilan. Kalau nanti aktor mau di-upgrade,
+jalankan per-frame dengan referensi regu_diam, bukan batch besar.
 
 Pelajaran gelombang 1, wajib dibawa gelombang berikutnya:
 

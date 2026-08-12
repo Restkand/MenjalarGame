@@ -53,13 +53,11 @@ func setup(pane_atas, pane_bawah, world):
 	_bawah = _buat_layer(pane_bawah, ts)
 
 	_fasad = FasadViewCls.new(world)
-	_fasad.scale = Vector2.ONE / float(Config.PPU)
 	_fasad.z_index = 0
 	pane_atas.tempel(_fasad)
 
 	# tumpukan puing per sel — di atas ubin & fasad, di bawah batang sulur
 	var puing_tanah = PuingTanahViewCls.new(world)
-	puing_tanah.scale = Vector2.ONE / float(Config.PPU)
 	puing_tanah.z_index = 0
 	pane_atas.tempel(puing_tanah)
 
@@ -81,9 +79,7 @@ func _buat_tileset():
 func _buat_layer(pane, ts):
 	var l = TileMapLayer.new()
 	l.tile_set = ts
-	# petak 32 px = 8 satuan: skala 1/PPU menjatuhkannya ke ruang satuan,
 	# sejajar dengan semua lapis lain
-	l.scale = Vector2.ONE / float(Config.PPU)
 	l.z_index = 0
 	l.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	pane.tempel(l)

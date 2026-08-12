@@ -37,7 +37,7 @@ func _ready():
 	layer = 20
 
 	var box = PanelContainer.new()
-	box.position = Vector2(648, 12)
+	box.position = Vector2(1596, 12)
 	box.custom_minimum_size = Vector2(HUD_LEBAR + 12, 0)
 	add_child(box)
 
@@ -73,7 +73,7 @@ func _ready():
 	_c_fill = _bar(vb, Config.C_LEAF)
 
 	_lbl_win = Label.new()
-	_lbl_win.position = Vector2(330, 250)
+	_lbl_win.position = Vector2(830, 420)
 	add_child(_lbl_win)
 
 	_build_overlay()
@@ -231,17 +231,8 @@ func _build_overlay():
 	vb.add_child(kontrol)
 
 
-# Peta cahaya dipanggang dicicil beberapa frame. Tombol MULAI dikunci sampai
-# selesai — kalau tidak, permainan bisa dimulai di atas peta cahaya kosong dan
-# fotosintesis akan salah hitung di detik-detik pertama.
-func set_bake(sibuk, kemajuan):
-	if _btn == null:
-		return
-	_btn.disabled = sibuk
-	if sibuk:
-		_btn.text = "MENYIAPKAN  %d%%" % int(round(kemajuan * 100))
-	else:
-		_btn.text = "  MULAI  "
+# set_bake() dihapus di R4 — bake petak selesai seketika, MULAI tidak pernah
+# perlu dikunci lagi.
 
 
 func _on_play():

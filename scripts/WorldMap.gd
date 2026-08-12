@@ -42,10 +42,9 @@ var zona_bobot = [0.0, 0.0, 0.0, 0.0]   # indeks = Config.ZONA_NAMA
 var zona_luas  = [0, 0, 0, 0]
 var zona_tutup = [0, 0, 0, 0]
 
-var _bake_y    = -1    # baris bake berikutnya; -1 = tidak ada bake berjalan
-var _bake_awal = 0     # baris awal bake ini, hanya untuk menghitung kemajuan
-
 const PETAK = 8        # satuan per petak TileMap (32 px / PPU 4)
+
+var _pw = 0            # lebar grid petak (Config.W / PETAK), diisi build()
 
 
 func build():
@@ -53,8 +52,14 @@ func build():
 	tutup = PackedByteArray(); tutup.resize(Config.W * Config.H)
 	rambatan_baru = []
 	tutup_luas = 0
-	light = PackedFloat32Array(); light.resize(Config.W * Config.H)
-	vis = PackedFloat32Array(); vis.resize(Config.W * Config.H)
+	# light & vis per PETAK 8x8, bukan per satuan (R4) — 2.400 sel.
+	# light default 1.0: area di luar fasad (langit, atas tumpukan puing di
+	# tepi) dianggap tersinari penuh; vis default 0 (tak ada yang melihat).
+	_pw = Config.W / PETAK
+	var _ph = Config.H / PETAK
+	light = PackedFloat32Array(); light.resize(_pw * _ph)
+	light.fill(1.0)
+	vis = PackedFloat32Array(); vis.resize(_pw * _ph)
 	settled = PackedByteArray(); settled.resize(Config.W * Config.H)
 	settled_n = 0
 	puing_atas = Config.H
@@ -178,7 +183,7 @@ func build():
 			elif k == Config.T_DOOR:
 				pintu_luas += 1
 
-	bake_mulai(Config.FACADE_Y0)
+	bake_semua()
 
 
 func _rect(x, y, w, h, kind):
@@ -190,72 +195,62 @@ func _rect(x, y, w, h, kind):
 
 
 # ---------------------------------------------------------------------------
-# Bake cahaya & keterlihatan — DICICIL
+# Bake cahaya & keterlihatan — GRID PETAK (R4, docs/09 §6)
 #
-# Fasad 288x168 pada kisi 2 px berarti 12.096 sinar. Satu sapuan penuh jauh
-# melewati anggaran satu frame di GDScript, jadi bake dijalankan beberapa baris
-# per frame lewat bake_langkah(). Pemanggilnya (main.gd) menahan permainan
-# selama bake_sibuk() masih true, dan layar MULAI yang sudah ada menyembunyikan
-# seluruh penantian itu.
-#
-# Aman dicicil karena vis[y] hanya membaca light[y] — satu baris tidak pernah
-# bergantung pada baris yang belum dipanggang.
+# light dan vis hidup per petak 8x8 satuan: 60x40 = 2.400 sel, ~600 sinar di
+# area fasad. Selesai dalam hitungan milidetik, jadi boleh dipanggang ulang
+# kapan saja — seluruh mesin cicilan lama (bake_langkah, tombol MULAI
+# terkunci) sudah dibuang. Resolusi 8-satuan cukup: vis dipakai sebagai laju
+# perhatian, bukan gambar.
 # ---------------------------------------------------------------------------
 
-# Memulai (atau memperluas) bake dari baris y_awal ke bawah.
-#
-# Dipanggil dua kali: sekali saat build(), dan sekali lagi tiap kali tumpukan
-# puing stabil. Yang kedua tidak perlu memanggang seluruh fasad — sinar datang
-# dari atas-kiri, jadi puing hanya bisa membayangi yang berada DI BAWAHNYA.
-func bake_mulai(y_awal):
-	var y0 = int(clamp(y_awal, Config.FACADE_Y0, Config.FACADE_Y1 - 1))
-	# tetap selaras dengan kisi 2 px
-	y0 -= (y0 - Config.FACADE_Y0) % 2
-	# Bake yang sedang berjalan tidak boleh kehilangan sisanya: ambil yang
-	# paling atas dari keduanya.
-	if _bake_y >= 0:
-		y0 = min(y0, _bake_y)
-	_bake_awal = y0
-	_bake_y = y0
+func bake_semua():
+	_bake_petak(int(Config.FACADE_Y0 / PETAK))
 
 
-func bake_sibuk():
-	return _bake_y >= 0
+# Dipanggil tiap tumpukan puing stabil / fasad gugur. Sinar datang dari
+# atas-kiri, jadi perubahan siluet hanya membayangi baris DI BAWAHNYA.
+func rebake_dari(y_awal):
+	_bake_petak(int(clamp(y_awal, Config.FACADE_Y0, Config.FACADE_Y1 - 1))
+			/ PETAK)
 
 
-func bake_kemajuan():
-	if _bake_y < 0:
-		return 1.0
-	var total = Config.FACADE_Y1 - _bake_awal
-	if total <= 0:
-		return 1.0
-	return clamp(float(_bake_y - _bake_awal) / float(total), 0.0, 1.0)
+func _bake_petak(ty0):
+	var tx0 = Config.FACADE_X0 / PETAK
+	var tx1 = int(ceil(float(Config.FACADE_X1) / PETAK))
+	var ty1 = int(ceil(float(Config.FACADE_Y1) / PETAK))
+	for ty in range(ty0, ty1):
+		var cy = ty * PETAK + PETAK / 2
+		var h = clamp(float(cy - Config.FACADE_Y0) \
+				/ float(Config.FACADE_Y1 - Config.FACADE_Y0), 0.0, 1.0)
+		for tx in range(tx0, tx1):
+			var cx = tx * PETAK + PETAK / 2
+			var l = 1.0 if _ray_clear(cx, cy) else 0.16
+			light.set(ty * _pw + tx, l)
 
-
-func bake_langkah(baris):
-	if _bake_y < 0:
-		return
-	var akhir = min(Config.FACADE_Y1, _bake_y + baris)
-	while _bake_y < akhir:
-		_bake_light_row(_bake_y)
-		_bake_vis_row(_bake_y)
-		_bake_vis_row(_bake_y + 1)
-		_bake_y += 2
-	if _bake_y >= Config.FACADE_Y1:
-		_bake_y = -1
-
-
-# Satu sapuan mendatar mengisi blok 2x2, jadi baris y sekaligus y+1.
-func _bake_light_row(y):
-	var x = Config.FACADE_X0
-	while x < Config.FACADE_X1:
-		var v = 1.0 if _ray_clear(x, y) else 0.16
-		for dy in range(0, 2):
-			for dx in range(0, 2):
-				var i = (y + dy) * Config.W + (x + dx)
-				if i >= 0 and i < light.size():
-					light.set(i, v)
-		x += 2
+			# vis petak: dasar + cahaya + ketinggian, lalu isi petaknya —
+			# jendela/pintu menonjol, ledge meneduhkan
+			var jendela = 0
+			var pintu = 0
+			var ledge = 0
+			for dy in range(PETAK):
+				var bar = (ty * PETAK + dy) * Config.W + tx * PETAK
+				for dx in range(PETAK):
+					var k = grid[bar + dx]
+					if k == Config.T_WINDOW:
+						jendela += 1
+					elif k == Config.T_DOOR:
+						pintu += 1
+					elif k == Config.T_LEDGE:
+						ledge += 1
+			var v = 0.20 + 0.48 * l + 0.28 * h
+			if jendela >= 8:
+				v += 0.30
+			if pintu >= 8 or cy > Config.FACADE_Y1 - 26:
+				v += 0.30
+			if ledge >= 8:
+				v -= 0.28
+			vis.set(ty * _pw + tx, clamp(v, 0.0, 1.0))
 
 
 # Melangkah BAKE_LANGKAH unit sekaligus, bukan 1. Separuh biaya, dan penghalang
@@ -281,40 +276,23 @@ func _ray_clear(sx, sy):
 	return true
 
 
-func _bake_vis_row(y):
-	if y < Config.FACADE_Y0 or y >= Config.FACADE_Y1:
-		return
-	for x in range(Config.FACADE_X0, Config.FACADE_X1):
-		var i = y * Config.W + x
-		var h = float(y - Config.FACADE_Y0) \
-				/ float(Config.FACADE_Y1 - Config.FACADE_Y0)
-		var v = 0.20 + 0.48 * light[i] + 0.28 * h
-		var k = grid[i]
-		if k == Config.T_WINDOW:
-			v += 0.30
-		if k == Config.T_DOOR or y > Config.FACADE_Y1 - 26:
-			v += 0.30
-		if k == Config.T_LEDGE:
-			v -= 0.28
-		vis.set(i, clamp(v, 0.0, 1.0))
-
-
 func at(x, y):
 	if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 		return Config.T_NEIGHBOR
 	return grid[y * Config.W + x]
 
 
+# light dan vis dibaca lewat petak — pemanggil tetap memakai koordinat satuan
 func light_at(x, y):
 	if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 		return 0.0
-	return light[y * Config.W + x]
+	return light[(y / PETAK) * _pw + (x / PETAK)]
 
 
 func vis_at(x, y):
 	if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 		return 0.0
-	return vis[y * Config.W + x]
+	return vis[(y / PETAK) * _pw + (x / PETAK)]
 
 
 # Permukaan yang bisa dicengkeram tanaman. Termasuk PUING: tumpukan reruntuhan
@@ -391,7 +369,7 @@ func rambati(px, py):
 				elif k == Config.T_DOOR:
 					tutup_pintu += 1
 				var z = _zona(x, y)
-				zona_bobot[z] += vis[i]
+				zona_bobot[z] += vis_at(x, y)
 				zona_tutup[z] += 1
 			elif k == Config.T_PUING:
 				tutup.set(i, 1)

@@ -79,7 +79,7 @@ func _gugurkan(id):
 		return   # sudah tidak ada gedung di situ (mis. sudah gugur duluan)
 
 	# siluet berubah — bayangan di bawah petak ini ikut berubah
-	world.bake_mulai(y0)
+	world.rebake_dari(y0)
 
 	var tengah = float(Config.EROSI_PETAK) * 0.5
 	for _k in range(Config.EROSI_PUING):
@@ -121,7 +121,7 @@ func _bake_step(delta):
 		return
 	_perlu_bake = false
 	_tenang = 0.0
-	world.bake_mulai(world.puing_atas - 4)
+	world.rebake_dari(world.puing_atas - 4)
 
 
 func _dust_step(delta):

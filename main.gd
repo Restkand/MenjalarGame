@@ -85,7 +85,6 @@ func _ready():
 	# puing melayang & debu — hanya pane atas; blocked() menghentikan puing
 	# di garis tanah, jadi ia tidak pernah masuk zona bawah
 	var puing_view = PuingViewCls.new(erosi)
-	puing_view.scale = Vector2.ONE / float(Config.PPU)
 	puing_view.z_index = 2
 	pane_atas.tempel(puing_view)
 
@@ -198,10 +197,10 @@ func _kamera(delta):
 		v.y += 1.0
 	if v == Vector2.ZERO:
 		return
-	# Dibagi tingkat zoom supaya kecepatan geser terasa sama di layar: pada
-	# zoom 4 satu piksel dunia memakan empat piksel layar.
-	_pane_aktif.geser(v.normalized() * Config.GESER_SPEED * delta
-			/ float(_pane_aktif.tingkat_zoom))
+	# GESER_SPEED dalam satuan dunia; kamera hidup di piksel (x PPU). Dibagi
+	# zoom supaya kecepatan geser terasa sama di layar pada zoom berapa pun.
+	_pane_aktif.geser(v.normalized() * Config.GESER_SPEED * Config.PPU
+			* delta / _pane_aktif.zoom)
 
 
 # Isi kartu pergantian fase — pengajaran kontekstual: sistem perhatian
@@ -258,14 +257,6 @@ func _process(delta):
 	delta = min(delta, 1.0 / 30.0)
 	var m = _mouse_dunia()
 	_kamera(delta)
-
-	# Peta cahaya dipanggang dicicil beberapa baris per frame. Selama belum
-	# selesai, permainan ditahan di layar MULAI — jadi seluruh penantiannya
-	# tersembunyi dan tidak pernah terlihat sebagai hitch.
-	if world.bake_sibuk():
-		world.bake_langkah(Config.BAKE_BARIS_MAIN if playing
-				else Config.BAKE_BARIS_DIAM)
-	hud.set_bake(world.bake_sibuk(), world.bake_kemajuan())
 
 	# erosi berjalan juga sebelum MULAI — puing yang masih melayang setelah
 	# reset harus tetap jatuh
@@ -353,10 +344,10 @@ func _unhandled_input(event):
 		var p = _pane_di(event.position)
 		if p != null:
 			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-				p.set_tingkat_zoom(p.tingkat_zoom + Config.ZOOM_LANGKAH)
+				p.ubah_zoom(Config.ZOOM_FAKTOR)
 				return
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-				p.set_tingkat_zoom(p.tingkat_zoom - Config.ZOOM_LANGKAH)
+				p.ubah_zoom(1.0 / Config.ZOOM_FAKTOR)
 				return
 
 	if event is InputEventMouseButton \
@@ -365,9 +356,9 @@ func _unhandled_input(event):
 		return
 
 	if _geser_drag and event is InputEventMouseMotion:
-		# dibagi zoom: geseran diberikan dalam piksel layar, kamera hidup di
-		# piksel dunia. Tandanya dibalik supaya dunia ikut kursor.
-		_pane_aktif.geser(-event.relative / float(_pane_aktif.tingkat_zoom))
+		# geseran datang dalam piksel layar; dibagi zoom jadi piksel dunia.
+		# Tandanya dibalik supaya dunia ikut kursor.
+		_pane_aktif.geser(-event.relative / _pane_aktif.zoom)
 		return
 
 	# --- tombol yang selalu aktif -------------------------------------------

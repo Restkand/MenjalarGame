@@ -238,8 +238,25 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A–F dan R1–R3 selesai — seluruh mekanik docs/06 sudah
-berdiri.** Sisa peta jalan: jalur render R4–R6, lalu TAHAP G (poles).
+Status: **TAHAP A–F dan R1–R5 selesai.** Sisa peta jalan: **R6** (HUD
+Control proper, aktor jadi sprite, `PixelCanvas` mati total, aset PixelLab
+gelombang 2), lalu TAHAP G (poles).
+
+R4+R5 yang sudah berdiri — bake petak & kamera piksel:
+
+- **R4**: `light`/`vis` hidup di GRID PETAK 60×40 (`_pw`, index `(y/PETAK)*
+  _pw + x/PETAK` di `light_at`/`vis_at` — pemanggil tetap koordinat satuan).
+  ~600 sinar, selesai seketika; SELURUH mesin cicilan dibuang (`bake_langkah`,
+  `bake_sibuk`, `set_bake`, tombol MULAI terkunci). `bake_semua()` di build,
+  `rebake_dari(y)` saat siluet berubah. Catatan: docs/09 R4 menyebut "hapus
+  PixelCanvas.gd" — DITUNDA ke R6, overlay masih menggambar tips/aktor/debug.
+- **R5**: jendela **1920×1080** (resizable), pane 1920×720 / 1920×360,
+  SubViewport ukuran piksel penuh. SEMUA view hidup di ruang piksel — semua
+  skala 1/PPU dihapus; sprite overlay & lampu justru di-skala ×PPU. **Zoom
+  `Camera2D` BEBAS** (0.75–3.0, roda ×1.25) — larangan zoom bulat era
+  `stretch_shrink` dicabut karena aset tampil 1:1. `Pane.zoom` float;
+  `titik_dunia()` tetap mengembalikan SATUAN simulasi.
+- HUD pindah ke x=1596; panel tuning setinggi 980; help di y=1034.
 
 Paket keterbacaan (playtest ketiga, 11 Agustus — "bingung objective &
 punishment"):

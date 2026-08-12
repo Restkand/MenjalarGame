@@ -126,26 +126,18 @@ const PHASE_DAY = 0
 const PHASE_NIGHT = 1
 
 # ---------------------------------------------------------------------------
-# Split screen
+# Split screen (angka R5, docs/09 §2)
 #
-# Angka-angka ini dipilih supaya SEMUA penskalaan jatuh di kelipatan bulat.
-# Zoom pecahan membuat piksel berkedip dan buram, dan itu melanggar seluruh
-# aturan render proyek ini — jadi zoom hanya boleh bilangan bulat.
-#
-#   zoom 2  pane atas melihat 480x192 = SELURUH zona udara (0..191)
-#           pane bawah melihat 480x128 = SELURUH zona tanah (192..319)
-#   zoom 4  pane atas melihat 240x96, pane bawah melihat 240x64
-#
-# Akibat yang disengaja: pada zoom 2 tidak ada gulir vertikal sama sekali,
-# karena tiap pane pas menampilkan zonanya utuh. Gulir vertikal baru muncul di
-# zoom 4. Jadi 2 = "lihat keseluruhan", 4 = "kerja teliti".
-const PANE_LEBAR       = 960
-const PANE_ATAS_TINGGI = 384
-const PANE_BAWAH_TINGGI = 256
+# Jendela 1920x1080; dunia 480x320 satuan x PPU 4 = 1920x1280 piksel. Aset
+# tampil 1:1, jadi larangan zoom bulat TIDAK berlaku lagi — Camera2D.zoom
+# bebas dan mulus. Pada zoom 1 pane atas melihat hampir seluruh zona udara.
+const PANE_LEBAR        = 1920
+const PANE_ATAS_TINGGI  = 720
+const PANE_BAWAH_TINGGI = 360
 
-const ZOOM_MIN     = 2
-const ZOOM_MAX     = 4
-const ZOOM_LANGKAH = 2      # 2 -> 4 -> 2; hanya kelipatan bulat
+const ZOOM_MIN    = 0.75
+const ZOOM_MAX    = 3.0
+const ZOOM_FAKTOR = 1.25    # pengali per gerigi roda mouse
 
 # Piksel per satuan simulasi (docs/09 §2). Simulasi tidak pernah tahu tentang
 # piksel — konversi hanya terjadi di lapis tampilan (scripts/render/), dengan
@@ -157,31 +149,14 @@ const PPU = 4
 var GESER_SPEED = 220.0     # piksel dunia per detik saat menahan WASD
 
 # ---------------------------------------------------------------------------
-# Bake cahaya
+# Bake cahaya (R4, docs/09 §6)
 #
-# Fasad sekarang 288x168 = 48.384 piksel. Pada kisi 2 px itu 12.096 sinar, dan
-# di GDScript satu sapuan penuh memakan waktu jauh lebih lama daripada satu
-# frame. Jadi bake DICICIL beberapa baris per frame.
-#
-# Layar MULAI sudah menahan permainan sebelum dimulai, jadi cicilan pertama
-# sembunyi di balik layar itu dan pemain tidak pernah melihat hitch.
-#
-# BAKE_LANGKAH 2.0: sinar melompat 2 unit sekali langkah, bukan 1. Ledge
-# setebal 4 px tetap terdeteksi, dan biayanya separuh. Risikonya hanya tepi
-# tipis tumpukan puing bisa terlewat — bayangan bocor sedikit, tidak fatal.
-#
-# Diukur di mesin pengembang: bake penuh 168 baris = 209 ms, jadi 1,24 ms per
-# baris. Dua anggaran berbeda, karena bake dipanggil di dua keadaan:
-#
-#   DIAM   di balik layar MULAI, tidak ada yang lain berjalan. 16 baris =
-#          20 ms per frame, seluruh fasad selesai dalam ~13 frame.
-#   MAIN   saat bermain, dipicu tumpukan puing yang baru diam. 2 baris =
-#          2,5 ms per frame — muat di sisa anggaran frame tanpa terasa.
-#          Peta cahaya sempat basi beberapa frame; itu tidak terlihat.
-const BAKE_BARIS_DIAM = 16
-const BAKE_BARIS_MAIN = 2
-const BAKE_LANGKAH    = 2.0    # panjang satu langkah sinar
-const BAKE_MAX        = 220    # langkah maksimal sebelum sinar dianggap lolos
+# light dan vis hidup di GRID PETAK 60x40 (8 satuan per petak) — 2.400 sel,
+# bukan 153.600. Satu bake penuh cuma ~600 sinar di area fasad dan selesai
+# dalam hitungan milidetik, jadi seluruh mesin cicilan (bake per baris,
+# tombol MULAI terkunci) DIBUANG. Boleh dipanggang ulang kapan saja.
+const BAKE_LANGKAH = 2.0    # panjang satu langkah sinar
+const BAKE_MAX     = 220    # langkah maksimal sebelum sinar dianggap lolos
 
 # ---------------------------------------------------------------------------
 # Erosi — pembongkaran sebagai KOSMETIK (TAHAP B, docs/06 §5)
@@ -309,9 +284,9 @@ const LAMPU_RADIUS  = 28    # jangkauan, dalam piksel dunia
 const LAMPU_TINGKAT = 4     # jumlah tangga falloff; kecil = makin pixel art
 const LAMPU_JUMLAH  = 9     # berapa jendela yang menyala (dari 54 yang ada)
 
-# Tinggi panel tuning yang bisa digulir. Jendela 640, panel mulai di y=12, dan
-# teks bantuan duduk di y=584.
-const PANEL_TINGGI = 548
+# Tinggi panel tuning yang bisa digulir. Jendela 1080, panel mulai di y=12,
+# dan teks bantuan duduk di y=1034.
+const PANEL_TINGGI = 980
 
 const SUN_RAY = Vector2(-0.34, -0.94)
 

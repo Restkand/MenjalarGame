@@ -80,12 +80,11 @@ func setup_lights(world, pane):
 		var w = world.windows[i]
 		var l = PointLight2D.new()
 		l.texture = _lamp_tex
-		# Sprite tidak lagi diskalakan, jadi satu texel lampu = satu piksel
-		# dunia dan posisinya langsung koordinat dunia.
-		l.texture_scale = 1.0
+		# tekstur lampu beresolusi satuan; PPU membawanya ke ruang piksel
+		l.texture_scale = float(Config.PPU)
 		l.color = Config.C_LAMPU
 		l.energy = 0.0                     # siang: padam
-		l.position = w
+		l.position = w * float(Config.PPU)
 		l.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		pane.tempel(l)
 		_lights.append({"node": l, "win": w})
@@ -133,13 +132,14 @@ func _blank():
 	return img
 
 
-# Skala 1: pembesaran ke layar sekarang dikerjakan SubViewportContainer lewat
-# stretch_shrink, jadi koordinat sprite = koordinat dunia. Itu yang membuat
-# posisi lampu, kamera, dan mouse semuanya hidup di satu sistem koordinat.
+# R5: viewport hidup di ruang piksel, sedangkan Image overlay tetap
+# 480x320 satuan — sprite diskalakan PPU supaya menutupi dunia 1920x1280.
+# Overlay memang bergaya piksel kasar; isinya pindah ke sprite saat R6.
 func _sprite(tex, z):
 	var s = Sprite2D.new()
 	s.texture = tex
 	s.centered = false
+	s.scale = Vector2(Config.PPU, Config.PPU)
 	s.z_index = z
 	# Pengganti flags=0 milik Godot 3. Tanpa ini pembesarannya jadi buram dan
 	# seluruh identitas pixel art-nya hilang.

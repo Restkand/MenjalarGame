@@ -7,8 +7,11 @@ extends Node2D
 #
 # Rumus parallax: gambar pada x' = x + cam.x * (1 - f). Kamera bergeser
 # 100 px -> lapisan ikut 100*(1-f) px -> gerak tampak = 100*f px (lebih
-# pelan dari dunia). Siluet digambar deterministik (seed tetap) supaya
-# kotanya sama tiap kali dibuka.
+# pelan dari dunia).
+#
+# Siluetnya strip PixelLab (gelombang 3, docs/12) yang di-recolor ke rona
+# lapisnya — bentuk dari model, warna tetap milik palet kita. Tiap strip
+# diulang horizontal menutupi rentang pandang, berjangkar di horizon.
 #
 # CanvasModulate pane ikut menggelapkan latar saat malam — gratis.
 
@@ -19,25 +22,13 @@ var _cam_last = Vector2.INF
 
 func _init(p):
 	pane = p
-	var rng = RandomNumberGenerator.new()
-	rng.seed = 7
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# skala 2: strip 100/140 px terlalu pendek dibanding fasad 192*4 px;
+	# diperbesar bulat supaya pikselnya tetap tajam
 	_lapis = [
-		{"f": 0.25, "warna": Color("7E8896"),
-				"gedung": _barisan(rng, 120, 300, 70)},
-		{"f": 0.50, "warna": Color("6F7987"),
-				"gedung": _barisan(rng, 200, 480, 100)},
+		{"f": 0.25, "tex": load("res://aset/latar_jauh.png"), "skala": 2.0},
+		{"f": 0.50, "tex": load("res://aset/latar_dekat.png"), "skala": 2.0},
 	]
-
-
-func _barisan(rng, t_min, t_max, lebar):
-	var keluar = []
-	var x = -1400.0
-	while x < 3600.0:
-		var w = lebar * (0.7 + rng.randf() * 0.9)
-		keluar.append({"x": x, "w": w,
-				"h": t_min + rng.randf() * (t_max - t_min)})
-		x += w + rng.randf() * 90.0
-	return keluar
 
 
 func _process(_delta):
@@ -57,5 +48,12 @@ func _draw():
 	var horizon = float(Config.GROUND_Y * Config.PPU)
 	for l in _lapis:
 		var geser = cam.x * (1.0 - l.f)
-		for g in l.gedung:
-			draw_rect(Rect2(g.x + geser, horizon - g.h, g.w, g.h), l.warna)
+		var w = l.tex.get_width() * l.skala
+		var h = l.tex.get_height() * l.skala
+		# mulai dari ubin strip pertama yang masih masuk pandangan kiri
+		var kiri = cam.x - 1400.0
+		var mulai = floor((kiri - geser) / w) * w + geser
+		var x = mulai
+		while x < cam.x + 1400.0:
+			draw_texture_rect(l.tex, Rect2(x, horizon - h, w, h), false)
+			x += w

@@ -16,10 +16,15 @@ extends Node2D
 # TerrainView), jadi semua rect satuan dikalikan PPU.
 
 var world
+var _tex_jendela
+var _tex_pintu
 
 
 func _init(w):
 	world = w
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_tex_jendela = load("res://aset/jendela.png")
+	_tex_pintu = load("res://aset/pintu.png")
 
 
 func _r(rect):
@@ -29,23 +34,15 @@ func _r(rect):
 func _draw():
 	var ppu = float(Config.PPU)
 
-	# jendela: bingkai ambang, kaca, palang tengah
+	# jendela: sprite PixelLab 56x64 (gelombang 2, docs/12) — kanvas persis
+	# 14x16 satuan, jadi digambar 1:1 pada rect fiturnya
 	for w in world.windows:
 		# jendela yang sudah runtuh tidak digambar — aturan yang sama dengan
 		# lampu malam di Suasana.set_night()
 		if world.at(int(w.x), int(w.y)) != Config.T_WINDOW:
 			continue
 		var r = Rect2i(int(w.x) - 7, int(w.y) - 8, 14, 16)
-		draw_rect(_r(r), Config.C_WALL_DARK)                    # bingkai
-		draw_rect(_r(r.grow(-1)), Config.C_WINDOW)              # kaca
-		# palang jendela — dua garis tipis menyilang
-		draw_rect(Rect2((r.position.x + 1) * ppu, (w.y - 0.5) * ppu,
-				12.0 * ppu, 1.0 * ppu), Config.C_WALL_DARK)
-		draw_rect(Rect2((w.x - 0.5) * ppu, (r.position.y + 1) * ppu,
-				1.0 * ppu, 14.0 * ppu), Config.C_WALL_DARK)
-		# ambang bawah menonjol — sisi bawah gelap, aturan volume docs/01 §5
-		draw_rect(Rect2((r.position.x - 1) * ppu, r.end.y * ppu,
-				16.0 * ppu, 1.0 * ppu), Config.C_LEDGE)
+		draw_texture_rect(_tex_jendela, _r(r), false)
 
 	for f in world.fitur:
 		var r = f.rect
@@ -53,11 +50,7 @@ func _draw():
 		if world.at(tengah.x, tengah.y) == Config.T_SKY:
 			continue   # sudah runtuh
 		if f.jenis == "pintu":
-			draw_rect(_r(r.grow(1)), Config.C_WALL_DARK)        # kusen
-			draw_rect(_r(r), Config.C_DOOR)
-			# garis belah dua daun pintu
-			draw_rect(Rect2((tengah.x - 0.5) * ppu, r.position.y * ppu,
-					1.0 * ppu, r.size.y * ppu), Config.C_WALL_DARK)
+			draw_texture_rect(_tex_pintu, _r(r), false)
 		else:
 			draw_rect(_r(r), Config.C_LEDGE)
 			# sisi bawah (atau kanan, untuk yang tegak) diberi bayangan

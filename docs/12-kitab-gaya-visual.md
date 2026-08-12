@@ -106,6 +106,8 @@ Dicatat per gelombang: tanggal, jumlah generasi terpakai, seed ubin terpilih.
 | Tanggal | Gelombang | Terpakai | Kumulatif |
 |---|---|---|---|
 | 12 Agu | 1 — ubin terrain | 18 | 18 / 2000 |
+| 12 Agu | 2 — jendela + pintu | 3 | 21 / 2000 |
+| 12 Agu | 3 — dua strip siluet latar | 2 | 23 / 2000 |
 
 Pelajaran gelombang 1, wajib dibawa gelombang berikutnya:
 

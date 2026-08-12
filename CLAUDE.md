@@ -309,7 +309,11 @@ kolam 5 pemutar sfx bergilir. Peristiwa: sting kartu, potong (gergaji
 regu & X), daun (tunas ulang), thunk (perkuat), pohon (tanam & menang),
 puing mendarat (debum, cooldown 0,35 dtk). Pemutar WAJIB di-stop di
 `_exit_tree` — playback yang masih hidup saat engine berhenti bocor di
-ObjectDB. Volume konservatif (-9 s/d -16 dB).
+ObjectDB. Volume konservatif (-9 s/d -16 dB). Catatan: walau sudah stop +
+stream=null, verifikasi headless KADANG masih memperingatkan 4 instance
+AudioStreamWAV/PlaybackWAV bocor — itu race driver audio dummy headless
+(terbukti kambuhan: bocor-bersih-bocor pada kode identik, 12 Agu). Abaikan;
+jangan diburu.
 
 **G8 SELESAI** — kohesi visual & gerak, semuanya prosedural (nol kuota):
 

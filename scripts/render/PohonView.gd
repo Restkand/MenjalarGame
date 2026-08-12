@@ -11,13 +11,15 @@ extends Node2D
 
 var sim
 var _t = 0.0
-var _tex
+var _texs = []
 
 
 func _init(s):
 	sim = s
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_tex = load("res://aset/pohon.png")
+	# dua varian (gelombang 4, docs/12) — dipilih deterministik dari posisi
+	# supaya hutan tidak terlihat difotokopi
+	_texs = [load("res://aset/pohon.png"), load("res://aset/pohon2.png")]
 
 
 func _process(delta):
@@ -28,8 +30,6 @@ func _process(delta):
 
 
 func _draw():
-	if _tex == null:
-		return
 	var ppu = float(Config.PPU)
 	# skala saat dewasa: tinggi sprite 128 px menutupi POHON_TINGGI satuan
 	var penuh = float(Config.POHON_TINGGI) * ppu / 128.0
@@ -39,5 +39,5 @@ func _draw():
 		# ayunan halus berjangkar di pangkal batang; fase dari posisi
 		var angin = sin(_t * 0.8 + t.x * 0.05) * 0.014
 		draw_set_transform(Vector2(t.x, t.y) * ppu, angin, Vector2(s, s))
-		draw_texture(_tex, Vector2(-48.0, -128.0))
+		draw_texture(_texs[int(t.x) % _texs.size()], Vector2(-48.0, -128.0))
 	draw_set_transform_matrix(Transform2D())

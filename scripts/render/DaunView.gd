@@ -61,12 +61,18 @@ func _gambar_lapis(lapis):
 		for l in s.leaves:
 			if int(l.get("lapis", 1)) != lapis:
 				continue
+			# Tahapan tunas dari gambar acuan: sepertiga umur pertama tampil
+			# sebagai SPRITE KUNCUP (sel 0) — bukan daun dewasa yang
+			# dikecilkan sampai jadi gumpalan — lalu "membuka" jadi daun
+			# yang membesar sampai DAUN_DEWASA.
+			var t = min(1.0, l.age / Config.DAUN_DEWASA)
 			var v = int(l.get("varian", 0))
-			# dari KUNCUP ke dewasa selama DAUN_DEWASA detik — bagian muda
-			# sulur selalu bertabur kuncup kecil, bagian tua berdaun besar,
-			# persis tahapan tunas -> lebat di gambar acuan
-			var sk = l.get("skala", 1.0) \
-					* (0.3 + 0.7 * min(1.0, l.age / Config.DAUN_DEWASA))
+			var sk = l.get("skala", 1.0)
+			if t < 0.3:
+				v = 0
+				sk *= 0.7 + 0.6 * t
+			else:
+				sk *= 0.55 + 0.45 * (t - 0.3) / 0.7
 			var rona = l.get("rona", 1.0)
 			var warna
 			if lapis == 0:

@@ -114,10 +114,8 @@ const LEAF_SPACING = 6.0
 const TUNAS_TIAP   = 2.0    # detik antar daun susulan per sulur
 const DAUN_DEWASA  = 30.0   # detik dari kuncup sampai ukuran penuh
 
-# Berapa titik yang disimpan tiap untai, dan berapa titik terakhir yang
-# digambar ulang tiap frame ke lapisan pohon yang akumulatif.
+# Berapa titik yang disimpan tiap untai.
 const STRAND_MAX_TITIK = 1800
-const STRAND_EKOR      = 360
 
 # Radius pencarian klik, dalam piksel dunia.
 const PILIH_RADIUS  = 18.0   # memilih ujung

@@ -1,11 +1,10 @@
 extends Node2D
 
-# Pohon — satu batch _draw() untuk semua pohon (R3, docs/09).
+# Pohon — sprite PixelLab, satu batch _draw() untuk semua pohon (R6).
 #
-# Menggantikan penggambaran piksel akumulatif di lapisan tree yang lama.
-# Batang + tajuk digambar prosedural pada resolusi PPU; sprite PixelLab
-# (pohon_pangkal, docs/10 №12) baru masuk saat R6 — pohon TUMBUH tingginya,
-# dan meregangkan sprite mengikuti tinggi akan merusak gambarnya.
+# Pohon tumbuh MENYELURUH dari kecil ke besar (skala seragam berjangkar di
+# pangkal batang), bukan diregangkan tingginya — meregangkan sprite merusak
+# gambarnya, sedangkan pohon muda yang utuh-tapi-kecil justru terlihat wajar.
 #
 # Redraw hanya selama ada pohon yang masih meninggi (atau jumlahnya berubah);
 # hutan yang sudah dewasa tidak menggambar ulang apa pun.
@@ -13,11 +12,13 @@ extends Node2D
 var sim
 var _n = -1
 var _tumbuh = false
+var _tex
 
 
 func _init(s):
 	sim = s
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_tex = load("res://aset/pohon.png")
 
 
 func _process(_delta):
@@ -35,19 +36,14 @@ func _process(_delta):
 
 
 func _draw():
+	if _tex == null:
+		return
 	var ppu = float(Config.PPU)
+	# skala saat dewasa: tinggi sprite 128 px menutupi POHON_TINGGI satuan
+	var penuh = float(Config.POHON_TINGGI) * ppu / 128.0
 	for t in sim.trees:
-		var h = float(t.tinggi)
-		var puncak = Vector2(t.x, t.y - h) * ppu
-
-		# batang, menebal sedikit di pangkal
-		draw_rect(Rect2((t.x - 1.0) * ppu, (t.y - h) * ppu,
-				2.0 * ppu, h * ppu), Config.C_BRANCH)
-		draw_rect(Rect2((t.x - 1.5) * ppu, (t.y - h * 0.33) * ppu,
-				3.0 * ppu, h * 0.33 * ppu), Config.C_BRANCH)
-
-		# tajuk: bola daun + sisi terang kiri-atas (arah matahari)
-		var r = max(3.0, h / 2.8) * ppu
-		draw_circle(puncak, r, Config.C_LEAF)
-		draw_circle(puncak + Vector2(-r * 0.35, -r * 0.35), r * 0.45,
-				Config.C_TIP)
+		var f = clamp(float(t.tinggi) / float(Config.POHON_TINGGI), 0.0, 1.0)
+		var s = (0.22 + 0.78 * f) * penuh
+		draw_set_transform(Vector2(t.x, t.y) * ppu, 0.0, Vector2(s, s))
+		draw_texture(_tex, Vector2(-48.0, -128.0))
+	draw_set_transform_matrix(Transform2D())

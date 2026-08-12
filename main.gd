@@ -8,10 +8,13 @@ const ClimberCls     = preload("res://scripts/Climber.gd")
 const ErosiCls       = preload("res://scripts/Erosi.gd")
 const BabakCls       = preload("res://scripts/Babak.gd")
 const PaneCls        = preload("res://scripts/Pane.gd")
-const PixelCanvasCls = preload("res://scripts/PixelCanvas.gd")
+const SuasanaCls     = preload("res://scripts/Suasana.gd")
 const TanamanViewCls = preload("res://scripts/render/TanamanView.gd")
 const TerrainViewCls = preload("res://scripts/render/TerrainView.gd")
 const PuingViewCls   = preload("res://scripts/render/PuingView.gd")
+const AktorViewCls   = preload("res://scripts/render/AktorView.gd")
+const UjungViewCls   = preload("res://scripts/render/UjungView.gd")
+const RisikoViewCls  = preload("res://scripts/render/RisikoView.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
 const HudCls         = preload("res://scripts/Hud.gd")
 
@@ -22,11 +25,15 @@ var crew
 var climbers
 var erosi
 var babak
-var canvas
+var suasana
 var tanaman
 var terrain
 var panel
 var hud
+
+var ujung_atas
+var ujung_bawah
+var risiko
 
 var _babak_terakhir = 1
 var _fase_terakhir = Config.PHASE_DAY
@@ -53,7 +60,7 @@ func _ready():
 	world = WorldMapCls.new()
 	world.build()
 
-	# Pane dibuat sebelum PixelCanvas: canvas menempelkan sprite-nya ke dalam
+	# Pane dibuat lebih dulu: semua view menempelkan node-nya ke dalam
 	# viewport masing-masing pane, jadi pane harus sudah ada.
 	pane_atas = PaneCls.new()
 	add_child(pane_atas)
@@ -69,15 +76,15 @@ func _ready():
 
 	_pane_aktif = pane_atas
 
-	# terrain dulu baru canvas: keduanya z-eksplisit, tapi urutan tempel
-	# menentukan siapa yang menang saat z sama (FasadView di atas ubin)
+	# terrain paling dulu: z-nya eksplisit, tapi urutan tempel menentukan
+	# siapa yang menang saat z sama (FasadView di atas ubin)
 	terrain = TerrainViewCls.new()
 	terrain.setup(pane_atas, pane_bawah, world)
 
-	canvas = PixelCanvasCls.new()
-	add_child(canvas)
-	canvas.setup([pane_atas, pane_bawah])
-	canvas.setup_lights(world, pane_atas)
+	suasana = SuasanaCls.new()
+	add_child(suasana)
+	suasana.setup([pane_atas, pane_bawah])
+	suasana.setup_lights(world, pane_atas)
 
 	erosi = ErosiCls.new()
 	erosi.setup(world)
@@ -107,6 +114,23 @@ func _ready():
 	babak = BabakCls.new()
 	babak.reset()
 
+	# lapis view sisa overlay lama (R6): aktor, ujung/pratinjau, peta risiko
+	var aktor = AktorViewCls.new(crew, climbers)
+	aktor.z_index = 3
+	pane_atas.tempel(aktor)
+
+	ujung_atas = UjungViewCls.new(sim)
+	ujung_atas.z_index = 4
+	pane_atas.tempel(ujung_atas)
+
+	ujung_bawah = UjungViewCls.new(sim)
+	ujung_bawah.z_index = 4
+	pane_bawah.tempel(ujung_bawah)
+
+	risiko = RisikoViewCls.new(world)
+	risiko.z_index = 4
+	pane_atas.tempel(risiko)
+
 	panel = TuningPanelCls.new()
 	add_child(panel)
 	panel.reset_pressed.connect(_restart)
@@ -114,7 +138,6 @@ func _ready():
 	hud = HudCls.new()
 	add_child(hud)
 	hud.play_pressed.connect(_on_play)
-
 
 func _on_play():
 	playing = true
@@ -125,7 +148,7 @@ func _restart():
 	# ulang — bukan sekadar mereset pohon.
 	world.build()
 	terrain.bangun_ulang()
-	canvas.setup_lights(world, pane_atas)   # grid baru — lampu yang padam menyala lagi
+	suasana.setup_lights(world, pane_atas)   # grid baru — lampu yang padam menyala lagi
 	erosi.setup(world)
 	sim.reset()
 	# id untai mulai dari 1 lagi setelah reset, jadi view lama WAJIB dibuang
@@ -300,26 +323,23 @@ func _process(delta):
 
 	tanaman.sinkron()
 	terrain.sinkron()
-	canvas.begin_frame()
-	sim.render(canvas)
-	if show_risk:
-		canvas.draw_risk(world)
-	canvas.draw_crew(crew)
-	canvas.draw_climbers(climbers)
-	for s in sim.strands:
-		if s.alive and s.tembus >= 0.0:
-			canvas.draw_tembus(s.tip, s.tembus)
-	if playing and is_steering and sim.selected != null and sim.selected.alive:
-		canvas.draw_preview(sim.selected.preview(m, 80, world))
 
-	# Permainan usai saat babak III tuntas (menang) atau tanaman kelaparan
-	# sampai mati (kalah). `won` menahan input & simulasi untuk keduanya;
-	# HUD yang membedakan lewat objek babak.
+	# view menggambar dirinya sendiri; main hanya menyuapi data yang tidak
+	# bisa mereka hitung: pratinjau jalur (butuh mouse) dan sakelar risiko
+	risiko.visible = show_risk
+	var pratinjau = []
+	if playing and is_steering and sim.selected != null and sim.selected.alive:
+		pratinjau = sim.selected.preview(m, 80, world)
+	ujung_atas.pratinjau = pratinjau
+	ujung_bawah.pratinjau = pratinjau
+
+	# Permainan usai saat babak III tuntas (menang) atau seluruh tanaman
+	# mati (kalah). `won` menahan input & simulasi untuk keduanya; HUD yang
+	# membedakan lewat objek babak.
 	if playing and not won and (babak.menang or babak.kalah):
 		won = true
-	canvas.end_frame()
 
-	canvas.set_night(cycle.night_amount())
+	suasana.set_night(cycle.night_amount())
 	hud.refresh(sim, cycle, world, crew, climbers, babak)
 
 

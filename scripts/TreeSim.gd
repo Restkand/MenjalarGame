@@ -209,13 +209,8 @@ func bottleneck():
 	return ""
 
 
-func render(canvas):
-	# Untai, daun, dan pohon semuanya sudah digambar lapis view (SulurView /
-	# DaunView / PohonView). Yang tersisa di sini hanya denyut ujung, di
-	# overlay — ia pindah ke sprite saat R6.
-	for s in strands:
-		if s.alive:
-			canvas.draw_tip(s.tip, s == selected, time)
+# render() dihapus di R6 — seluruh penggambaran kini milik lapis view
+# (SulurView, DaunView, PohonView, AktorView, UjungView, RisikoView).
 
 # Yang sefase selalu bisa dipilih. Yang menjalar sendiri di atas puing juga —
 # kalau tidak, pemain menonton sesuatu tumbuh tanpa bisa menyentuhnya.

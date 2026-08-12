@@ -3,7 +3,7 @@ extends RefCounted
 # Manajer lapis tampilan tanaman (R1, docs/09).
 #
 # Satu Node2D akar per pane. Sejak R5 viewport hidup di ruang piksel, jadi
-# sejajar dengan lapis PixelCanvas lama yang masih 1 piksel = 1 satuan.
+# semua koordinat lokal adalah satuan simulasi x PPU.
 # Untai sulur masuk ke pane atas, akar ke pane bawah — kamera tiap pane
 # dijepit ke zonanya masing-masing, jadi satu untai tidak pernah perlu
 # tampil di dua pane sekaligus.
@@ -43,7 +43,7 @@ func setup(pane_atas, pane_bawah, sim):
 
 func _buat_root(pane):
 	var r = Node2D.new()
-	# di atas lapis world (0), di bawah lapis tree/overlay milik PixelCanvas
+	# di atas terrain (0), di bawah puing melayang (2) dan aktor (3)
 	r.z_index = 1
 	pane.tempel(r)
 	return r

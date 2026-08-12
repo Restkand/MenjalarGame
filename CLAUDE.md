@@ -238,9 +238,35 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A–F dan R1–R5 selesai.** Sisa peta jalan: **R6** (HUD
-Control proper, aktor jadi sprite, `PixelCanvas` mati total, aset PixelLab
-gelombang 2), lalu TAHAP G (poles).
+Status: **TAHAP A–F dan R1–R6 selesai — SELURUH peta jalan render tuntas.**
+Sisa: TAHAP G (poles: parallax, audio, transisi, layar judul final, dan
+anatomi HUD dua-pita docs/08 §3 yang ditunda dari R6).
+
+R6 yang sudah berdiri — `PixelCanvas` MATI, semua visual adalah view:
+
+- `scripts/render/AktorView.gd` — regu & pemanjat sprite PixelLab 48×64,
+  satu batch `_draw()`: animasi 2 frame (0,3 dtk), cermin hadap lewat
+  transform, pingsan = sprite rebah redup, garis merah ke sasaran saat
+  memangkas. Pemanjat berpusat di titik sulur yang dipijaknya.
+- `scripts/render/UjungView.gd` (satu per pane) — denyut ujung, kotak
+  pilihan sebesar radius klik, bar menembus beton, pratinjau jalur (diisi
+  `main` lewat properti `pratinjau`).
+- `scripts/render/RisikoView.gd` — peta V per petak vis 8×8, jujur pada
+  resolusi datanya. `main` cuma menyetel `visible`.
+- `PohonView` memakai sprite `aset/pohon.png`, tumbuh lewat SKALA SERAGAM
+  berjangkar di pangkal (0.22→1.0) — bukan diregangkan tingginya.
+- **`PixelCanvas.gd` DIHAPUS** → `scripts/Suasana.gd`: hanya CanvasModulate
+  per pane + lampu jendela (falloff bertangga dipertahankan sebagai gaya).
+  `TreeSim.render()` ikut hilang; tidak ada Image/ImageTexture tersisa.
+- Aset aktor dinormalisasi prosedural (scratchpad `normalisasi_aktor.gd`):
+  palet dipaksa ke warna `regu_diam`, tinggi bounding-box disamakan —
+  jawaban untuk "warna & ukuran antar frame tidak konsisten". Sprite
+  pemanjat TIDAK boleh berisi tali/tiang (ia memanjat sulur pemain; tali
+  membuat normalisasi mengecilkan karakternya).
+- Kuota PixelLab terpakai 35/40. Sisa 5 — untuk TAHAP G, prioritaskan
+  varian pohon kedua & ikon HUD; jangan buang untuk tekstur polos.
+- Urutan z pane atas: terrain+fasad+puing-tanah 0, tanaman 1, puing
+  melayang 2, aktor 3, ujung/risiko 4.
 
 R4+R5 yang sudah berdiri — bake petak & kamera piksel:
 

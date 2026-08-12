@@ -32,7 +32,7 @@ func _draw():
 	# jendela: bingkai ambang, kaca, palang tengah
 	for w in world.windows:
 		# jendela yang sudah runtuh tidak digambar — aturan yang sama dengan
-		# lampu malam di PixelCanvas.set_night()
+		# lampu malam di Suasana.set_night()
 		if world.at(int(w.x), int(w.y)) != Config.T_WINDOW:
 			continue
 		var r = Rect2i(int(w.x) - 7, int(w.y) - 8, 14, 16)

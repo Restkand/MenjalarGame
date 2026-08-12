@@ -7,6 +7,7 @@ extends RefCounted
 
 var grid
 var jaringan           # 0/1 per satuan — jejak untai untuk avatar (P1)
+var dalam              # grid interior gedung (P2) — enum T_RUANG.. di tapak fasad
 var light
 var vis
 var windows = []       # titik tengah tiap jendela — dipakai lampu & FasadView
@@ -58,6 +59,7 @@ func build():
 	# apa pun. Inilah "jalan raya" avatar; beda dari `tutup` yang hanya
 	# menandai fasad demi ekonomi tutupan.
 	jaringan = PackedByteArray(); jaringan.resize(Config.W * Config.H)
+	_bangun_interior()
 	rambatan_baru = []
 	tutup_luas = 0
 	# light & vis per PETAK 8x8, bukan per satuan (R4) — 2.400 sel.
@@ -475,6 +477,83 @@ func sedot_di(p, jumlah):
 
 
 # Apakah ada bekas rambatan di sekitar titik ini — syarat tunas ulang (G2).
+# --- interior gedung (P2, docs/13 §4) --------------------------------------
+
+# Tata letak hardcoded seperti build() — generator menyusul (setara G10
+# lama). Lantai menempel di dasar tiap baris jendela (jy+16), jadi masuk
+# lewat jendela selalu mendarat pas di lantai. Ventilasi digambar TERAKHIR:
+# ia menembus dinding kamar — itulah gunanya ventilasi.
+func _bangun_interior():
+	dalam = PackedByteArray(); dalam.resize(Config.W * Config.H)
+
+	# seluruh tapak = ruang; cangkang 4 tepi = dinding
+	_rect_dalam(Config.FACADE_X0, Config.FACADE_Y0, 288, 168, Config.T_RUANG)
+	_rect_dalam(96, 24, 288, 4, Config.T_DINDING_DALAM)
+	_rect_dalam(96, 24, 4, 168, Config.T_DINDING_DALAM)
+	_rect_dalam(380, 24, 4, 168, Config.T_DINDING_DALAM)
+	_rect_dalam(96, 188, 288, 4, Config.T_LANTAI)   # dasar gedung
+
+	# slab lantai per baris jendela: y = jy+16 (jy = 40..170 langkah 26)
+	for jy in range(40, 180, 26):
+		_rect_dalam(100, jy + 16, 280, 3, Config.T_LANTAI)
+
+	# dinding kamar per tingkat, menggantung dari langit-langit dan berhenti
+	# 12 satuan di atas lantai = celah pintu. Posisi berselang-seling per
+	# tingkat supaya rute eksplorasi zig-zag, bukan lurus.
+	var atap_tingkat   = [28, 59, 85, 111, 137, 163]   # udara teratas tiap tingkat
+	var lantai_tingkat = [56, 82, 108, 134, 160, 188]  # puncak slab di bawahnya
+	for i in range(atap_tingkat.size()):
+		var y0 = atap_tingkat[i]
+		var y_pintu = lantai_tingkat[i] - 12
+		var xs = [180, 264] if i % 2 == 0 else [222]
+		for x in xs:
+			_rect_dalam(x, y0, 3, y_pintu - y0, Config.T_DINDING_DALAM)
+
+	# poros lift: x 306..318, menembus semua slab; dindingnya sendiri
+	_rect_dalam(306, 28, 12, 160, Config.T_POROS)
+	_rect_dalam(303, 28, 3, 160, Config.T_DINDING_DALAM)
+	_rect_dalam(318, 28, 3, 160, Config.T_DINDING_DALAM)
+	# bukaan poros per lantai (di sisi kiri, setinggi pintu)
+	for jy in range(40, 180, 26):
+		_rect_dalam(303, jy + 6, 3, 10, Config.T_POROS)
+
+	# GERBANG P2: teralis menyumbat poros antara lantai 3 dan 4 —
+	# janji Metroid yang baru terbuka lewat upgrade (P7)
+	_rect_dalam(306, 84, 12, 8, Config.T_TERALIS)
+
+	# ventilasi: duct 3 satuan menempel langit-langit, menembus SEMUA
+	# dinding kamar (bukan cangkang) — jalan tikus antar kamar
+	for jy in range(40, 180, 26):
+		_rect_dalam(102, jy + 1, 276, 3, Config.T_VENT)
+
+
+func _rect_dalam(x, y, w, h, kind):
+	for yy in range(y, min(y + h, Config.H)):
+		for xx in range(x, min(x + w, Config.W)):
+			dalam[yy * Config.W + xx] = kind
+
+
+# Padat untuk avatar (P2): tergantung ia di dalam gedung atau di luar.
+# Di dalam: cangkang di luar tapak selalu padat; lantai/dinding/teralis
+# padat; ruang/vent/poros bisa dilalui.
+func padat_avatar(px, py, di_dalam):
+	if not di_dalam:
+		return padat(px, py)
+	if px < Config.FACADE_X0 or px >= Config.FACADE_X1 \
+			or py < Config.FACADE_Y0 or py >= Config.FACADE_Y1:
+		return true
+	match dalam[py * Config.W + px]:
+		Config.T_LANTAI, Config.T_DINDING_DALAM, Config.T_TERALIS:
+			return true
+	return false
+
+
+# Avatar berdiri di sel jendela/pintu fasad? (gerbang masuk-keluar, tombol E)
+func di_gerbang_interior(px, py):
+	var k = at(px, py)
+	return k == Config.T_WINDOW or k == Config.T_DOOR
+
+
 # --- jaringan avatar (P1, docs/13) ----------------------------------------
 
 # Ditandai Strand.grow untuk TIAP titik untai (sulur & akar), 3x3.

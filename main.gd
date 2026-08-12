@@ -21,6 +21,7 @@ const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
 const HudCls         = preload("res://scripts/Hud.gd")
 const AvatarCls      = preload("res://scripts/Avatar.gd")
 const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
+const InteriorViewCls = preload("res://scripts/render/InteriorView.gd")
 
 var world
 var sim
@@ -46,6 +47,7 @@ var risiko
 var avatar
 var avatar_view
 var _lompat_tekan = false   # edge tombol Spasi, dikosongkan tiap frame
+var _masuk_tekan = false    # edge tombol E (masuk/keluar gedung, P2)
 
 
 var _babak_terakhir = 1
@@ -159,6 +161,10 @@ func _ready():
 
 	# avatar (P1, docs/13) — lahir saat MULAI, view-nya siap dari sekarang
 	avatar = AvatarCls.new()
+	# interior (P2): menutup fasad saat avatar di dalam; avatar tetap di atas
+	var interior = InteriorViewCls.new(world, avatar)
+	interior.z_index = 4
+	pane_atas.tempel(interior)
 	avatar_view = AvatarViewCls.new(avatar)
 	avatar_view.z_index = 5
 	pane_atas.tempel(avatar_view)
@@ -417,7 +423,7 @@ func _process(delta):
 			arah.y -= 1.0
 		if _tekan(KEY_S) or _tekan(KEY_DOWN):
 			arah.y += 1.0
-		avatar.update(dt, arah, _lompat_tekan, world)
+		avatar.update(dt, arah, _lompat_tekan, _masuk_tekan, world)
 		if avatar.layu_baru:
 			avatar.layu_baru = false
 			hud.flash_msg("LAYU — kembali ke simpul jaringan terakhir")
@@ -443,6 +449,7 @@ func _process(delta):
 		pane_atas.geser((target - pane_atas.cam.position)
 				* clamp(delta * 6.0, 0.0, 1.0))
 	_lompat_tekan = false
+	_masuk_tekan = false
 
 	# view menggambar dirinya sendiri; main hanya menyuapi data yang tidak
 	# bisa mereka hitung: pratinjau jalur (butuh mouse) dan sakelar risiko
@@ -587,6 +594,23 @@ func _unhandled_input(event):
 			_try_branch(m, ada_ujung)
 
 	if event is InputEventKey and event.pressed and not event.echo:
+		# --- kata kerja avatar (P2) — didahulukan dari kata kerja lama -----
+		if _kunci(event, KEY_E):
+			# masuk/keluar gedung lewat jendela/pintu — diproses Avatar.update
+			if playing:
+				_masuk_tekan = true
+			return
+		if playing and _kunci(event, KEY_F):
+			# F milik avatar sekarang: tanam jangkar (perkuat lama tetap ada
+			# di kode, kehilangan tombol — nasibnya diputuskan P6)
+			if avatar.jangkar(world):
+				suara.mainkan("daun")
+				hud.flash_msg("Jangkar ditanam — simpul bangun & titik pulih  (-%d energi)"
+						% int(Config.JANGKAR_BIAYA))
+			else:
+				hud.flash_msg("Energi kurang — jangkar butuh %d"
+						% int(Config.JANGKAR_BIAYA))
+			return
 		if _kunci(event, KEY_T):
 			# tanam pohon dengan sengaja (G5) — korbankan sulur di puing
 			var hasil = sim.tanam_sengaja()

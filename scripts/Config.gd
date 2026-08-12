@@ -496,3 +496,12 @@ const AVATAR_TEMPEL_JEDA = 0.3  # detik sebelum boleh menempel lagi usai lepas
 const AVATAR_SETENGAH_LEBAR = 1.5   # kotak badan: pos = kaki
 const AVATAR_TINGGI    = 5.0
 const ZOOM_AVATAR      = 2.0    # zoom awal kamera-ikut P1
+
+# P2 (docs/13 §4): interior gedung — grid lapis kedua `dalam`
+var JANGKAR_BIAYA = 25.0   # F: menanam simpul jaringan di posisi avatar
+const T_RUANG         = 20  # udara interior
+const T_LANTAI        = 21  # slab lantai — padat
+const T_DINDING_DALAM = 22  # dinding kamar / cangkang — padat
+const T_VENT          = 23  # saluran ventilasi — bisa dilalui, menembus dinding
+const T_POROS         = 24  # poros lift — udara vertikal
+const T_TERALIS       = 25  # gerbang statis P2 — padat sampai upgrade (P7)

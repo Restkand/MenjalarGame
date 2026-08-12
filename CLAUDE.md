@@ -240,7 +240,30 @@ docs/12 (kitab gaya) tetap hukum.
   Catatan harness: headless tak dibatasi 60fps — delta kecil, ukur
   gerakan per WAKTU sim, bukan per jumlah frame.
 
-Berikutnya: **P2 — interior gedung** (docs/13 §9).
+**P2 SELESAI** — interior gedung:
+
+- `WorldMap.dalam` (grid lapis kedua di tapak fasad 96..384 x 24..192,
+  enum T_RUANG/T_LANTAI/T_DINDING_DALAM/T_VENT/T_POROS/T_TERALIS di
+  Config): 6 tingkat dengan slab menempel dasar tiap baris jendela
+  (jy+16 — masuk lewat jendela SELALU mendarat pas di lantai), dinding
+  kamar zig-zag bercelah pintu, ventilasi 3 satuan di langit-langit yang
+  MENEMBUS dinding kamar, poros lift x306..318 dengan bukaan per lantai,
+  dan gerbang teralis di poros antara tingkat 3-4 (dibuka P7).
+- `padat_avatar(x, y, di_dalam)` — fisika sadar-lapis; `Avatar.di_dalam`
+  + transisi tombol **E** di sel T_WINDOW/T_DOOR (dua arah), layu kembali
+  ke lapis tempat simpulnya ditanam (`simpul_dalam`).
+- Tombol **F = tanam jangkar** (JANGKAR_BIAYA 25): menandai jaringan 5x5
+  di posisi avatar — checkpoint + titik pulih, kunci bertahan hidup di
+  interior yang belum berjaringan. F-perkuat lama kehilangan tombol
+  (kodenya masih hidup; nasib di P6).
+- `render/InteriorView.gd` — digambar hanya saat di dalam (menutup fasad
+  + rambatan, z 4 di bawah avatar 5): run-length per baris, jendela
+  tampak sebagai cahaya pucat (penanda pintu keluar E), jaringan interior
+  hijau samar; refresh 0,5 dtk untuk jangkar baru.
+- Harness 4 asersi: masuk (mendarat flush di lantai), jangkar (energi
+  80-25, jaringan tertanda), teralis padat vs poros terbuka, keluar.
+
+Berikutnya: **P3 — sumber daya** (docs/13 §9).
 
 Segala sesuatu di bawah baris ini adalah RIWAYAT arah sebelumnya —
 konteks berharga untuk reuse, bukan arah kerja:

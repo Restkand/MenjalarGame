@@ -238,9 +238,12 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A–F dan R1–R6 selesai — SELURUH peta jalan render tuntas,
-termasuk anatomi HUD dua-pita.** Sisa: TAHAP G (parallax, audio, transisi,
-layar judul final).
+Status: **TAHAP A–F dan R1–R6 selesai — seluruh peta jalan docs/06 dan
+docs/09 tuntas.** Arah kerja sekarang: **`docs/11-peta-jalan-g-plus.md`**
+(G1–G10), disusun dari review jujur 12 Agustus dan DISETUJUI PENUH pemilik
+proyek. Berikutnya: **G1** (jeda + percepat 2×). Tiga temuan terbesar
+review yang menjadi tulangnya: kepadatan keputusan per menit rendah,
+ekonomi mati setelah babak I, dan belum ada audio.
 
 HUD dua-pita (docs/08 §3, dibangun setelah R6):
 

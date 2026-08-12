@@ -127,8 +127,13 @@ func _spawn_leaf(world):
 			# tegak lurus arah sulur, dengan goyangan alami
 			"sudut": angle + side * PI / 2.0 + randf_range(-0.6, 0.6),
 			"age": 0.0,
-			"varian": randi() % 4,
+			"varian": randi() % 8,
 			"skala": randf_range(0.85, 1.35),
+			# kedalaman kanopi: daun belakang digambar duluan, lebih gelap
+			# dan sedikit lebih besar — tumpukan jadi terbaca sebagai rimbun
+			# bertingkat, bukan stiker bertumpuk
+			"lapis": 0 if randf() < 0.45 else 1,
+			"rona": randf_range(0.82, 1.05),
 		})
 
 

@@ -44,23 +44,39 @@ func _process(_delta):
 func _draw():
 	if atlas == null:
 		return
+	# Dua lintasan: lapis BELAKANG dulu (lebih gelap, sedikit lebih besar),
+	# lalu lapis DEPAN dengan variasi rona per daun. Inilah yang membuat
+	# tumpukan terbaca sebagai kanopi bertingkat, bukan stiker ditempel —
+	# playtest 12 Agustus.
+	_gambar_lapis(0)
+	_gambar_lapis(1)
+	draw_set_transform_matrix(Transform2D())
+
+
+func _gambar_lapis(lapis):
 	var ppu = float(Config.PPU)
 	for s in sim.strands:
 		if s.is_root:
 			continue
 		for l in s.leaves:
+			if int(l.get("lapis", 1)) != lapis:
+				continue
 			var v = int(l.get("varian", 0))
 			# daun lahir kecil lalu membesar selama 1,5 detik (§9 Logika)
 			var sk = l.get("skala", 1.0) * (0.5 + 0.5 * min(1.0, l.age / 1.5))
-			# BERJANGKAR di pangkalnya: transform diletakkan di titik tempel
-			# pada sumbu sulur, diputar searah `sudut` (tegak lurus sulur,
-			# berselang-seling), lalu sprite digambar dengan pangkal di
-			# origin — 4 px pangkalnya terbenam di bawah batang supaya
-			# sambungannya tidak pernah terlihat putus.
+			var rona = l.get("rona", 1.0)
+			var warna
+			if lapis == 0:
+				sk *= 1.12
+				warna = Color(0.5 * rona, 0.62 * rona, 0.5 * rona)
+			else:
+				warna = Color(rona * 0.96, rona, rona * 0.94)
+			# BERJANGKAR di pangkalnya: transform di titik tempel pada sumbu
+			# sulur, diputar searah `sudut`, pangkal terbenam 4 px di bawah
+			# batang supaya sambungannya tidak pernah terlihat putus.
 			draw_set_transform(l.pos * ppu,
 					l.get("sudut", -PI / 2.0) + PI / 2.0,
 					Vector2(sk, sk))
 			draw_texture_rect_region(atlas,
 					Rect2(Vector2(-14.0, -24.0), Vector2(28.0, 28.0)),
-					Rect2(v * 24, 0, 24, 24))
-	draw_set_transform_matrix(Transform2D())
+					Rect2(v * 24, 0, 24, 24), warna)

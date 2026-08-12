@@ -191,6 +191,13 @@ Dicatat per gelombang: tanggal, jumlah generasi terpakai, seed ubin terpilih.
 | 12 Agu | 5 — karakter Regu Perawat + 6 animasi (26 frame) | 10 | 39 / 2000 |
 | 12 Agu | polish playtest kelima (pintu transparan, tetangga, 4 tanah, bunga) | 7 | 46 / 2000 |
 | 12 Agu | playtest keenam: jalan v3 (leher template melar) | 2 | 48 / 2000 |
+| 13 Agu | P3.9: 6 wujud avatar (seed 901-906) + strip tumbuh 17f (animate_image 910) | 7 | 55 / 2000 |
+
+Resep strip pertumbuhan (P3.9): `animate_image` dengan `first_frame_url` =
+wujud pertama & `last_frame_url` = wujud terakhir + aksi "seed sprouting
+and growing..." menghasilkan 16 frame interpolasi KONSISTEN dalam SATU
+generasi (48x48). Frame tengah yang janggal disulam wujud jangkar, semua
+disnap palet tanaman oleh gen_tumbuh.gd.
 
 Pelajaran playtest keenam: animasi TEMPLATE me-retarget skeleton generik ke
 karakter — di karakter gempal berkepala besar, lehernya bisa melar

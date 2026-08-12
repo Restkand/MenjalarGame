@@ -32,6 +32,17 @@ var jejak = []             # P3: jalur sulur yang DITUMBUHKAN avatar —
 var hadap = 1.0            # arah hadap terakhir (untuk lesat tanpa arah)
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 
+# metamorfosis (P3.9, papan acuan §1): 1 BIJI, 2 KECAMBAH, 3 TUNAS,
+# 4 SULUR, 5 PERAMBAT, 6 LEBAT. Ukuran badan kontinu (ukuran()), tahap
+# hanyalah tonggak kemampuan & wujud.
+var tahap = 1
+var tahap_baru = 0         # event sekali-baca untuk kartu metamorfosis main
+var energi_max = 100.0
+var tumbuh_total = 0.0     # satuan jaringan yang pernah ditumbuhkan
+var jangkar_n = 0
+var pernah_air = false     # pernah minum dari keran/akuifer (diisi main)
+var pernah_cahaya = false
+
 # kit gerak (P3.75, docs/13 §3.2)
 var _coyote = 0.0          # sisa waktu "masih boleh lompat" setelah lepas pijakan
 var _buffer = 0.0          # sisa waktu lompat-lebih-awal yang masih dihormati
@@ -52,11 +63,34 @@ func mulai(p):
 	mengisi = false
 	jejak = []
 	_tempel_jeda = 0.0
+	tahap = 1
+	tahap_baru = 0
+	energi_max = Config.AVATAR_ENERGI_MAX
+	tumbuh_total = 0.0
+	jangkar_n = 0
+	pernah_air = false
+	pernah_cahaya = false
+
+
+func tahap_nama():
+	return ["", "BIJI", "KECAMBAH", "TUNAS", "SULUR", "PERAMBAT",
+			"LEBAT"][tahap]
+
+
+# Kemajuan tumbuh 0..1 — memilih frame strip pertumbuhan 16-frame DAN
+# skala halus. Sprite-nya sendiri sudah membesar per frame, jadi rentang
+# skala tambahan dibuat sempit (anti patah-patah, anti dobel-besar).
+func tumbuh_frak():
+	return clamp(tumbuh_total / Config.UKURAN_PENUH, 0.0, 1.0)
+
+
+func ukuran():
+	return 0.85 + 0.3 * tumbuh_frak()
 
 
 # P3: isi energi dari sumber — dipanggil main yang tahu fase & cahaya
 func isi(jumlah):
-	energi = min(Config.AVATAR_ENERGI_MAX, energi + jumlah)
+	energi = min(energi_max, energi + jumlah)
 
 
 # i = Dictionary input dari main: arah (Vector2), lompat (edge),
@@ -68,6 +102,18 @@ func update(dt, i, world):
 	_lesat_cd = max(0.0, _lesat_cd - dt)
 	if i.arah.x != 0.0:
 		hadap = signf(i.arah.x)
+
+	# tonggak metamorfosis yang tidak terikat momen tumbuh (P3.9):
+	# SULUR -> PERAMBAT: dua jangkar + pernah air & cahaya
+	if tahap == 4 and jangkar_n >= int(Config.TAHAP5_JANGKAR) \
+			and pernah_air and pernah_cahaya:
+		tahap = 5
+		tahap_baru = 5
+		energi_max = Config.AVATAR_ENERGI_MAX * Config.TAHAP5_ENERGI
+	# PERAMBAT -> LEBAT: tubuh jaringan sudah luas
+	elif tahap == 5 and tumbuh_total >= Config.TAHAP6_TUMBUH:
+		tahap = 6
+		tahap_baru = 6
 
 	# E di jendela/pintu fasad: keluar-masuk gedung (P2). Transisi memutus
 	# moda merambat — di sisi seberang Anda jatuh dulu ke lantai/jaringan.
@@ -98,12 +144,13 @@ func jangkar(world):
 			world.tandai_jaringan(px + dx, py + dy)
 	simpul = pos
 	simpul_dalam = di_dalam
+	jangkar_n += 1
 	return true
 
 
 func _rambat(dt, i, world):
 	var arah = i.arah
-	energi = min(Config.AVATAR_ENERGI_MAX, energi + Config.AVATAR_REGEN * dt)
+	energi = min(energi_max, energi + Config.AVATAR_REGEN * dt)
 	simpul = pos
 	simpul_dalam = di_dalam
 
@@ -122,7 +169,8 @@ func _rambat(dt, i, world):
 	# jaringan, bayar energi per detik — untuk menyeberangi wilayah yang
 	# sudah dikuasai dengan gesit
 	var laju = Config.AVATAR_RAMBAT
-	if i.sprint and energi > Config.RAMBAT_SPRINT_BIAYA * dt + 6.0:
+	if tahap >= 4 and i.sprint \
+			and energi > Config.RAMBAT_SPRINT_BIAYA * dt + 6.0:
 		laju *= Config.RAMBAT_SPRINT
 		energi -= Config.RAMBAT_SPRINT_BIAYA * dt
 	var langkah = arah.normalized() * laju * dt
@@ -148,11 +196,21 @@ func _rambat(dt, i, world):
 	if world.padat_avatar(cx, cy, di_dalam):
 		return
 	var biaya = langkah.length() * Config.RAMBAT_TUMBUH_BIAYA
+	if tahap >= 6:
+		biaya *= Config.TAHAP6_BIAYA   # LEBAT: tumbuh lebih murah
 	if energi <= biaya + 4.0:
 		return   # sisakan napas — jangan layu karena tumbuh
 	energi -= biaya
 	pos = tumbuh_ke
 	world.tandai_jaringan(cx, cy)
+	# tonggak tumbuh (P3.9): KECAMBAH -> TUNAS -> SULUR dari total jaringan
+	tumbuh_total += langkah.length()
+	if tahap == 2 and tumbuh_total >= Config.TAHAP3_TUMBUH:
+		tahap = 3
+		tahap_baru = 3
+	elif tahap == 3 and tumbuh_total >= Config.TAHAP4_TUMBUH:
+		tahap = 4
+		tahap_baru = 4
 	if jejak.is_empty() \
 			or jejak[jejak.size() - 1].pos.distance_to(pos) >= 1.5:
 		jejak.append({"pos": pos, "dalam": di_dalam})
@@ -161,9 +219,14 @@ func _rambat(dt, i, world):
 func _lepas(dt, i, world):
 	energi -= Config.AVATAR_KURAS * dt
 
-	# menempel kembali begitu menyentuh jaringan (setelah jeda lepas)
+	# menempel kembali begitu menyentuh jaringan (setelah jeda lepas).
+	# BIBIT yang pertama kali menyentuh jaringan BERAKAR — metamorfosis
+	# pertama (P3.9): sejak ini ia tanaman, bukan biji berkaki.
 	if _tempel_jeda <= 0.0 \
 			and world.jaringan_di(int(round(pos.x)), int(round(pos.y - 2.0))):
+		if tahap == 1:
+			tahap = 2
+			tahap_baru = 2
 		moda = MERAMBAT
 		vel = Vector2()
 		_melompat = false
@@ -172,8 +235,9 @@ func _lepas(dt, i, world):
 		return
 
 	# LESAT (P3.75): burst pendek segala arah, gravitasi mati selama dash —
-	# jurus menyeberang celah & meraih jaringan yang nyaris tak tergapai
-	if i.lesat and _lesat_cd <= 0.0 \
+	# jurus menyeberang celah & meraih jaringan yang nyaris tak tergapai.
+	# Terbuka di tahap SULUR (P3.9).
+	if tahap >= 4 and i.lesat and _lesat_cd <= 0.0 \
 			and energi > Config.LESAT_BIAYA + 4.0:
 		var d = i.arah
 		if d == Vector2.ZERO:

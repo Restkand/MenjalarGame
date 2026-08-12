@@ -100,7 +100,7 @@ func _pita_avatar():
 	_lbl_moda = Label.new()
 	_lbl_moda.add_theme_font_size_override("font_size", 15)
 	_lbl_moda.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_lbl_moda.custom_minimum_size = Vector2(130, 0)
+	_lbl_moda.custom_minimum_size = Vector2(220, 0)
 	_hb_av.add_child(_lbl_moda)
 
 	# ikon sumber yang SEDANG mengisi — muncul hanya saat minum/berjemur
@@ -534,14 +534,14 @@ func set_waktu(jeda, laju):
 func refresh(sim, w, world, crew, climbers, babak):
 	# --- moda avatar (P3.5): satu bahasa, lalu selesai ----------------------
 	if _avatar != null:
-		var isi = clamp(_avatar.energi / Config.AVATAR_ENERGI_MAX, 0.0, 1.0)
+		var isi = clamp(_avatar.energi / _avatar.energi_max, 0.0, 1.0)
 		_av_e_fill.size = Vector2(320.0 * isi, 12)
 		_av_e_fill.color = Config.C_TIP if isi > 0.3 else Config.C_ALERT
 		if _avatar.moda == _avatar.MERAMBAT:
-			_lbl_moda.text = "MERAMBAT"
+			_lbl_moda.text = "%s · MERAMBAT" % _avatar.tahap_nama()
 			_lbl_moda.add_theme_color_override("font_color", Config.C_LEAF)
 		else:
-			_lbl_moda.text = "LEPAS"
+			_lbl_moda.text = "%s · LEPAS" % _avatar.tahap_nama()
 			_lbl_moda.add_theme_color_override("font_color", Config.C_WINDOW)
 		_av_ikon_air.visible = _avatar.mengisi and _avatar.sumber == "air"
 		_av_ikon_cahaya.visible = _avatar.mengisi \

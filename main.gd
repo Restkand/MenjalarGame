@@ -408,6 +408,30 @@ func _process(delta):
 			avatar.layu_baru = false
 			hud.flash_msg("LAYU — kembali ke simpul jaringan terakhir")
 
+		# metamorfosis (P3.9): tonggak BESAR (kemampuan baru) dapat kartu,
+		# tonggak kecil cukup flash — pergantian yang sering menjeda justru
+		# terasa patah-patah
+		if avatar.tahap_baru > 0:
+			var th = avatar.tahap_baru
+			avatar.tahap_baru = 0
+			suara.mainkan("daun" if th < 6 else "pohon")
+			if th == 2:
+				_kartu_t = Config.KARTU_DETIK
+				hud.tampil_kartu("BERAKAR — KECAMBAH",
+						"kini kau bisa MERAMBAT di jaringan dan TUMBUH di tepinya")
+			elif th == 3:
+				hud.flash_msg("Metamorfosis: TUNAS — tubuhmu mulai memanjang")
+			elif th == 4:
+				_kartu_t = Config.KARTU_DETIK
+				hud.tampil_kartu("METAMORFOSIS — SULUR",
+						"Shift terbuka: LESAT di udara, SPRINT di jaringan")
+			elif th == 5:
+				hud.flash_msg("Metamorfosis: PERAMBAT — kapasitas energi membesar")
+			else:
+				_kartu_t = Config.KARTU_DETIK
+				hud.tampil_kartu("METAMORFOSIS — LEBAT",
+						"mahkota mekar: tumbuh kini jauh lebih murah — penuhi kotanya")
+
 		# --- sumber daya (P3, docs/13 §4): air & cahaya PUNYA ALAMAT -------
 		var apx = int(round(avatar.pos.x))
 		var apy = int(round(avatar.pos.y - 2.0))
@@ -418,6 +442,7 @@ func _process(delta):
 			avatar.isi(Config.AIR_ISI * dt)
 			avatar.mengisi = true
 			avatar.sumber = "air"
+			avatar.pernah_air = true
 			if not _sumber_air_dikenal:
 				_sumber_air_dikenal = true
 				hud.flash_msg("SUMBER AIR — energi terisi selama di dekatnya")
@@ -426,6 +451,7 @@ func _process(delta):
 				avatar.isi(Config.CAHAYA_ISI * dt)
 				avatar.mengisi = true
 				avatar.sumber = "cahaya"
+				avatar.pernah_cahaya = true
 				if not _sumber_cahaya_dikenal:
 					_sumber_cahaya_dikenal = true
 					hud.flash_msg("MATAHARI — energi terisi di area terang saat siang")

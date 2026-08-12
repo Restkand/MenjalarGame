@@ -333,6 +333,35 @@ karakter & peta metroidvania DULU; P4 penjaga digeser ke belakangnya):
   tercatat. Jebakan lama terulang & tercatat: titik uji (60,100) ada di
   DALAM gedung tetangga — terkubur = diam; cek tata letak dulu.
 
+**P3.9 SELESAI** — metamorfosis avatar & gedung hidup (playtest: "karakter
+seperti bola berjalan; gedung monoton; ingin fase bibit jadi perambat;
+transisi jangan patah-patah; 16 frame seperti papan acuan"):
+
+- **ENAM tahap** (Config TAHAP*): 1 BIJI (jalan+lompat saja), 2 KECAMBAH
+  (berakar saat pertama menyentuh jaringan — bisa merambat & tumbuh),
+  3 TUNAS (tumbuh 25), 4 SULUR (tumbuh 70 — LESAT & sprint terbuka),
+  5 PERAMBAT (2 jangkar + pernah air & cahaya — energi_max ×1.4),
+  6 LEBAT (tumbuh 160 — biaya tumbuh ×0.75). Tonggak besar dapat kartu,
+  kecil cukup flash (jeda yang sering justru patah-patah).
+- **Anti patah-patah**: wujud = `aset/avatar_tumbuh.png` STRIP 17 frame
+  48px (animate_image PixelLab: frame awal=biji, frame akhir=lebat,
+  interpolasi 16 frame SATU generasi; frame 8-9 yang janggal disulam
+  wujud jangkar tunas & sulur). AvatarView memilih frame dari
+  `tumbuh_frak()` yang di-lerp halus (_frak_halus) + skala kontinu
+  sempit 0.85..1.15 + animasi MEKAR (pantulan skala + cincin ganda)
+  saat tahap berganti. 6 sprite avatar_tahap*.png jadi cadangan.
+- **Interior 6 tingkat 6 karakter**: loteng mesin (bongkah lompatan),
+  kantor+kubikel (platform pendek), LANTAI BOLONG (lubang slab + celah
+  24 satuan yang HANYA terseberangi LESAT — gerbang kemampuan pertama),
+  kantor+keran, gudang peti bertumpuk (tangga loncat ke ventilasi),
+  lobi berkolom. Ventilasi kini BERLUBANG berselang-seling.
+- Harness: bibit terkunci lesat; berakar→2; TUNAS 25 & SULUR 70 (ukuran
+  kontinu 0.85→0.96); PERAMBAT + 140; celah/kubikel/vent-bolong benar.
+  Jebakan lajur: fasad penuh ledge tersembunyi (pipa x156, pita
+  horizontal antar jendela) — uji tumbuh HARUS di langit murni (y<24).
+- PixelLab: prompt & seed wujud di log docs/12 §7; animate_image
+  first/last_frame_url = resep interpolasi antar wujud jangkar.
+
 Berikutnya: **P4 — penjaga & alarm** (docs/13 §9), kecuali pemilik proyek
 mengarahkan lain.
 

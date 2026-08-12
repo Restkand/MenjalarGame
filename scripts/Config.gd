@@ -523,3 +523,15 @@ var RAMBAT_SPRINT_BIAYA = 3.0   # energi/dtk sprint merambat
 const COYOTE_DETIK    = 0.12    # masih boleh lompat setelah lepas pijakan
 const BUFFER_LOMPAT   = 0.12    # lompat ditekan sesaat sebelum mendarat
 const LOMPAT_POTONG   = 0.45    # pengali vel.y saat tombol lompat dilepas dini
+
+# P3.9 (papan acuan §1): metamorfosis avatar ENAM tahap — biji, kecambah,
+# tunas, sulur, perambat, lebat. Ukuran badan tumbuh KONTINU mengikuti
+# tumbuh_total; tahap hanyalah tonggak kemampuan & pergantian wujud
+# (permintaan pemilik proyek: transisi jangan patah-patah).
+var TAHAP3_TUMBUH  = 25.0   # kecambah -> TUNAS
+var TAHAP4_TUMBUH  = 70.0   # tunas -> SULUR (membuka LESAT & sprint)
+var TAHAP5_JANGKAR = 2      # sulur -> PERAMBAT (plus pernah air & cahaya)
+var TAHAP5_ENERGI  = 1.4    # pengali kapasitas energi PERAMBAT
+var TAHAP6_TUMBUH  = 160.0  # perambat -> LEBAT
+var TAHAP6_BIAYA   = 0.75   # LEBAT: tumbuh lebih murah (pengali biaya)
+var UKURAN_PENUH   = 200.0  # tumbuh_total saat badan mencapai ukuran penuh

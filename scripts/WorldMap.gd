@@ -514,17 +514,51 @@ func _bangun_interior():
 	for jy in range(40, 180, 26):
 		_rect_dalam(100, jy + 16, 280, 3, Config.T_LANTAI)
 
-	# dinding kamar per tingkat, menggantung dari langit-langit dan berhenti
-	# 12 satuan di atas lantai = celah pintu. Posisi berselang-seling per
-	# tingkat supaya rute eksplorasi zig-zag, bukan lurus.
+	# ENAM TINGKAT, ENAM KARAKTER (P3.9 — playtest: "terlalu tidak varian,
+	# kurang tantangan"). Dinding menggantung dari langit-langit dan
+	# berhenti 12 satuan di atas lantai = celah pintu.
 	var atap_tingkat   = [28, 59, 85, 111, 137, 163]   # udara teratas tiap tingkat
 	var lantai_tingkat = [56, 82, 108, 134, 160, 188]  # puncak slab di bawahnya
+	# tingkat 0 LOTENG MESIN, 1 KANTOR, 2 LANTAI BOLONG (tanpa sekat),
+	# 3 KANTOR+KERAN, 4 GUDANG PETI (tanpa sekat), 5 LOBI (terbuka, berkolom)
+	var sekat = [[180, 264], [222], [], [200, 292], [], []]
 	for i in range(atap_tingkat.size()):
 		var y0 = atap_tingkat[i]
 		var y_pintu = lantai_tingkat[i] - 12
-		var xs = [180, 264] if i % 2 == 0 else [222]
-		for x in xs:
+		for x in sekat[i]:
 			_rect_dalam(x, y0, 3, y_pintu - y0, Config.T_DINDING_DALAM)
+
+	# loteng mesin (tingkat 0): dua bongkah mesin untuk dilompati
+	_rect_dalam(140, 48, 10, 8, Config.T_DINDING_DALAM)
+	_rect_dalam(238, 46, 12, 10, Config.T_DINDING_DALAM)
+
+	# kantor (tingkat 1 & 3): kubikel pendek = platform loncatan
+	_rect_dalam(130, 76, 8, 6, Config.T_LANTAI)
+	_rect_dalam(190, 74, 8, 8, Config.T_LANTAI)
+	_rect_dalam(340, 76, 8, 6, Config.T_LANTAI)
+	_rect_dalam(160, 128, 8, 6, Config.T_LANTAI)
+	_rect_dalam(255, 126, 8, 8, Config.T_LANTAI)
+
+	# gudang (tingkat 4): peti bertumpuk — tangga loncat ke ventilasi
+	_rect_dalam(148, 154, 10, 6, Config.T_LANTAI)
+	_rect_dalam(166, 148, 10, 12, Config.T_LANTAI)
+	_rect_dalam(184, 142, 12, 18, Config.T_LANTAI)
+	_rect_dalam(298, 152, 14, 8, Config.T_LANTAI)
+	_rect_dalam(320, 144, 10, 16, Config.T_LANTAI)
+
+	# lobi (tingkat 5): dua kolom penuh — megah, dan pijakan rambat
+	_rect_dalam(214, 163, 4, 25, Config.T_DINDING_DALAM)
+	_rect_dalam(262, 163, 4, 25, Config.T_DINDING_DALAM)
+
+	# LANTAI BOLONG: lubang-lubang slab membuka rute vertikal — dan satu
+	# celah LEBAR (24 satuan) yang hanya terseberangi dengan LESAT: gerbang
+	# kemampuan pertama ala metroidvania
+	_rect_dalam(150, 108, 10, 3, Config.T_RUANG)
+	_rect_dalam(196, 108, 24, 3, Config.T_RUANG)   # celah lebar — butuh LESAT
+	_rect_dalam(250, 108, 8, 3, Config.T_RUANG)
+	_rect_dalam(340, 82, 8, 3, Config.T_RUANG)     # jatuhan dari kantor atas
+	_rect_dalam(170, 134, 8, 3, Config.T_RUANG)
+	_rect_dalam(240, 160, 8, 3, Config.T_RUANG)
 
 	# poros lift: x 306..318, menembus semua slab; dindingnya sendiri
 	_rect_dalam(306, 28, 12, 160, Config.T_POROS)
@@ -539,9 +573,17 @@ func _bangun_interior():
 	_rect_dalam(306, 84, 12, 8, Config.T_TERALIS)
 
 	# ventilasi: duct 3 satuan menempel langit-langit, menembus SEMUA
-	# dinding kamar (bukan cangkang) — jalan tikus antar kamar
+	# dinding kamar (bukan cangkang) — jalan tikus antar kamar. BERLUBANG
+	# berselang-seling (P3.9): bukan jalan tol gratis, lubangnya memaksa
+	# turun ke kamar lalu naik lagi.
+	var selang = 0
 	for jy in range(40, 180, 26):
 		_rect_dalam(102, jy + 1, 276, 3, Config.T_VENT)
+		if selang % 2 == 0:
+			_rect_dalam(198, jy + 1, 8, 3, Config.T_RUANG)
+		else:
+			_rect_dalam(322, jy + 1, 8, 3, Config.T_RUANG)
+		selang += 1
 
 	# keran bocor (P3): stasiun AIR interior — dua titik, sengaja di
 	# tingkat 2 barat dan tingkat 4 timur supaya eksplorasi ditarik

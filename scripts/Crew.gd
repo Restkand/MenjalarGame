@@ -141,8 +141,11 @@ func _update_unit(u, delta, sim, world, x0, x1):
 	# menggergaji pangkal — beberapa detik, lalu SELURUH bagian di atas
 	# potongan lenyap. Itulah kerja tukang kebun, dan itulah kenapa hari
 	# perawatan pantas ditakuti walau sudah diumumkan dua hari sebelumnya.
+	# Pangkal yang DIPERKUAT (G2) butuh dua kali durasi — jendela lebih lebar
+	# untuk menimbun regu dengan puing atau merelakan dengan tenang.
+	var durasi = Config.CREW_POTONG * (2.0 if u.s.kokoh else 1.0)
 	u.kerja = u.kerja + delta
-	if u.kerja < Config.CREW_POTONG:
+	if u.kerja < durasi:
 		return
 	u.kerja = 0.0
 	if sim.pangkas(u.s, u.i, world):

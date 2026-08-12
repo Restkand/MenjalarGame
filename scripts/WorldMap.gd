@@ -428,6 +428,23 @@ func zona_tutupan(i):
 	return float(zona_tutup[i]) / float(zona_luas[i])
 
 
+# Apakah ada bekas rambatan di sekitar titik ini — syarat tunas ulang (G2).
+func ada_rambatan(p):
+	var px = int(round(p.x))
+	var py = int(round(p.y))
+	for dy in range(-2, 3):
+		var y = py + dy
+		if y < 0 or y >= Config.H:
+			continue
+		for dx in range(-2, 3):
+			var x = px + dx
+			if x < 0 or x >= Config.W:
+				continue
+			if tutup[y * Config.W + x] == 1:
+				return true
+	return false
+
+
 func rasio_jendela_tertutup():
 	if jendela_luas == 0:
 		return 0.0

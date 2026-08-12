@@ -251,7 +251,16 @@ untuk simulasi (erosi/sim/cycle/crew/climber/babak); kamera, kartu, dan
 animasi view tetap delta asli. Hari perawatan otomatis menarik waktu ke 1×
 (`_kartu_fase`). Indikator "❚❚ JEDA"/"▶▶ 2×" di pita atas
 (`Hud.set_waktu`). Terverifikasi: 2× menggandakan jam tepat, jeda membeku
-sempurna. **Berikutnya: G2** (tunas ulang + perkuat pangkal).
+sempurna.
+
+**G2 SELESAI** — dua kata kerja aktif: **tunas ulang** (`TreeSim.tunas_di`,
+COST_TUNAS 25 — klik kanan di bekas rambatan/`world.ada_rambatan`
+menumbuhkan untai baru dari titik itu; jawaban pemain terhadap
+potongan-pangkal regu) dan **perkuat pangkal** (`TreeSim.perkuat`, tombol F,
+COST_KOKOH 60 — `Strand.kokoh` membuat gergaji regu butuh 2× durasi;
+visual: batang 1.3× lebih tebal + modulasi hangat di SulurView). Klik kanan
+kini bertingkat tiga: pohon > ujung terdekat > bekas rambatan.
+**Berikutnya: G3** (bangkai layu — hukuman regu diperhalus).
 
 HUD dua-pita (docs/08 §3, dibangun setelah R6):
 

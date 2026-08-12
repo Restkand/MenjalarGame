@@ -14,6 +14,7 @@ var _daun_kiri = false # sisi daun berikutnya — berselang-seling kiri-kanan
 var _tunas_t   = 0.0   # jeda sampai daun susulan berikutnya
 var berakar    = 0.0   # kemajuan menjadi pohon saat berdiri di atas puing
 var tembus     = -1.0  # menembus beton: -1 = tidak; 0..1 = kemajuan bor
+var kokoh      = false # pangkal diperkuat — gergaji regu butuh 2x durasi
 
 
 func _init(x, y, a, root, gen, sid):

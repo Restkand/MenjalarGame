@@ -145,6 +145,7 @@ func _ready():
 	add_child(hud)
 	hud.play_pressed.connect(_on_play)
 
+
 func _on_play():
 	playing = true
 
@@ -278,18 +279,26 @@ func _kartu_fase():
 	hud.tampil_kartu(judul, isi)
 
 
-func _try_branch():
+# Klik kanan bertingkat tiga (G2): pohon > ujung terdekat > bekas rambatan.
+# `ada_ujung` = apakah klik jatuh dekat ujung yang bisa dipilih — cabang
+# klasik dari ujung didahulukan atas tunas ulang supaya kebiasaan lama tetap
+# bekerja (area sekitar ujung hampir selalu juga bekas rambatan).
+func _try_branch(m, ada_ujung):
 	# pohon di dekat kursor jadi titik awal baru, kalau ada
-	if sim.branch_at(_mouse_dunia()):
+	if sim.branch_at(m):
 		return
-	if sim.branch():
+	if ada_ujung and sim.branch():
 		return
-	if sim.selected == null or not sim.selected.alive:
-		hud.flash_msg("Pilih ujung dulu (klik kiri)")
-	elif sim.energy < Config.COST_BRANCH:
-		hud.flash_msg("Energi kurang — butuh %d" % int(Config.COST_BRANCH))
-	else:
+	if sim.tunas_di(m, world):
+		hud.flash_msg("Tunas baru dari bekas rambatan  (-%d energi)"
+				% int(Config.COST_TUNAS))
+		return
+	if sim.strands.size() >= Config.MAX_STRANDS:
 		hud.flash_msg("Batas untai tercapai")
+	elif sim.energy < Config.COST_TUNAS:
+		hud.flash_msg("Energi kurang — butuh %d" % int(Config.COST_TUNAS))
+	else:
+		hud.flash_msg("Klik kanan di ujung, pohon, atau bekas rambatan")
 
 
 func _process(delta):
@@ -451,11 +460,24 @@ func _unhandled_input(event):
 					hud.flash_msg("Menembus beton — energi terkuras")
 			is_steering = true
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			if sim.select_near(m, cycle.phase):
-				_try_branch()
+			var ada_ujung = sim.select_near(m, cycle.phase)
+			_try_branch(m, ada_ujung)
 
 	if event is InputEventKey and event.pressed and not event.echo:
-		if _kunci(event, KEY_X):
+		if _kunci(event, KEY_F):
+			# perkuat pangkal sulur terpilih (G2)
+			if sim.perkuat():
+				hud.flash_msg("Pangkal diperkuat — gergaji regu butuh 2x lebih lama  (-%d energi)"
+						% int(Config.COST_KOKOH))
+			elif sim.selected == null or not sim.selected.alive \
+					or sim.selected.is_root:
+				hud.flash_msg("Perkuat: pilih sulur dulu (klik kiri)")
+			elif sim.selected.kokoh:
+				hud.flash_msg("Sulur ini sudah diperkuat")
+			else:
+				hud.flash_msg("Energi kurang — perkuat butuh %d"
+						% int(Config.COST_KOKOH))
+		elif _kunci(event, KEY_X):
 			# putus sulur di kursor — menjatuhkan pemanjat di atasnya, DAN
 			# merontokkan daun-daunnya: pemangkasan sukarela yang menurunkan
 			# perhatian (pendamaian dua makna X, lihat Config.PERHATIAN_PANGKAS)

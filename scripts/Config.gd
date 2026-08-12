@@ -127,6 +127,18 @@ const COST_BRANCH = 15.0
 const ENERGY_MAX = 200.0
 const ENERGY_START = 120.0
 
+# Dua kata kerja aktif (G2) — keduanya saluran keluar energi, supaya energi
+# kembali terasa sebagai anggaran dan pemain punya alasan menekan sesuatu:
+#
+# TUNAS ULANG: klik kanan di BEKAS RAMBATAN (peta tutup) menumbuhkan untai
+# baru dari titik itu. Lebih mahal daripada bercabang biasa karena ia
+# menghidupkan kembali wilayah yang digergaji regu tanpa merayap ulang dari
+# tanah — jawaban pemain terhadap potongan-pangkal.
+var COST_TUNAS = 25.0
+# PERKUAT PANGKAL: sulur terpilih menebal; gergaji regu butuh DUA KALI
+# durasi. Mahal — pertahanan proaktif untuk sulur yang zonanya dijadwalkan.
+var COST_KOKOH = 60.0
+
 const FACADE_X0 = 96
 const FACADE_X1 = 384
 const FACADE_Y0 = 24

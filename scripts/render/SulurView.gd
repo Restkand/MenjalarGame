@@ -13,6 +13,7 @@ extends Line2D
 
 var strand
 var _n_terakhir = -1
+var _kokoh_terakhir = false
 
 
 func _init(s):
@@ -34,9 +35,10 @@ func _init(s):
 
 func _process(_delta):
 	var n = strand.points.size()
-	if n == _n_terakhir:
+	if n == _n_terakhir and strand.kokoh == _kokoh_terakhir:
 		return
 	_n_terakhir = n
+	_kokoh_terakhir = strand.kokoh
 
 	if n < 2:
 		visible = false
@@ -56,6 +58,10 @@ func _process(_delta):
 
 	# Lebar pangkal dalam satuan dunia, menebal seiring umur untai — kurva
 	# yang sama dengan rumus lama, dikali PPU karena koordinat lokal di sini
-	# adalah piksel tampilan.
+	# adalah piksel tampilan. Pangkal yang diperkuat (G2) tampak lebih tebal
+	# dan sedikit lebih hangat — investasinya harus terlihat.
 	var w = 1.6 + min(4.4, n * 0.012) - strand.generation * 0.6
+	if strand.kokoh:
+		w *= 1.3
+		self_modulate = Color(1.1, 1.02, 0.9)
 	width = max(1.4, w) * Config.PPU

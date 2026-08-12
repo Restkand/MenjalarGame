@@ -278,6 +278,34 @@ func branch():
 	return true
 
 
+# TUNAS ULANG (G2): untai sulur baru dari bekas rambatan (peta tutup).
+# Inilah yang menghidupkan kembali wilayah yang digergaji regu tanpa harus
+# merayap ulang dari tanah — dan alasan hukuman potongan-pangkal tetap adil.
+func tunas_di(p, world):
+	if world == null or not world.ada_rambatan(p):
+		return false
+	if strands.size() >= Config.MAX_STRANDS or energy < Config.COST_TUNAS:
+		return false
+	energy -= Config.COST_TUNAS
+	var ns = _make(p.x, p.y, -PI / 2.0, false, 0)
+	strands.append(ns)
+	selected = ns
+	return true
+
+
+# PERKUAT PANGKAL (G2): sulur terpilih menebal, gergaji regu butuh dua kali
+# durasi. Sekali dan permanen untuk untai itu.
+func perkuat():
+	if selected == null or not selected.alive or selected.is_root \
+			or selected.kokoh:
+		return false
+	if energy < Config.COST_KOKOH:
+		return false
+	energy -= Config.COST_KOKOH
+	selected.kokoh = true
+	return true
+
+
 func spend(amount):
 	if amount <= 0.0:
 		return

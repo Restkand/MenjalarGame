@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://deey78hleul7p"
-path="res://.godot/imported/regu_jalan_2.png-7a6d5c8dd458f345efc805cb591897a8.ctex"
+uid="uid://5sseg7q2b1vg"
+path="res://.godot/imported/aktor_pemanjat_naik.png-4885b64350ba6bfac91287803db116aa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://aset/regu_jalan_2.png"
-dest_files=["res://.godot/imported/regu_jalan_2.png-7a6d5c8dd458f345efc805cb591897a8.ctex"]
+source_file="res://aset/aktor_pemanjat_naik.png"
+dest_files=["res://.godot/imported/aktor_pemanjat_naik.png-4885b64350ba6bfac91287803db116aa.ctex"]
 
 [params]
 

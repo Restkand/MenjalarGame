@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvefqb3tnwrsj"
-path="res://.godot/imported/regu_diam.png-4f1b67da35fe7dbc522f1ba647626acc.ctex"
+uid="uid://d4ahs82uvaaui"
+path="res://.godot/imported/aktor_pemanjat_gantung.png-4932922fa8ee4f2075271a09249b671c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://aset/regu_diam.png"
-dest_files=["res://.godot/imported/regu_diam.png-4f1b67da35fe7dbc522f1ba647626acc.ctex"]
+source_file="res://aset/aktor_pemanjat_gantung.png"
+dest_files=["res://.godot/imported/aktor_pemanjat_gantung.png-4932922fa8ee4f2075271a09249b671c.ctex"]
 
 [params]
 

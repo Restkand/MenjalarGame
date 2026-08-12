@@ -372,10 +372,16 @@ masih membingungkan, regu sibuk di bawah tanah"):
 
 R6 yang sudah berdiri — `PixelCanvas` MATI, semua visual adalah view:
 
-- `scripts/render/AktorView.gd` — regu & pemanjat sprite PixelLab 48×64,
-  satu batch `_draw()`: animasi 2 frame (0,3 dtk), cermin hadap lewat
-  transform, pingsan = sprite rebah redup, garis merah ke sasaran saat
-  memangkas. Pemanjat berpusat di titik sulur yang dipijaknya.
+- `scripts/render/AktorView.gd` — regu & pemanjat sprite PixelLab,
+  satu batch `_draw()`. Sejak 12 Agu (kuota Tier 1): SEMUA animasi adalah
+  strip `aset/aktor_<nama>.png` (sel 48×64, 4–6 frame, 0,15 dtk/frame) yang
+  digenerate dari SATU karakter pipeline PixelLab (`create_character` v3 +
+  `animate_character`; templat lengkap di docs/12 §6 — WAJIB dibaca sebelum
+  menyentuh aktor). Jumlah frame dibaca dari lebar strip. Normalisasi
+  ukuran memakai SATU skala global dari tinggi berdiri regu_diam — jangan
+  pernah menskalakan per animasi, pose membungkuk akan menggembung.
+  Cermin hadap lewat transform, pingsan = sprite rebah redup, garis merah
+  ke sasaran saat memangkas. Pemanjat berpusat di titik sulur dipijak.
 - `scripts/render/UjungView.gd` (satu per pane) — denyut ujung, kotak
   pilihan sebesar radius klik, bar menembus beton, pratinjau jalur (diisi
   `main` lewat properti `pratinjau`).

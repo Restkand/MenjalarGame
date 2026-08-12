@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvr413f6fgfic"
-path="res://.godot/imported/pemanjat_naik_2.png-73ebbd2b43693f8d1f69e31c8fa47d66.ctex"
+uid="uid://baas5vw7685ew"
+path="res://.godot/imported/aktor_regu_kerja.png-735754242f3c5dc39a887a395a6e5d4d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://aset/pemanjat_naik_2.png"
-dest_files=["res://.godot/imported/pemanjat_naik_2.png-73ebbd2b43693f8d1f69e31c8fa47d66.ctex"]
+source_file="res://aset/aktor_regu_kerja.png"
+dest_files=["res://.godot/imported/aktor_regu_kerja.png-735754242f3c5dc39a887a395a6e5d4d.ctex"]
 
 [params]
 

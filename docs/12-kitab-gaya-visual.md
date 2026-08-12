@@ -99,7 +99,85 @@ Satu gelombang = generate → kurasi → snap palet → pasang → verifikasi
 headless → commit. Tidak ada generasi gelombang berikut sebelum gelombang
 berjalan di game.
 
-## 6. Log generasi
+## 6. TEMPLAT AKTOR — hint lengkap, wajib disalin utuh
+
+Semua manusia di game lahir dari SATU karakter pipeline PixelLab
+(`create_character` mode v3), lalu setiap animasi digenerate DARI karakter
+itu (`animate_character`). Jangan pernah menggenerate manusia lewat
+`create_image_pixflux` lepas — konsistensi identitas hanya dijamin pipeline
+karakter.
+
+### 6.1 Karakter kanon
+
+- **ID karakter**: `32cc51a8-78f5-46e2-9520-6f6c82d8279e` ("Regu Perawat",
+  grup `79655625-b707-4b96-97c4-aec9a592af4e`). SELAMA karakter ini masih
+  ada di akun, semua animasi baru ditambahkan ke ID ini — jangan membuat
+  karakter baru untuk peran yang sama.
+- **Deskripsi kanon** (dipakai kalau karakter harus dibuat ulang, salin
+  persis): "middle-aged city maintenance worker, grey flat cap, muted
+  blue-grey overalls over a light grey shirt, dark work boots, empty hands,
+  standing relaxed, muted desaturated colors, calm pixel art, no black
+  outlines"
+- **Parameter pembuatan**: `mode="v3"`, `view="side"`, `size=64`,
+  `outline="lineless"`, `detail="low detail"`. Kanvas keluaran pipeline
+  120×120 — itu normal (kanvas diberi ruang animasi), JANGAN dianggap
+  ukuran karakter.
+- **Anatomi acuan**: tinggi berdiri konten ±58 px pada kanvas keluaran
+  120 px; kepala bertopi pet abu; lengan kosong (alat hanya boleh muncul
+  di animasi kerja). Wajah tidak pernah kelihatan detail — kamera game
+  terlalu jauh; jangan buang generasi untuk wajah.
+
+### 6.2 Arah & animasi
+
+- Game HANYA memakai dua arah: **east** untuk semua animasi di tanah
+  (jalan, diam, kerja — hadap kiri dicerminkan transform oleh AktorView)
+  dan **south** untuk animasi di sulur (naik, gantung — badan menghadap
+  pemain, latar adalah fasad).
+- Animasi tanah yang ada template-nya pakai TEMPLATE (1 gen):
+  `walking-6-frames`, `breathing-idle`. Aksi khusus pakai v3 dengan
+  `frame_count` 4–6 dan `keep_first_frame=false` (frame rotasi berdiri
+  merusak loop aksi).
+- Prompt aksi v3 menjelaskan GERAKNYA SAJA, tanpa lingkungan ("sawing at
+  waist height...", BUKAN "sawing a vine on a building"). Lingkungan
+  membuat model menggambar properti yang tidak bisa dipakai.
+- Daftar animasi kanon → nama strip:
+  | Strip | Sumber | Arah | Frame |
+  |---|---|---|---|
+  | aktor_regu_diam | template breathing-idle | east | 4 |
+  | aktor_regu_jalan | template walking-6-frames | east | 6 |
+  | aktor_regu_kerja | v3 "sawing at waist height with a small handsaw held in both hands, body rocking back and forth with the cutting motion" | east | 6 |
+  | aktor_pemanjat_naik | v3 "climbing straight up a vertical rope hand over hand, legs gripping, facing the viewer, moving upward" | south | 6 |
+  | aktor_pemanjat_gantung | v3 "hanging below an overhead bar gripped by one arm extended straight up above the head, body dangling vertically, feet swinging gently in the air" | south | 4 |
+
+### 6.3 Normalisasi ukuran — aturan yang tidak boleh dilanggar
+
+Frame mentah dinormalisasi `gen_aktor.gd` (scratchpad) menjadi strip
+`aset/aktor_<nama>.png`, sel 48×64 per frame. Tiga aturan kerasnya:
+
+1. **SATU skala global untuk semua animasi satu karakter**: skala = 58 px /
+   tinggi konten median `regu_diam`. JANGAN PERNAH menskalakan tiap animasi
+   ke tinggi selnya sendiri — pose membungkuk yang kontennya pendek akan
+   menggembung setinggi orang berdiri (kesalahan 12 Agu yang ditangkap
+   pemilik proyek).
+2. **Jangkar**: animasi tanah = kaki di dasar sel (y=64); animasi sulur
+   (naik/gantung) = berpusat vertikal, karena AktorView menggambarnya
+   berpusat di titik sulur yang dipijak.
+3. Konten yang melebihi sel setelah skala global DIPOTONG, tidak pernah
+   diskalakan ulang per frame.
+
+AktorView membaca jumlah frame dari lebar strip (lebar/48) — menambah
+frame tidak butuh perubahan kode. Tempo global `FRAME_DETIK` 0,15 dtk.
+
+### 6.4 Karakter baru (kalau suatu hari perlu)
+
+Peran baru (misal inspektur) = `create_character` v3 BARU dengan parameter
+§6.1 persis (view side, size 64, lineless, low detail) dan deskripsi yang
+mengganti HANYA pakaian/atribut — bukan proporsi, bukan gaya. Lalu ulangi
+§6.2–6.3. Kalau ingin wajah/badan yang sama persis dengan Regu Perawat,
+pakai `create_character_state` pada ID kanon (variasi seragam), bukan
+karakter baru.
+
+## 7. Log generasi
 
 Dicatat per gelombang: tanggal, jumlah generasi terpakai, seed ubin terpilih.
 
@@ -110,12 +188,13 @@ Dicatat per gelombang: tanggal, jumlah generasi terpakai, seed ubin terpilih.
 | 12 Agu | 3 — dua strip siluet latar | 2 | 23 / 2000 |
 | 12 Agu | 4 — batang sulur/akar + pohon varian 2 | 4 | 27 / 2000 |
 | 12 Agu | 6 — banner layar judul | 2 | 29 / 2000 (angka resmi get_balance) |
+| 12 Agu | 5 — karakter Regu Perawat + 6 animasi (26 frame) | 10 | 39 / 2000 |
 
-Gelombang 5 (aktor) DITUNDA dengan sengaja: aktor sudah seragam lewat
-normalisasi prosedural dan sudah diterima pemilik proyek; batch edit_image
-butuh ~15rb karakter base64 inline yang rawan korup di jalur MCP, dan
-biayanya 20-40 generasi per panggilan. Kalau nanti aktor mau di-upgrade,
-jalankan per-frame dengan referensi regu_diam, bukan batch besar.
+Gelombang 5 sempat ditunda (rencana lama: batch edit_image — payload base64
+~15rb karakter rawan korup di jalur MCP). Jalur yang akhirnya dipakai dan
+BERHASIL: pipeline karakter (create_character v3 + animate_character), yang
+sekaligus membuang masalah konsistensi — semua frame lahir dari satu
+karakter. Templat lengkapnya di §6; sprite 2-frame lama dihapus.
 
 Pelajaran gelombang 1, wajib dibawa gelombang berikutnya:
 

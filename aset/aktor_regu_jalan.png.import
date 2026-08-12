@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://picqia2hsirv"
-path="res://.godot/imported/regu_kerja_2.png-eb4789141ca2fc436ecc330cf30260e5.ctex"
+uid="uid://c5qyia1ihmfe4"
+path="res://.godot/imported/aktor_regu_jalan.png-90fb15692da06cccb4291143cd8b149c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://aset/regu_kerja_2.png"
-dest_files=["res://.godot/imported/regu_kerja_2.png-eb4789141ca2fc436ecc330cf30260e5.ctex"]
+source_file="res://aset/aktor_regu_jalan.png"
+dest_files=["res://.godot/imported/aktor_regu_jalan.png-90fb15692da06cccb4291143cd8b149c.ctex"]
 
 [params]
 

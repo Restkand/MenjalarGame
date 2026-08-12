@@ -199,6 +199,24 @@ Diambil dari `docs/04-status-proyek.md` §9.
 
 ## Arah saat ini
 
+**PIVOT IV — 12 Agustus 2026 malam. Rancangan yang berlaku sekarang:
+`docs/13-pivot-metroid-carrion.md` — stealth-platformer organik acuan
+Carrion/Metroid/Splinter Cell 2D. Kamera TUNGGAL ikut avatar (split-screen
+dibongkar), serangan dua tingkat lilit & bunuh, akhir = menyebar ke kota.
+Keputusan pemilik proyek setelah playtest orang-dekat (teman + pasangan)
+menyatakan gameplay stealth sistemik membingungkan dan tidak asyik.**
+
+Konsekuensi status: **G9–G10 BATAL**; peta jalan yang berlaku adalah
+**P1–P8 di docs/13 §9** (berikutnya: P1 — avatar dua moda). docs/06 dan
+docs/11 turun status jadi riwayat. Sistem lama JANGAN dihapus sebelum
+tahap penggantinya berdiri (docs/13 §9); peta reuse ada di docs/13 §8.
+Identitas visual TIDAK ikut pivot — docs/12 (kitab gaya) tetap hukum.
+
+Segala sesuatu di bawah baris ini adalah RIWAYAT arah sebelumnya —
+konteks berharga untuk reuse, bukan arah kerja:
+
+---
+
 **Arah berubah lagi pada 10 Agustus 2026. Rancangan yang berlaku sekarang ada
 di `docs/06-desain-stealth-splitscreen.md`. Baca itu sebelum menyentuh mekanik
 apa pun.** Ringkasnya:

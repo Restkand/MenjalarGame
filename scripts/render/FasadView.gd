@@ -37,16 +37,20 @@ func _draw():
 	# jalan raya (playtest 12 Agu): trotoar beton di sepanjang garis tanah
 	# dengan siar antar lempeng dan bibir jalan gelap — digambar paling awal
 	# supaya kaki gedung, pintu, dan aktor duduk di atasnya
+	# trotoar digambar per SEGMEN, menyisakan celah di dua lubang got
+	# (P3.75) — pintu masuk bawah tanah harus terlihat, bukan jebakan
 	var gy = float(Config.GROUND_Y)
-	draw_rect(Rect2(0.0, (gy - 3.0) * ppu, Config.W * ppu, 3.0 * ppu),
-			Color("8D8D85"))
+	for seg in [[0, 146], [151, 330], [335, Config.W]]:
+		draw_rect(Rect2(seg[0] * ppu, (gy - 3.0) * ppu,
+				(seg[1] - seg[0]) * ppu, 3.0 * ppu), Color("8D8D85"))
+		draw_rect(Rect2(seg[0] * ppu, (gy - 0.75) * ppu,
+				(seg[1] - seg[0]) * ppu, 0.75 * ppu), Color("55554F"))
 	var sx = 0
 	while sx < Config.W:
-		draw_rect(Rect2(float(sx) * ppu, (gy - 3.0) * ppu,
-				1.0, 3.0 * ppu), Color("6B6B64"))
+		if (sx < 146 or sx >= 151) and (sx < 330 or sx >= 335):
+			draw_rect(Rect2(float(sx) * ppu, (gy - 3.0) * ppu,
+					1.0, 3.0 * ppu), Color("6B6B64"))
 		sx += 10
-	draw_rect(Rect2(0.0, (gy - 0.75) * ppu, Config.W * ppu, 0.75 * ppu),
-			Color("55554F"))
 
 	# jendela: sprite PixelLab 56x64 (gelombang 2, docs/12) — kanvas persis
 	# 14x16 satuan, jadi digambar 1:1 pada rect fiturnya

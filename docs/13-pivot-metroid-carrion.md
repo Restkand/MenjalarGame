@@ -85,6 +85,22 @@ membunuh"):
    bisa dilakukan saat dekat jaringan — memperpanjang jaringan = memperluas
    jangkauan ancaman. Tanpa darah; korban lenyap ke dalam dedaunan.
 
+**§3.2 — Kit gerak & desain karakter** (13 Agu, keputusan pemilik proyek:
+fokus karakter & peta DULU, penjaga menyusul):
+
+- Rasa gerak standar genre: **coyote time** (masih boleh lompat sesaat
+  setelah meninggalkan pijakan), **jump buffer** (tekan lompat sesaat
+  sebelum mendarat tetap dihitung), **lompatan variabel** (lepas tombol =
+  lompatan pendek), **LESAT** (Shift: dash pendek segala arah, bayar
+  energi, cooldown) dan **sprint merambat** (Shift ditahan di jaringan).
+- Desain visual karakter: kepala sulur dengan EKOR TENDRIL yang mengikuti
+  jejak gerakan (tubuhnya benar-benar tanaman yang mengalir), squash &
+  stretch saat lompat/mendarat, daun kecil mengibas sesuai kecepatan,
+  inti cahaya C_TIP yang berdenyut. Prosedural dulu; sprite PixelLab
+  menunggu bentuknya terbukti enak.
+- Urutan peta jalan DIUBAH: P3.75 (karakter & peta, termasuk layar peta M
+  dan terowongan bawah tanah) dikerjakan SEBELUM P4 penjaga.
+
 ## 4. Dunia: satu gedung = peta Metroid
 
 - **Interior gedung DIBANGUN** (baru): lantai-lantai berisi kamar,

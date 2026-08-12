@@ -29,7 +29,15 @@ var mengisi = false        # P3: sedang di sumber (untuk denyut view)
 var sumber = ""            # "air" / "cahaya" saat mengisi — untuk ikon HUD
 var jejak = []             # P3: jalur sulur yang DITUMBUHKAN avatar —
                            # [{pos, dalam}] digambar JejakView
+var hadap = 1.0            # arah hadap terakhir (untuk lesat tanpa arah)
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
+
+# kit gerak (P3.75, docs/13 §3.2)
+var _coyote = 0.0          # sisa waktu "masih boleh lompat" setelah lepas pijakan
+var _buffer = 0.0          # sisa waktu lompat-lebih-awal yang masih dihormati
+var _lesat_t = 0.0         # sisa durasi dash (gravitasi mati)
+var _lesat_cd = 0.0        # jeda antar dash
+var _melompat = false      # sedang di fase naik lompatan (untuk potong dini)
 
 
 func mulai(p):
@@ -51,15 +59,19 @@ func isi(jumlah):
 	energi = min(Config.AVATAR_ENERGI_MAX, energi + jumlah)
 
 
-# arah: (-1..1 per sumbu); lompat & masuk: true hanya di frame tombol ditekan
-func update(dt, arah, lompat, masuk, world):
+# i = Dictionary input dari main: arah (Vector2), lompat (edge),
+# lompat_tahan (bool), lesat (edge), sprint (bool), masuk (edge)
+func update(dt, i, world):
 	if dt <= 0.0:
 		return
 	_tempel_jeda = max(0.0, _tempel_jeda - dt)
+	_lesat_cd = max(0.0, _lesat_cd - dt)
+	if i.arah.x != 0.0:
+		hadap = signf(i.arah.x)
 
 	# E di jendela/pintu fasad: keluar-masuk gedung (P2). Transisi memutus
 	# moda merambat — di sisi seberang Anda jatuh dulu ke lantai/jaringan.
-	if masuk and world.di_gerbang_interior(int(round(pos.x)),
+	if i.masuk and world.di_gerbang_interior(int(round(pos.x)),
 			int(round(pos.y - 2.0))):
 		di_dalam = not di_dalam
 		moda = LEPAS
@@ -68,9 +80,9 @@ func update(dt, arah, lompat, masuk, world):
 		return
 
 	if moda == MERAMBAT:
-		_rambat(dt, arah, lompat, world)
+		_rambat(dt, i, world)
 	else:
-		_lepas(dt, arah, lompat, world)
+		_lepas(dt, i, world)
 
 
 # F: menanam simpul jaringan di posisi avatar (P2) — checkpoint + titik
@@ -89,14 +101,16 @@ func jangkar(world):
 	return true
 
 
-func _rambat(dt, arah, lompat, world):
+func _rambat(dt, i, world):
+	var arah = i.arah
 	energi = min(Config.AVATAR_ENERGI_MAX, energi + Config.AVATAR_REGEN * dt)
 	simpul = pos
 	simpul_dalam = di_dalam
 
 	# melepaskan diri: lompatan kecil ke arah input
-	if lompat:
+	if i.lompat:
 		moda = LEPAS
+		_melompat = true
 		_tempel_jeda = Config.AVATAR_TEMPEL_JEDA
 		vel = Vector2(arah.x * Config.AVATAR_JALAN,
 				-Config.AVATAR_LOMPAT * 0.75)
@@ -104,7 +118,14 @@ func _rambat(dt, arah, lompat, world):
 
 	if arah == Vector2.ZERO:
 		return
-	var langkah = arah.normalized() * Config.AVATAR_RAMBAT * dt
+	# sprint merambat (P3.75): Shift ditahan = mengalir lebih cepat di
+	# jaringan, bayar energi per detik — untuk menyeberangi wilayah yang
+	# sudah dikuasai dengan gesit
+	var laju = Config.AVATAR_RAMBAT
+	if i.sprint and energi > Config.RAMBAT_SPRINT_BIAYA * dt + 6.0:
+		laju *= Config.RAMBAT_SPRINT
+		energi -= Config.RAMBAT_SPRINT_BIAYA * dt
+	var langkah = arah.normalized() * laju * dt
 	# coba gerak penuh; kalau keluar jaringan, coba per sumbu (menyusur).
 	# Kandidat yang tidak benar-benar bergerak DILEWATI — kandidat sumbu
 	# dengan komponen nol adalah "gerakan nol yang selalu sah" dan diam-diam
@@ -137,7 +158,7 @@ func _rambat(dt, arah, lompat, world):
 		jejak.append({"pos": pos, "dalam": di_dalam})
 
 
-func _lepas(dt, arah, lompat, world):
+func _lepas(dt, i, world):
 	energi -= Config.AVATAR_KURAS * dt
 
 	# menempel kembali begitu menyentuh jaringan (setelah jeda lepas)
@@ -145,22 +166,59 @@ func _lepas(dt, arah, lompat, world):
 			and world.jaringan_di(int(round(pos.x)), int(round(pos.y - 2.0))):
 		moda = MERAMBAT
 		vel = Vector2()
+		_melompat = false
+		_lesat_t = 0.0
 		simpul = pos
 		return
 
+	# LESAT (P3.75): burst pendek segala arah, gravitasi mati selama dash —
+	# jurus menyeberang celah & meraih jaringan yang nyaris tak tergapai
+	if i.lesat and _lesat_cd <= 0.0 \
+			and energi > Config.LESAT_BIAYA + 4.0:
+		var d = i.arah
+		if d == Vector2.ZERO:
+			d = Vector2(hadap, 0.0)
+		vel = d.normalized() * Config.LESAT_KECEPATAN
+		_lesat_t = Config.LESAT_DETIK
+		_lesat_cd = Config.LESAT_ULANG
+		energi -= Config.LESAT_BIAYA
+		_melompat = false
+	if _lesat_t > 0.0:
+		_lesat_t -= dt
+		_gerak_tabrak(dt, world)
+		_cek_layu(world)
+		return
+
+	# coyote & buffer (P3.75): pengampunan waktu khas platformer yang enak
+	_coyote = Config.COYOTE_DETIK if di_tanah else max(0.0, _coyote - dt)
+	_buffer = Config.BUFFER_LOMPAT if i.lompat else max(0.0, _buffer - dt)
+
 	# horizontal: akselerasi menuju kecepatan target
-	var target = arah.x * Config.AVATAR_JALAN
+	var target = i.arah.x * Config.AVATAR_JALAN
 	vel.x = move_toward(vel.x, target, Config.AVATAR_ACCEL * dt)
-	# vertikal: gravitasi + lompat dari tanah
+	# vertikal: gravitasi + lompat (tanah ATAU sisa coyote)
 	vel.y += Config.AVATAR_GRAV * dt
-	if lompat and di_tanah and energi > Config.AVATAR_LOMPAT_BIAYA:
+	if _buffer > 0.0 and (di_tanah or _coyote > 0.0) \
+			and energi > Config.AVATAR_LOMPAT_BIAYA:
 		vel.y = -Config.AVATAR_LOMPAT
 		energi -= Config.AVATAR_LOMPAT_BIAYA
+		_buffer = 0.0
+		_coyote = 0.0
+		_melompat = true
+	# lompatan variabel: lepas tombol saat masih naik = lompatan pendek
+	if _melompat and not i.lompat_tahan and vel.y < 0.0:
+		vel.y *= Config.LOMPAT_POTONG
+		_melompat = false
+	if vel.y >= 0.0:
+		_melompat = false
 
 	_gerak_tabrak(dt, world)
+	_cek_layu(world)
 
-	# layu: energi habis di luar jaringan — bangun di simpul terakhir
-	# (termasuk kembali ke lapis tempat simpul itu ditanam)
+
+# layu: energi habis di luar jaringan — bangun di simpul terakhir
+# (termasuk kembali ke lapis tempat simpul itu ditanam)
+func _cek_layu(world):
 	if energi <= 0.0:
 		pos = simpul
 		di_dalam = simpul_dalam

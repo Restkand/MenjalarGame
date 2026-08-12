@@ -8,6 +8,7 @@ extends RefCounted
 var grid
 var jaringan           # 0/1 per satuan — jejak untai untuk avatar (P1)
 var dalam              # grid interior gedung (P2) — enum T_RUANG.. di tapak fasad
+var dijelajah          # 0/1 per PETAK — kabut peta layar M (P3.75)
 var light
 var vis
 var windows = []       # titik tengah tiap jendela — dipakai lampu & FasadView
@@ -59,6 +60,8 @@ func build():
 	# apa pun. Inilah "jalan raya" avatar; beda dari `tutup` yang hanya
 	# menandai fasad demi ekonomi tutupan.
 	jaringan = PackedByteArray(); jaringan.resize(Config.W * Config.H)
+	dijelajah = PackedByteArray()
+	dijelajah.resize((Config.W / PETAK) * (Config.H / PETAK))
 	_bangun_interior()
 	rambatan_baru = []
 	tutup_luas = 0
@@ -105,6 +108,20 @@ func build():
 
 	# gorong-gorong — koridor cepat melintasi tengah peta
 	_rect(130, 262, 220, 9, Config.T_GORONG)
+
+	# --- terowongan metroidvania (P3.75, docs/13 §4) -----------------------
+	# Bawah tanah jadi wilayah jelajah sungguhan bagi avatar LEPAS: dua
+	# lubang got dari trotoar turun ke selokan dangkal, tulang tengah
+	# menghubungkannya ke gorong lama, dan dua cabang buntu berhenti TEPAT
+	# di cangkang beton akuifer — gerbang yang kelak dibuka bor (P7).
+	_rect(146, Config.GROUND_Y, 5, 18, Config.T_GORONG)   # got barat
+	_rect(330, Config.GROUND_Y, 5, 18, Config.T_GORONG)   # got timur
+	_rect(120, 210, 240, 7, Config.T_GORONG)              # selokan dangkal
+	_rect(236, 217, 5, 45, Config.T_GORONG)               # turunan ke gorong
+	_rect(120, 217, 5, 60, Config.T_GORONG)               # cabang barat
+	_rect(96, 270, 29, 7, Config.T_GORONG)                # ...ke cangkang barat
+	_rect(355, 217, 5, 62, Config.T_GORONG)               # cabang timur
+	_rect(360, 272, 32, 7, Config.T_GORONG)               # ...ke cangkang timur
 
 	# utilitas — pita layanan tepat di bawah gedung, plus satu jalur turun.
 	# Celah x 236..250 disisakan supaya akar pertama (lahir di SEED_X=240)
@@ -577,6 +594,23 @@ func dekat_air(px, py, di_dalam):
 			elif grid[y * Config.W + x] == Config.T_AKUIFER:
 				return true
 	return false
+
+
+# Avatar menyingkap kabut peta di sekitarnya (radius petak) — layar M
+# hanya menggambar petak yang pernah didekati (P3.75).
+func tandai_jelajah(px, py):
+	var tx = px / PETAK
+	var ty = py / PETAK
+	var ph = Config.H / PETAK
+	for dy in range(-2, 3):
+		var y = ty + dy
+		if y < 0 or y >= ph:
+			continue
+		for dx in range(-2, 3):
+			var x = tx + dx
+			if x < 0 or x >= _pw:
+				continue
+			dijelajah[y * _pw + x] = 1
 
 
 # --- jaringan avatar (P1, docs/13) ----------------------------------------

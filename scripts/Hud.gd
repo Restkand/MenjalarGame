@@ -491,7 +491,7 @@ func _build_overlay():
 	vb.add_child(jarak2)
 
 	var kontrol = Label.new()
-	kontrol.text = "WASD / panah  bergerak (di jaringan: segala arah)        Spasi  lompat / lepas        E  masuk-keluar gedung di jendela/pintu        F  tanam jangkar\nP  jeda        1 / 2  kecepatan        roda  zoom        klik kiri  arahkan ujung        klik kanan  cabang / tunas        X  putus        T  tanam pohon"
+	kontrol.text = "WASD / panah  bergerak (di jaringan: segala arah — tepi jaringan = tumbuh)        Spasi  lompat / lepas        Shift  lesat / sprint\nE  masuk-keluar gedung        F  tanam jangkar        M  peta        P  jeda        1 / 2  kecepatan        roda  zoom"
 	kontrol.add_theme_color_override("font_color", Color(0.48, 0.51, 0.54))
 	kontrol.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(kontrol)

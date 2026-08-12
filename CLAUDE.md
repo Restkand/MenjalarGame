@@ -304,7 +304,37 @@ proyek: "rubah mekanik & HUD dulu supaya tidak bingung"):
 - refresh() bercabang dini saat _avatar != null; set_waktu menulis dua
   label (lama & avatar).
 
-Berikutnya: **P4 — penjaga & alarm** (docs/13 §9).
+**P3.75 SELESAI** — karakter & peta (keputusan pemilik proyek: fokus rasa
+karakter & peta metroidvania DULU; P4 penjaga digeser ke belakangnya):
+
+- **Kit gerak** (docs/13 §3.2, semua di Config): coyote time 0.12,
+  jump buffer 0.12, lompatan variabel (lepas Spasi dini → vel.y ×0.45),
+  **LESAT** Shift (burst 95 u/s 0.16 dtk, gravitasi mati, biaya 6,
+  cooldown 0.45; tanpa arah = ke hadap terakhir), **sprint merambat**
+  Shift ditahan (×1.8, 3 energi/dtk). Input avatar kini SATU Dictionary
+  (arah/lompat/lompat_tahan/lesat/sprint/masuk) — jangan tambah parameter
+  posisi lagi.
+- **Desain karakter**: AvatarView ekor tendril 6 ruas yang mengejar
+  kepala (lerp berantai — meliuk tanpa fisika), squash mendarat &
+  stretch di udara, daun ekor mengibas makin cepat saat laju tinggi,
+  inti C_TIP condong ke arah hadap. Ekor di-reset saat teleport >200 px
+  (layu/pintu) supaya tidak mencoret peta.
+- **Terowongan metroidvania**: dua lubang got di trotoar (x146 & x330,
+  trotoar FasadView digambar per segmen menyisakan celahnya), selokan
+  dangkal y210, turunan ke gorong lama, dua cabang buntu yang berhenti
+  TEPAT di cangkang beton akuifer (gerbang bor P7).
+- **Layar peta M** (`render/PetaView.gd`, CanvasLayer 15): kabut per
+  petak (`WorldMap.dijelajah`, disingkap avatar radius 2 petak),
+  warna per terrain, timpaan hijau jaringan, penanda simpul + avatar
+  berkedip; membaca grid interior saat avatar di dalam.
+- Harness deterministik (avatar.update dipanggil langsung dt=1/60 —
+  bebas fps headless): lesat dx 18.9 & biaya benar, coyote lompat telat
+  jalan, lompatan ditahan 7 satuan lebih tinggi, got tembus + kabut
+  tercatat. Jebakan lama terulang & tercatat: titik uji (60,100) ada di
+  DALAM gedung tetangga — terkubur = diam; cek tata letak dulu.
+
+Berikutnya: **P4 — penjaga & alarm** (docs/13 §9), kecuali pemilik proyek
+mengarahkan lain.
 
 Segala sesuatu di bawah baris ini adalah RIWAYAT arah sebelumnya —
 konteks berharga untuk reuse, bukan arah kerja:

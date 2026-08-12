@@ -512,3 +512,14 @@ var RAMBAT_TUMBUH_BIAYA = 1.2   # energi per satuan memperpanjang jaringan
 var AIR_ISI             = 18.0  # isi energi/dtk di akuifer / keran bocor
 var CAHAYA_ISI          = 12.0  # isi energi/dtk di bawah matahari (siang, terang)
 var CAHAYA_JENDELA      = 8.0   # isi energi/dtk dekat jendela cerah interior
+
+# P3.75 (docs/13 §3.2): kit gerak & peta
+var LESAT_KECEPATAN   = 95.0    # dash: kecepatan burst
+var LESAT_DETIK       = 0.16    # dash: durasi (gravitasi mati selama ini)
+var LESAT_BIAYA       = 6.0
+var LESAT_ULANG       = 0.45    # dash: jeda antar pemakaian
+var RAMBAT_SPRINT     = 1.8     # pengali laju merambat saat Shift ditahan
+var RAMBAT_SPRINT_BIAYA = 3.0   # energi/dtk sprint merambat
+const COYOTE_DETIK    = 0.12    # masih boleh lompat setelah lepas pijakan
+const BUFFER_LOMPAT   = 0.12    # lompat ditekan sesaat sebelum mendarat
+const LOMPAT_POTONG   = 0.45    # pengali vel.y saat tombol lompat dilepas dini

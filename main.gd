@@ -23,6 +23,7 @@ const AvatarCls      = preload("res://scripts/Avatar.gd")
 const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
 const InteriorViewCls = preload("res://scripts/render/InteriorView.gd")
 const JejakViewCls   = preload("res://scripts/render/JejakView.gd")
+const PetaViewCls    = preload("res://scripts/render/PetaView.gd")
 
 var world
 var sim
@@ -49,6 +50,8 @@ var avatar
 var avatar_view
 var _lompat_tekan = false   # edge tombol Spasi, dikosongkan tiap frame
 var _masuk_tekan = false    # edge tombol E (masuk/keluar gedung, P2)
+var _lesat_tekan = false    # edge tombol Shift (dash, P3.75)
+var peta                    # layar peta M (P3.75)
 var _sumber_air_dikenal = false      # flash penemuan sekali (P3)
 var _sumber_cahaya_dikenal = false
 
@@ -179,6 +182,10 @@ func _ready():
 	avatar_view = AvatarViewCls.new(avatar)
 	avatar_view.z_index = 5
 	pane_atas.tempel(avatar_view)
+
+	# layar peta M (P3.75) — CanvasLayer sendiri, di luar viewport pane
+	peta = PetaViewCls.new(world, avatar)
+	add_child(peta)
 
 	panel = TuningPanelCls.new()
 	add_child(panel)
@@ -389,7 +396,14 @@ func _process(delta):
 			arah.y -= 1.0
 		if _tekan(KEY_S) or _tekan(KEY_DOWN):
 			arah.y += 1.0
-		avatar.update(dt, arah, _lompat_tekan, _masuk_tekan, world)
+		avatar.update(dt, {
+			"arah": arah,
+			"lompat": _lompat_tekan,
+			"lompat_tahan": _tekan(KEY_SPACE),
+			"lesat": _lesat_tekan,
+			"sprint": _tekan(KEY_SHIFT),
+			"masuk": _masuk_tekan,
+		}, world)
 		if avatar.layu_baru:
 			avatar.layu_baru = false
 			hud.flash_msg("LAYU — kembali ke simpul jaringan terakhir")
@@ -397,6 +411,7 @@ func _process(delta):
 		# --- sumber daya (P3, docs/13 §4): air & cahaya PUNYA ALAMAT -------
 		var apx = int(round(avatar.pos.x))
 		var apy = int(round(avatar.pos.y - 2.0))
+		world.tandai_jelajah(apx, apy)   # menyingkap kabut peta M (P3.75)
 		avatar.mengisi = false
 		avatar.sumber = ""
 		if world.dekat_air(apx, apy, avatar.di_dalam):
@@ -442,6 +457,7 @@ func _process(delta):
 				* clamp(delta * 6.0, 0.0, 1.0))
 	_lompat_tekan = false
 	_masuk_tekan = false
+	_lesat_tekan = false
 
 	# P3.5: pratinjau steering & menang-kalah babak lama dibungkam bersama
 	# sistemnya; peta risiko ikut (maknanya kembali di P4)
@@ -483,10 +499,10 @@ func _process(delta):
 				int(round(avatar.pos.y - 2.0))):
 			hint = "E  %s gedung" % ("keluar" if avatar.di_dalam else "masuk")
 		elif avatar.moda == avatar.MERAMBAT:
-			hint = "WASD merambat — terus tekan di tepi jaringan = TUMBUH        Spasi lepas        F jangkar (%d)" \
+			hint = "WASD merambat — tepi jaringan = TUMBUH        Shift sprint        Spasi lepas        F jangkar (%d)        M peta" \
 					% int(Config.JANGKAR_BIAYA)
 		else:
-			hint = "WASD gerak        Spasi lompat        sentuh tanaman untuk menempel"
+			hint = "WASD gerak        Spasi lompat        Shift lesat        sentuh tanaman untuk menempel        M peta"
 		hud.set_hint(hint)
 
 
@@ -552,8 +568,18 @@ func _unhandled_input(event):
 			elif playing:
 				_lompat_tekan = true
 			return
+		elif _kunci(event, KEY_SHIFT):
+			# LESAT (P3.75) — edge; sprint merambat membaca Shift ditahan
+			if playing:
+				_lesat_tekan = true
+			return
 		elif _kunci(event, KEY_P):
 			_jeda = not _jeda
+			return
+		elif _kunci(event, KEY_M):
+			# layar peta (P3.75) — buka/tutup; dunia tetap berjalan
+			if playing:
+				peta.visible = not peta.visible
 			return
 		elif _kunci(event, KEY_1):
 			_laju_waktu = 1.0

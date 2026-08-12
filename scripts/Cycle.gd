@@ -36,6 +36,10 @@ var rawat_kekuatan = 0.0   # perhatian saat inspeksi — menentukan jumlah regu
 var kering_hari  = -1      # hari mulai; -1 = tidak ada jadwal
 var kering_akhir = -1      # hari pertama SETELAH musim kering berakhir
 
+# Eskalasi (G6): tingkat kewaspadaan kota, naik tiap ESKALASI_TIAP hari.
+var eskalasi = 0
+var eskalasi_baru = false  # di-set saat naik; dibaca-kosongkan main (kartu)
+
 
 func reset():
 	phase = Config.PHASE_DAY
@@ -48,6 +52,19 @@ func reset():
 	rawat_kekuatan = 0.0
 	kering_hari = -1
 	kering_akhir = -1
+	eskalasi = 0
+	eskalasi_baru = false
+
+
+# Ambang inspeksi turun seiring eskalasi — kota yang waspada menoleransi
+# lebih sedikit hijau sebelum memanggil regu.
+func ambang_efektif():
+	return max(0.25, Config.AMBANG_RAWAT - eskalasi * 0.06)
+
+
+# Regu yang berpengalaman menggergaji lebih cepat.
+func faktor_gergaji():
+	return max(0.6, 1.0 - eskalasi * 0.08)
 
 
 func rawat_hari_ini():
@@ -126,6 +143,12 @@ func _fajar(world):
 		kering_hari = hari + 2
 		kering_akhir = kering_hari + max(1, int(Config.KERING_LAMA))
 
+	# kota makin waspada (G6) — kenaikan ditandai untuk diumumkan kartu
+	if hari > 2 and hari % max(2, int(Config.ESKALASI_TIAP)) == 0 \
+			and eskalasi < int(Config.ESKALASI_MAX):
+		eskalasi += 1
+		eskalasi_baru = true
+
 	if inspeksi_dalam() == 0:
 		_inspeksi(world)
 
@@ -133,7 +156,7 @@ func _fajar(world):
 func _inspeksi(world):
 	if rawat_hari >= 0:
 		return   # sudah ada jadwal berjalan
-	if perhatian < Config.AMBANG_RAWAT:
+	if perhatian < ambang_efektif():
 		return   # gedung dianggap masih wajar
 	rawat_hari = hari + max(1, int(Config.JEDA_RAWAT))
 	rawat_zona_idx = world.zona_teratas_idx()

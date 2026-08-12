@@ -28,11 +28,14 @@ func reset():
 func update(delta, sim, world, cycle):
 	dipotong = 0
 
-	# TAHAP E: pemanjat juga terjadwal — dan HANYA untuk zona ATAS (indeks
-	# 0-1), karena regu darat tidak bisa meraih fasad tinggi. Zona bawah
-	# cukup diurus regu darat.
+	# TAHAP E: pemanjat juga terjadwal — awalnya HANYA untuk zona ATAS
+	# (indeks 0-1), karena regu darat tidak bisa meraih fasad tinggi.
+	# Mulai eskalasi 2 (G6) mereka melayani SEMUA zona: kota yang waspada
+	# mengirim pemanjat ke mana pun sulur tinggi berada.
+	var zona_atas = cycle.rawat_zona_idx >= 0 and cycle.rawat_zona_idx < 2
 	if cycle.phase != Config.PHASE_DAY or not cycle.rawat_hari_ini() \
-			or cycle.rawat_zona_idx >= 2 or cycle.rawat_zona_idx < 0:
+			or cycle.rawat_zona_idx < 0 \
+			or (not zona_atas and cycle.eskalasi < 2):
 		units = []
 		return
 

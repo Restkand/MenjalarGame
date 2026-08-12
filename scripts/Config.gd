@@ -298,6 +298,16 @@ var AMBANG_RAWAT  = 0.5    # inspeksi menjadwalkan perawatan di atas ini
 var INSPEKSI_TIAP = 2      # inspeksi tiap sekian hari
 var JEDA_RAWAT    = 1      # perawatan datang sekian hari setelah dijadwalkan
 
+# Eskalasi antar siklus (G6): kota makin peduli seiring hari. Tiap
+# ESKALASI_TIAP hari tingkat waspada naik satu (maks ESKALASI_MAX):
+# ambang inspeksi turun 6% per tingkat (Cycle.ambang_efektif), regu
+# menggergaji 8% lebih cepat per tingkat (Cycle.faktor_gergaji), dan mulai
+# tingkat 2 pemanjat melayani SEMUA zona, bukan hanya zona atas. Semua
+# kenaikan DIUMUMKAN lewat kartu — eskalasi pun tunduk pada pilar "ancaman
+# selalu diumumkan". Run 30 menit tidak pernah dua siklus yang sama.
+var ESKALASI_TIAP = 4
+var ESKALASI_MAX  = 4
+
 # Setelah hari perawatan lewat, pengelola menganggap masalahnya tertangani —
 # perhatian dikalikan ini (dan bobot zona ikut separuh).
 var PERHATIAN_SETELAH_RAWAT = 0.5

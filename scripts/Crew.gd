@@ -21,6 +21,7 @@ extends RefCounted
 var units    = []     # {x, s, i, kerja, pingsan, pulang}
 var dipotong = 0      # potongan yang terjadi frame ini; dibaca lalu dinolkan
 var ditimpa  = 0      # regu yang baru tertimbun frame ini
+var _gergaji = 1.0    # faktor durasi gergaji dari eskalasi (G6)
 
 
 func reset():
@@ -43,6 +44,7 @@ func update(delta, sim, world, erosi, cycle):
 	var x0 = 0.0 if barat else Config.W / 2.0
 	var x1 = Config.W / 2.0 if barat else float(Config.W)
 
+	_gergaji = cycle.faktor_gergaji()
 	_sesuaikan_jumlah(cycle, barat)
 
 	var sisa = []
@@ -142,8 +144,9 @@ func _update_unit(u, delta, sim, world, x0, x1):
 	# potongan lenyap. Itulah kerja tukang kebun, dan itulah kenapa hari
 	# perawatan pantas ditakuti walau sudah diumumkan dua hari sebelumnya.
 	# Pangkal yang DIPERKUAT (G2) butuh dua kali durasi — jendela lebih lebar
-	# untuk menimbun regu dengan puing atau merelakan dengan tenang.
-	var durasi = Config.CREW_POTONG * (2.0 if u.s.kokoh else 1.0)
+	# untuk menimbun regu dengan puing atau merelakan dengan tenang. Regu
+	# yang berpengalaman (eskalasi, G6) menggergaji lebih cepat.
+	var durasi = Config.CREW_POTONG * (2.0 if u.s.kokoh else 1.0) * _gergaji
 	u.kerja = u.kerja + delta
 	if u.kerja < durasi:
 		return

@@ -38,6 +38,8 @@ var _p_fill
 var _lbl_tren      # panah tren perhatian
 var _lbl_waktu     # indikator jeda / 2x
 var _lbl_kalender
+var _p_garis       # garis ambang di bar perhatian — bergeser saat eskalasi
+var _garis_tmp     # garis terakhir yang dibuat _bar()
 var _p_prev = 0.0
 var _p_akum = 0.0
 var _p_delta = 0.0
@@ -103,6 +105,7 @@ func _pita_atas():
 
 	_ikon(hb, "ikon_perhatian")
 	_p_fill = _bar(hb, Config.C_WINDOW, 220.0, Config.AMBANG_RAWAT)
+	_p_garis = _garis_tmp   # ambang bergeser saat kota makin waspada (G6)
 	_lbl_tren = Label.new()
 	_lbl_tren.add_theme_font_size_override("font_size", 15)
 	_lbl_tren.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -181,6 +184,7 @@ func _bar(induk, col, lebar, ambang = -1.0):
 		garis.position = Vector2(lebar * ambang, 0)
 		garis.size = Vector2(2, 12)
 		bg.add_child(garis)
+		_garis_tmp = garis
 	return f
 
 
@@ -434,6 +438,7 @@ func refresh(sim, w, world, crew, climbers, babak):
 		_lbl_laju.text = "malam +0"
 
 	_p_fill.size = Vector2(220.0 * clamp(w.perhatian, 0.0, 1.0), 12)
+	_p_garis.position.x = 220.0 * w.ambang_efektif()
 
 	# tren perhatian, dicuplik tiap 0,7 detik supaya panahnya tenang
 	_p_akum += get_process_delta_time()
@@ -454,6 +459,8 @@ func refresh(sim, w, world, crew, climbers, babak):
 	# --- kalender (selalu terlihat, docs/08 §3.2) ---------------------------
 	var ph = "SIANG" if w.phase == Config.PHASE_DAY else "MALAM"
 	var baris1 = "HARI %d  %s %d%%" % [w.hari, ph, int(w.progress() * 100)]
+	if w.eskalasi > 0:
+		baris1 += "   WASPADA %d" % w.eskalasi
 	if crew.aktif() > 0:
 		baris1 += "   REGU %d" % crew.aktif()
 	if climbers.aktif() > 0:

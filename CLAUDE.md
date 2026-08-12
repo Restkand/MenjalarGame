@@ -287,7 +287,18 @@ termahal di permainan) menanam pohon di titik itu dan MENGORBANKAN untainya
 "penuh"/"energi") → pesan HUD spesifik. Berakar-pasif tetap jalan lambat.
 Catatan harness: `_world` TreeSim baru terisi di sim.update() pertama
 setelah MULAI — uji yang memanggil API sim di frame yang sama akan gagal
-palsu. **Berikutnya: G6** (eskalasi antar siklus).
+palsu; dan kartu fase (2,8 dtk jeda per pergantian) membuat hari uji
+merangkak — set `Config.KARTU_DETIK = 0.05` di harness hari-cepat.
+
+**G6 SELESAI** — eskalasi antar siklus: `Cycle.eskalasi` naik tiap
+ESKALASI_TIAP (4) hari sampai ESKALASI_MAX (4). Efeknya dihitung dinamis
+(Config tidak dimutasi): `ambang_efektif()` turun 6%/tingkat (garis ambang
+di bar perhatian HUD ikut bergeser), `faktor_gergaji()` regu 8% lebih cepat
+per tingkat, dan mulai tingkat 2 pemanjat melayani SEMUA zona (bukan hanya
+ATAS). Kenaikan diumumkan lewat baris tambahan di kartu fajar + "WASPADA n"
+di kalender — eskalasi pun tunduk pilar "ancaman selalu diumumkan".
+**Paket "menarik sampai menit 30" (G4–G6) TUNTAS. Berikutnya: G7** (pass
+audio — butuh file suara; freesound/jsfxr).
 
 HUD dua-pita (docs/08 §3, dibangun setelah R6):
 

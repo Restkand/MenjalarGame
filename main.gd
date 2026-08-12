@@ -268,12 +268,12 @@ func _kartu_fase():
 		if cycle.rawat_hari >= 0:
 			isi = "perhatian %d%% melewati ambang %d%%\nPERAWATAN dijadwalkan hari %d — zona %s" \
 					% [int(round(cycle.perhatian * 100)),
-					int(round(Config.AMBANG_RAWAT * 100)),
+					int(round(cycle.ambang_efektif() * 100)),
 					cycle.rawat_hari, cycle.rawat_zona]
 		else:
 			isi = "perhatian %d%% — masih di bawah ambang %d%%, gedung dianggap wajar" \
 					% [int(round(cycle.perhatian * 100)),
-					int(round(Config.AMBANG_RAWAT * 100))]
+					int(round(cycle.ambang_efektif() * 100))]
 	else:
 		# pengajaran ekonomi dengan angka hari ini: energi mengalir dari
 		# sisi yang LEBIH KECIL, dan hanya saat siang
@@ -287,6 +287,11 @@ func _kartu_fase():
 	if cycle.kering_hari >= 0 and cycle.hari < cycle.kering_hari:
 		isi += "\nMUSIM KERING dalam %d hari — pastikan akar mencapai akuifer" \
 				% (cycle.kering_hari - cycle.hari)
+	# eskalasi diumumkan di kartu hari kenaikannya (G6)
+	if cycle.eskalasi_baru:
+		cycle.eskalasi_baru = false
+		isi += "\nKOTA MAKIN WASPADA — ambang inspeksi %d%%, regu bekerja lebih cepat" \
+				% int(round(cycle.ambang_efektif() * 100))
 	hud.tampil_kartu(judul, isi)
 
 

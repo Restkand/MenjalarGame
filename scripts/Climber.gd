@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 # Pemanjat — antagonis fasad atas.
 #
@@ -25,18 +25,24 @@ func reset():
 	dipotong = 0
 
 
-func update(delta, sim, structure, phase):
+func update(delta, sim, world, cycle):
 	dipotong = 0
 
-	# Ikut pulang bersama regu darat saat malam.
-	if phase != Config.PHASE_DAY:
+	# TAHAP E: pemanjat juga terjadwal — awalnya HANYA untuk zona ATAS
+	# (indeks 0-1), karena regu darat tidak bisa meraih fasad tinggi.
+	# Mulai eskalasi 2 (G6) mereka melayani SEMUA zona: kota yang waspada
+	# mengirim pemanjat ke mana pun sulur tinggi berada.
+	var zona_atas = cycle.rawat_zona_idx >= 0 and cycle.rawat_zona_idx < 2
+	if cycle.phase != Config.PHASE_DAY or not cycle.rawat_hari_ini() \
+			or cycle.rawat_zona_idx < 0 \
+			or (not zona_atas and cycle.eskalasi < 2):
 		units = []
 		return
 
 	_bersihkan()
-	_sesuaikan_jumlah(sim, structure)
+	_sesuaikan_jumlah(sim, cycle)
 	for c in units:
-		_update_unit(c, delta)
+		_update_unit(c, delta, world)
 
 
 # Posisi di layar: titik sulur yang sedang dipijak.
@@ -80,30 +86,38 @@ func _bersihkan():
 	units = sisa
 
 
-func _sesuaikan_jumlah(sim, structure):
+func _sesuaikan_jumlah(sim, cycle):
 	# slider boleh diturunkan ke 0 untuk mematikan pemanjat saat menyetel
 	if Config.CLIMB_MAX < 1:
 		units = []
 		return
 
-	var n = 1 + int((1.0 - structure.integritas_total())
+	# jumlah dari perhatian saat inspeksi, sama seperti regu darat
+	var n = 1 + int(clamp(cycle.rawat_kekuatan, 0.0, 1.0)
 			* float(Config.CLIMB_MAX - 1))
 	n = int(clamp(n, 1, Config.CLIMB_MAX))
 
 	while units.size() > n:
-		units.remove(units.size() - 1)
+		units.remove_at(units.size() - 1)
 	if units.size() >= n:
 		return
 
-	var s = _cari_sulur(sim)
+	var s = _cari_sulur(sim, cycle.rawat_zona_idx)
 	if s == null:
 		return
 	units.append({"s": s, "idx": 0.0, "kerja": 0.0, "pingsan": 0.0})
 
 
-func _cari_sulur(sim):
+# Sulur yang bisa dipanjat DAN ujungnya berada di paruh dunia milik zona
+# yang dijadwalkan — pemanjat datang untuk zona itu, bukan berburu bebas.
+func _cari_sulur(sim, zona_idx):
+	var barat = zona_idx % 2 == 0
 	for s in sim.strands:
 		if not _bisa_dipanjat(s):
+			continue
+		if barat and s.tip.x >= Config.W / 2.0:
+			continue
+		if not barat and s.tip.x < Config.W / 2.0:
 			continue
 		var terpakai = false
 		for c in units:
@@ -127,7 +141,7 @@ func _bisa_dipanjat(s):
 	return s.tip.y < Config.GROUND_Y - Config.CREW_BAND_ATAS
 
 
-func _update_unit(c, delta):
+func _update_unit(c, delta, world):
 	if c.pingsan > 0.0:
 		c.pingsan = max(0.0, c.pingsan - delta)
 		return
@@ -152,6 +166,6 @@ func _update_unit(c, delta):
 	if c.kerja < Config.CLIMB_CABUT:
 		return
 	c.kerja = 0.0
-	c.s.trim(Config.CREW_PANJANG)
+	c.s.trim(Config.CREW_PANJANG, world)
 	dipotong += 1
 	c.idx = min(c.idx, float(max(0, c.s.points.size() - 1)))

@@ -1,9 +1,19 @@
-# Godot 3.x — folder cache hasil import aset (di-generate ulang otomatis)
+# Godot 4 — folder cache hasil import aset (di-generate ulang otomatis)
+.godot/
+
+# Sisa Godot 3.5, sudah tidak dibuat lagi sejak migrasi
 .import/
+
+# CATATAN: file *.uid JANGAN diabaikan. Sejak Godot 4.4 mereka adalah identitas
+# stabil tiap script; kalau tidak ikut di-commit, referensi antar-file bisa
+# putus saat proyek dibuka di mesin lain.
 
 # Setelan export yang berisi path lokal / kredensial
 export.cfg
 export_presets.cfg
+
+# Konfigurasi MCP — berisi kunci API PixelLab, jangan pernah di-commit
+.mcp.json
 
 # Hasil build/export
 build/
@@ -16,9 +26,6 @@ exports/
 .mono/
 data_*/
 mono_crash.*.json
-
-# Godot 4 (jaga-jaga kalau nanti upgrade)
-.godot/
 
 # OS / editor
 .DS_Store

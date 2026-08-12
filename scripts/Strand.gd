@@ -1,4 +1,4 @@
-extends Reference
+extends RefCounted
 
 var points     = []
 var leaves     = []
@@ -10,7 +10,11 @@ var generation = 0
 var id         = 0
 var _acc       = 0.0
 var _leaf_acc  = 0.0
+var _daun_kiri = false # sisi daun berikutnya — berselang-seling kiri-kanan
+var _tunas_t   = 0.0   # jeda sampai daun susulan berikutnya
 var berakar    = 0.0   # kemajuan menjadi pohon saat berdiri di atas puing
+var tembus     = -1.0  # menembus beton: -1 = tidak; 0..1 = kemajuan bor
+var kokoh      = false # pangkal diperkuat — gergaji regu butuh 2x durasi
 
 
 func _init(x, y, a, root, gen, sid):
@@ -24,7 +28,10 @@ func _init(x, y, a, root, gen, sid):
 func solid_at(world, x, y):
 	if is_root:
 		var k = world.at(int(round(x)), int(round(y)))
-		return k == Config.T_CONCRETE or k == Config.T_PIPE \
+		# beton solid TAPI bisa ditembus (klik ujung, bayar energi);
+		# batu solid selamanya. Akuifer, humus, gorong, dan utilitas semua
+		# bisa dilalui — utilitas dihukum lewat perhatian, bukan tembok.
+		return k == Config.T_CONCRETE or k == Config.T_BATU \
 				or k == Config.T_NEIGHBOR or y < Config.GROUND_Y
 	return not world.vine_ok(x, y)
 
@@ -51,7 +58,6 @@ func grow(delta, steer, t, world, laju = 1.0):
 	var target = angle
 	if steer != null:
 		target = steer
-	target = _tarik_joint(target, steer, tip, world)
 	target += sin(t * 2.7 + id * 13.0) * Config.NOISE_AMOUNT * delta
 
 	var d = wrapf(target - angle, -PI, PI)
@@ -90,93 +96,104 @@ func grow(delta, steer, t, world, laju = 1.0):
 		points.append(Vector2(tip.x, tip.y))
 		if not is_root:
 			gained = world.vis_at(int(round(tip.x)), int(round(tip.y)))
-		if points.size() > 900:
-			points.remove(0)
+			# jejak rambatan: pijakan kekal + bahan bakar erosi + tutupan
+			world.rambati(int(round(tip.x)), int(round(tip.y)))
+		if points.size() > Config.STRAND_MAX_TITIK:
+			points.remove_at(0)
 
 	if not is_root:
 		_leaf_acc += step
 		if _leaf_acc >= Config.LEAF_SPACING:
 			_leaf_acc -= Config.LEAF_SPACING
 			_spawn_leaf(world)
+		_tunas_step(delta, world)
 
 	return gained
 
 
-# Tigmotropisme ke arah sambungan struktur. Hanya sulur — akar tidak mencari
-# joint. Saat pemain sedang mengarahkan, deviasinya dibatasi JOINT_TARIK_MAX
-# supaya tetap terasa mengusulkan, bukan kehilangan kendali (Logika §5.1).
-func _tarik_joint(target, steer, p, world):
-	if is_root:
-		return target
-	var j = world.nearest_joint(p, Config.JOINT_TARIK_RADIUS)
-	if j == null:
-		return target
-	var ke_joint = atan2(j.y - p.y, j.x - p.x)
-	if steer == null:
-		return ke_joint
-	return steer + clamp(wrapf(ke_joint - steer, -PI, PI),
-			-Config.JOINT_TARIK_MAX, Config.JOINT_TARIK_MAX)
+# Pertumbuhan daun meniru panel "Tahap Pertumbuhan" acuan: ujung menanam
+# tunas, batang tua terus menambah daun susulan, dan tiap daun membesar
+# pelan dari kuncup — kerimbunan datang dari WAKTU tumbuh, bukan taburan.
 
-
+# Tunas di ujung yang sedang merambat.
 func _spawn_leaf(world):
-	if leaves.size() > 60 or not world.on_facade(tip.x, tip.y):
+	if not world.on_facade(tip.x, tip.y):
 		return
-	var side = 1.0 if randf() < 0.5 else -1.0
-	var off = Vector2(-sin(angle), cos(angle)) * rand_range(1.0, 3.0) * side
-	var p = tip + off
-	if not world.on_facade(p.x, p.y):
-		p = tip
-	leaves.append({"pos": p, "age": 0.0})
+	_buat_daun(Vector2(tip.x, tip.y), angle)
+
+
+# Daun susulan di titik acak sepanjang batang — panel "daun bertambah":
+# sulur yang hidup makin lama makin lebat, di seluruh tubuhnya.
+func _tunas_step(delta, world):
+	_tunas_t += delta
+	if _tunas_t < Config.TUNAS_TIAP:
+		return
+	_tunas_t = 0.0
+	if points.size() < 12:
+		return
+	var i = randi() % (points.size() - 6) + 4
+	var p = points[i]
+	if not world.vine_ok(p.x, p.y):
+		return
+	# arah batang setempat, dari titik tetangganya
+	var d = points[min(i + 2, points.size() - 1)] - points[max(i - 2, 0)]
+	_buat_daun(Vector2(p.x, p.y), atan2(d.y, d.x))
+
+
+func _buat_daun(p, arah_batang):
+	if leaves.size() > 200:
+		return
+	var side = -1.0 if _daun_kiri else 1.0
+	_daun_kiri = not _daun_kiri
+	# keluar dari batang, lalu dicondongkan ke ATAS — daun sungguhan mencari
+	# cahaya, dan condong fototropik inilah yang membuat acuan terlihat
+	# hidup: apa pun arah batangnya, mayoritas daun mendongak
+	var keluar = arah_batang + side * PI / 2.0
+	var sudut = lerp_angle(keluar, -PI / 2.0, 0.45) + randf_range(-0.35, 0.35)
+	# satu jenis dominan (daun lebar), diselingi dua bentuk pendamping —
+	# kerimbunan yang koheren, bukan mozaik delapan bentuk
+	var varian = 3
+	var acak = randf()
+	if acak > 0.85:
+		varian = 5
+	elif acak > 0.55:
+		varian = 1
+	leaves.append({
+		"pos": p,
+		"sudut": sudut,
+		"age": 0.0,
+		"varian": varian,
+		"skala": randf_range(0.8, 1.25),
+		# kedalaman kanopi: daun belakang digambar duluan, lebih gelap dan
+		# sedikit lebih besar
+		"lapis": 0 if randf() < 0.45 else 1,
+		"rona": randf_range(0.82, 1.05),
+	})
 
 
 func age_leaves(delta):
 	for l in leaves:
-		l.age = min(1.5, l.age + delta)
+		l.age = min(Config.DAUN_DEWASA, l.age + delta)
 
 
-# Fasad di bawah ujung runtuh. Mundur ke titik terakhir yang masih menempel,
-# buang bagian yang kini menggantung di atas lubang, lalu lanjut hidup.
-# Mengembalikan true kalau untai ini memang terdampak.
-func retreat_to_facade(world):
-	# Pakai vine_ok(), bukan on_facade() — kalau tidak, sulur yang sedang
-	# merentang di atas celah sempit akan dianggap kehilangan pijakan dan
-	# ditarik mundur, membatalkan kemampuan menjembatani itu sendiri.
-	if is_root or world.vine_ok(tip.x, tip.y):
-		return false
-
-	var i = points.size() - 1
-	while i >= 0 and not world.vine_ok(points[i].x, points[i].y):
-		i -= 1
-
-	if i < 1:
-		alive = false   # tidak ada pijakan tersisa sama sekali
-		return true
-
-	points.resize(i + 1)
-	tip = Vector2(points[i].x, points[i].y)
-	angle = angle + PI   # menghadap balik, menjauh dari lubang
-	_acc = 0.0
-	_leaf_acc = 0.0
-
-	var keep = []
-	for l in leaves:
-		if world.on_facade(l.pos.x, l.pos.y):
-			keep.append(l)
-	leaves = keep
-	return true
+# retreat_to_facade() dihapus di TAHAP B — lihat catatan di TreeSim.
 
 
-func trim(n):
+func trim(n, world = null):
 	for _i in range(n):
 		if points.size() <= 2:
 			alive = false
 			return
-		points.remove(points.size() - 1)
+		var p = points[points.size() - 1]
+		# pemangkasan menghapus jejak rambatan — bar HIJAU/zona ikut mundur
+		if not is_root and world != null:
+			world.hapus_rambatan(int(round(p.x)), int(round(p.y)))
+		points.remove_at(points.size() - 1)
 	tip = points[points.size() - 1]
 	angle = angle + PI
 	var keep = []
 	for l in leaves:
-		if l.pos.distance_to(tip) < 60.0:
+		if l.pos.distance_to(tip) < 120.0:
 			keep.append(l)
 	leaves = keep
 
@@ -189,13 +206,8 @@ func preview(mouse, length, world):
 	var turn_px = Config.MAX_TURN / max(0.001, spd)
 	for _i in range(int(length)):
 		var a2 = a
-		var st = null
 		if p.distance_to(mouse) > Config.DEAD_ZONE:
-			st = atan2(mouse.y - p.y, mouse.x - p.x)
-			a2 = st
-		# pratinjau harus memakai aturan yang sama, termasuk tarikan joint,
-		# supaya menunjukkan ke mana sulur benar-benar tumbuh (Logika §11)
-		a2 = _tarik_joint(a2, st, p, world)
+			a2 = atan2(mouse.y - p.y, mouse.x - p.x)
 		var d = wrapf(a2 - a, -PI, PI)
 		a += clamp(d, -turn_px, turn_px)
 		var q = Vector2(p.x + cos(a), p.y + sin(a))

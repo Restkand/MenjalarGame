@@ -1,14 +1,35 @@
 extends Node
 
-var GROWTH_SPEED   = 9.0
-var VINE_SPEED     = 3.2
+# TAHAP A — dunia diperbesar dari 240x160 ke 480x320.
+#
+# Aturan penskalaan yang dipakai di SELURUH file ini: apa pun yang diukur dalam
+# piksel dunia dikalikan 2, dan apa pun yang diukur dalam piksel-per-detik juga
+# dikalikan 2. Dengan begitu permainan terasa persis sama seperti sebelumnya
+# saat dilihat pada zoom 4x — zoom 4x mereproduksi tampilan lama.
+#
+# Yang TIDAK diskalakan: nilai tanpa satuan (MAX_TURN dalam radian, semua
+# ambang 0..1, eksponen biaya) dan ekonomi energi. Angka 9.0 di TreeSim dan
+# Structure sengaja dibiarkan — ia sudah dilepas dari GROWTH_SPEED sejak lama,
+# jadi ia konstanta biaya, bukan kecepatan.
+# Tempo (diluruskan playtest 12 Agustus): yang harus LAMBAT adalah
+# MENJALARNYA — rasa "sabar, organik" datang dari batang yang merayap pelan,
+# bukan dari jam dunia yang diulur. Hari justru dikembalikan lebih pendek
+# supaya ritme kalender inspeksi tetap terasa hidup.
+var GROWTH_SPEED   = 7.0    # akar
+var VINE_SPEED     = 5.5    # sulur
 var MAX_TURN       = 1.1
 var NOISE_AMOUNT   = 0.35
 var ENERGY_RATE    = 7.0
 var COST_PER_PIXEL = 0.30
 var COST_TIP_EXP   = 0.62
-var DAY_LEN        = 22.0
-var NIGHT_LEN      = 24.0
+var DAY_LEN        = 28.0
+var NIGHT_LEN      = 30.0
+
+# Kartu pergantian fase: permainan berhenti sejenak, kartu besar mengumumkan
+# hari/inspeksi/kedatangan regu. Ini kendaraan pengajaran utama — sistem
+# perhatian dijelaskan TEPAT saat relevan, bukan lewat dinding teks tutorial.
+# Klik untuk melewati.
+var KARTU_DETIK = 2.8
 
 # regu perawatan gedung
 #
@@ -21,12 +42,21 @@ var NIGHT_LEN      = 24.0
 # jatuh menimbun mereka. Sengaja sementara, bukan permanen — kalau regu bisa
 # dihabisi, pemain tinggal membersihkan peta lalu bekerja tanpa lawan. Yang
 # sementara justru memberi irama: runtuhkan, dapat jeda aman, mereka kembali.
-var CREW_SPEED   = 18.0   # piksel per detik
-var CREW_CABUT   = 0.55   # detik per potongan
-var CREW_MAX     = 4      # jumlah regu saat gedung nyaris rata
+# TAHAP E: regu tidak lagi spawn terus-menerus — mereka HANYA datang pada
+# hari perawatan yang diumumkan kalender, sebanyak 1 + perhatian-saat-
+# inspeksi * (MAX-1), bekerja di zona yang dijadwalkan, lalu pulang begitu
+# zonanya bersih. MAX kembali normal karena tekanannya kini berjadwal, bukan
+# banjir.
+# Dirombak playtest 12 Agustus: regu MEMOTONG SULUR DI PANGKALNYA (seluruh
+# bagian di atas potongan lenyap sekali gergaji), dan TIDAK pernah menyentuh
+# akar — pengelola tidak melihat bawah tanah. CREW_POTONG adalah lama
+# menggergaji satu sulur; cukup panjang untuk ditimbun puing atau direlakan.
+var CREW_SPEED   = 36.0   # piksel per detik
+var CREW_POTONG  = 2.4    # detik menggergaji sebelum sulur putus di pangkal
+var CREW_MAX     = 3      # regu terbanyak dalam satu hari perawatan
 var CREW_PINGSAN = 6.0    # detik tertimbun sebelum bangkit lagi
 
-const CREW_LEBAR = 3.0    # setengah lebar badan, untuk deteksi tertimpa
+const CREW_LEBAR = 6.0    # setengah lebar badan, untuk deteksi tertimpa
 
 # Pemanjat.
 #
@@ -38,141 +68,301 @@ const CREW_LEBAR = 3.0    # setengah lebar badan, untuk deteksi tertimpa
 #
 # Jawabannya: putus sulur di bawahnya (tombol X). Dia jatuh, dengan harga
 # pertumbuhan di atas titik potong itu ikut hilang.
-# Titik sulur berjarak 1 px, jadi ini juga kecepatannya di layar. Nilai 25
-# membuat sulur 300 titik dipanjat dalam 12 detik — sekitar setengah siang,
-# cukup lama untuk terlihat datang dan disikapi, cukup cepat untuk sampai.
-# Pada 9 dibutuhkan 33 detik, lebih lama dari satu siang penuh, sehingga
-# pemanjat tidak akan pernah tiba di ujung.
-var CLIMB_SPEED   = 25.0   # titik sulur yang dilalui per detik
-# Lebih lambat daripada CREW_CABUT: mereka bekerja canggung di ketinggian, dan
+# Titik sulur berjarak 1 px, jadi ini juga kecepatannya di layar. Di dunia 2x,
+# sulur sepanjang itu juga punya 2x lebih banyak titik, jadi nilainya ikut
+# digandakan supaya waktu tempuhnya tetap sama: 600 titik dalam 12 detik —
+# sekitar setengah siang, cukup lama untuk terlihat datang dan disikapi, cukup
+# cepat untuk sampai. Pada setengahnya dibutuhkan 33 detik, lebih lama dari
+# satu siang penuh, sehingga pemanjat tidak akan pernah tiba di ujung.
+var CLIMB_SPEED   = 50.0   # titik sulur yang dilalui per detik
+# Lambat: mereka bekerja canggung di ketinggian, dan
 # itu memberi pemain waktu bereaksi. Memutus sulur lebih awal jauh lebih murah
 # daripada terlambat, karena yang hilang adalah pertumbuhan di atas potongan.
 var CLIMB_CABUT   = 1.2    # detik per potongan setelah sampai di ujung
-var CLIMB_MAX     = 3
+var CLIMB_MAX     = 2      # pemanjat terbanyak; hanya untuk zona ATAS
 var CLIMB_PINGSAN = 8.0    # detik setelah jatuh sebelum mencoba lagi
 
 # Pangkal sulur harus di bawah baris ini supaya bisa dicapai dari tanah.
 # Sulur yang dicabangkan tinggi-tinggi jadi jaringan yang tak terjangkau —
 # itulah imbalan untuk menumbuhkan jaringan terpisah, bukan satu jalur besar.
-const CLIMB_BASIS     = 80.0
-const CLIMB_MIN_TITIK = 40   # sulur harus cukup panjang untuk dipanjat
+const CLIMB_BASIS     = 140.0
+const CLIMB_MIN_TITIK = 80   # sulur harus cukup panjang untuk dipanjat
 
-const CREW_JANGKAUAN  = 5.0     # sedekat apa untuk mulai mencabut
-const CREW_CARI       = 120.0   # sejauh apa mereka mencari sasaran
-const CREW_PANJANG    = 14      # titik yang dipotong tiap potongan
-const CREW_BAND_ATAS  = 26.0    # setinggi apa di fasad mereka bisa meraih
-const CREW_BAND_BAWAH = 18.0    # sedalam apa mereka bisa menggali
+const CREW_JANGKAUAN  = 10.0    # sedekat apa untuk mulai menggergaji
+const CREW_PANJANG    = 28      # titik per potongan PEMANJAT (regu: pangkal)
+const CREW_BAND_ATAS  = 45.0    # setinggi apa di fasad regu bisa meraih
 
-const DEAD_ZONE = 7.0
+const DEAD_ZONE = 14.0
 const C_WARN = Color("D8A34A")
-const W = 240
-const H = 160
-const SCALE = 4
-const GROUND_Y = 112
+
+# Dunia, bukan layar. Sejak TAHAP A dunia LEBIH BESAR daripada jendela dan
+# ditampilkan lewat dua SubViewport berkamera sendiri, jadi Config.SCALE
+# DIHAPUS — penskalaan ke layar sekarang urusan SubViewportContainer.
+const W = 480
+const H = 320
+const GROUND_Y = 192
+
 const MAX_STRANDS = 24
-const SEED_X = 120
-const LEAF_SPACING = 7.0
+const SEED_X = 240
+# Pertumbuhan daun meniru panel "Tahap Pertumbuhan" acuan (playtest 12
+# Agustus): daun BENAR-BENAR tumbuh, bukan ditempel jadi.
+#
+#   1. Ujung yang merambat menanam TUNAS kecil tiap LEAF_SPACING satuan.
+#   2. Tiap tunas membesar pelan selama DAUN_DEWASA detik — bagian muda
+#      sulur selalu penuh kuncup kecil, bagian tua berdaun besar.
+#   3. Batang yang hidup terus MENAMBAH daun baru di titik acak sepanjang
+#      tubuhnya tiap TUNAS_TIAP detik ("daun bertambah" -> "lebat" ->
+#      "mendominasi") — kerimbunan datang dari WAKTU, bukan dari taburan.
+const LEAF_SPACING = 6.0
+const TUNAS_TIAP   = 2.0    # detik antar daun susulan per sulur
+const DAUN_DEWASA  = 30.0   # detik dari kuncup sampai ukuran penuh
+
+# Berapa titik yang disimpan tiap untai.
+const STRAND_MAX_TITIK = 1800
+
+# Radius pencarian klik, dalam piksel dunia.
+const PILIH_RADIUS  = 18.0   # memilih ujung
+const PUTUS_RADIUS  = 16.0   # memutus sulur dengan X
 const COST_BRANCH = 15.0
 const ENERGY_MAX = 200.0
 const ENERGY_START = 120.0
 
-const FACADE_X0 = 44
-const FACADE_X1 = 196
-const FACADE_Y0 = 12
-const FACADE_Y1 = 112
+# Dua kata kerja aktif (G2) — keduanya saluran keluar energi, supaya energi
+# kembali terasa sebagai anggaran dan pemain punya alasan menekan sesuatu:
+#
+# TUNAS ULANG: klik kanan di BEKAS RAMBATAN (peta tutup) menumbuhkan untai
+# baru dari titik itu. Lebih mahal daripada bercabang biasa karena ia
+# menghidupkan kembali wilayah yang digergaji regu tanpa merayap ulang dari
+# tanah — jawaban pemain terhadap potongan-pangkal.
+var COST_TUNAS = 25.0
+# PERKUAT PANGKAL: sulur terpilih menebal; gergaji regu butuh DUA KALI
+# durasi. Mahal — pertahanan proaktif untuk sulur yang zonanya dijadwalkan.
+var COST_KOKOH = 60.0
+
+# BANGKAI LAYU (G3): gergaji regu tidak melenyapkan bagian atas seketika —
+# ia jadi bangkai kering yang menyusut dari ujung selama BANGKAI_UMUR detik
+# (~satu hari penuh), dan tutupannya terkikis MENGIKUTI penyusutan itu.
+# Kerugian totalnya sama, tapi pemain melihat prosesnya dan punya jendela
+# menyambung lewat tunas ulang selama bekas rambatannya belum terkikis.
+# X pemain tetap instan — pemangkasan sukarela memang harus langsung bersih.
+var BANGKAI_UMUR = 50.0
+
+# ---------------------------------------------------------------------------
+# Air yang tidak pernah selesai (G4) — jawaban untuk "ekonomi mati setelah
+# babak I": begitu akar duduk di akuifer, air dulunya beres selamanya dan
+# min(Air, Cahaya) berhenti jadi keputusan.
+#
+# AKUIFER MENYUSUT: tiap akar yang menyedot menurunkan permukaan air
+# (baris teratas kolam berubah jadi tanah lembap — kelihatan di peta).
+# Banyak akar = cepat kering; akar harus mengejar permukaan yang turun,
+# dan dua kolam = dua babak kehidupan air.
+# 0.09 baris/detik: satu akar menguras kolam 22 baris dalam ~4 siklus hari.
+var AKUIFER_SEDOT = 0.09
+
+# MUSIM KERING: event kalender yang DIUMUMKAN dua hari sebelumnya — selama
+# berlangsung, tanah lembap dihitung kering dan hanya akuifer yang memberi
+# air. Datang tiap KERING_SIKLUS hari, berlangsung KERING_LAMA hari.
+var KERING_SIKLUS = 6
+var KERING_LAMA   = 2
+
+const FACADE_X0 = 96
+const FACADE_X1 = 384
+const FACADE_Y0 = 24
+const FACADE_Y1 = 192
 
 const PHASE_DAY = 0
 const PHASE_NIGHT = 1
 
-# rangka struktural
-const M_KOLOM = 0
-const M_BALOK = 1
-
-const FRAME_COLS = 4
-const FRAME_ROWS = 5
-
-# beban & keruntuhan
+# ---------------------------------------------------------------------------
+# Split screen (angka R5, docs/09 §2)
 #
-# KAPASITAS_MAX adalah angka paling menentukan di sistem ini. Dengan
-# BERAT_PER_PIKSEL = 1.0, beban ruas kolom paling bawah saat gedung utuh adalah
-# 199 / 301 / 301 / 199, jadi ambang harus di atas 301 atau gedung runtuh
-# sendiri saat mulai. Perilaku terukur:
+# Jendela 1920x1080; dunia 480x320 satuan x PPU 4 = 1920x1280 piksel. Aset
+# tampil 1:1, jadi larangan zoom bulat TIDAK berlaku lagi — Camera2D.zoom
+# bebas dan mulus.
 #
-#   350  runtuh berantai besar: satu serangan menjatuhkan 20 dari 31 member.
-#        Terlalu mudah — playtest menunjukkan gedung roboh setelah menjalar
-#        sedikit saja.
-#   420  DIPAKAI. Terkurung: satu serangan menjatuhkan satu garis kolom
-#        (4 member) tanpa merambat ke tetangga, jadi butuh 4 serangan berhasil
-#        untuk menang. Margin gedung utuh 28% (stress terberat 0.717).
-var BERAT_PER_PIKSEL = 1.0
-var KAPASITAS_MAX    = 420.0
-var COLLAPSE_STEP    = 0.15
+# Anatomi layar (docs/08 §3): DUA PITA HUD mengapit kanvas — pita atas
+# (sumber daya + kalender) dan pita bawah (babak + bar zona). Pane menyusut
+# memberi ruang, jadi TIDAK ADA elemen HUD di dalam wilayah kanvas; satu-
+# satunya yang boleh menimpa tepi kanvas adalah band pesan sementara di
+# bawah pita atas (pola "pita inspeksi" ui_kit).
+const HUD_ATAS  = 40
+const HUD_BAWAH = 40
 
-const COLLAPSE_MAX_ITER = 20
-const MEMBER_TEBAL      = 1
-const PUING_PER_PIKSEL  = 0.6
-const PUING_GRAVITASI   = 120.0
-const PUING_MAX         = 1400
+const PANE_LEBAR        = 1920
+const PANE_ATAS_TINGGI  = 700
+const PANE_BAWAH_TINGGI = 300
 
-# Panel dinding jatuh saat sekian dari 4 member yang mengurungnya sudah gagal.
-# 3, bukan 2: dengan 2, satu serangan menjatuhkan hampir seluruh dinding
-# sekaligus dan gedung terasa rapuh.
-const PANEL_AMBANG   = 3
+const ZOOM_MIN    = 0.75
+const ZOOM_MAX    = 3.0
+const ZOOM_FAKTOR = 1.25    # pengali per gerigi roda mouse
 
-# Panel luruh baris demi baris dari atas, bukan lenyap seketika. Tanpa ini,
-# dindingnya hilang dalam satu frame dan yang tersisa cuma awan titik — pemain
-# tidak melihat massa apa pun jatuh.
-const PANEL_LURUH    = 85.0  # baris per detik
-const PUING_PER_LUAS = 14    # satu bongkah puing tiap sekian piksel persegi
+# Piksel per satuan simulasi (docs/09 §2). Simulasi tidak pernah tahu tentang
+# piksel — konversi hanya terjadi di lapis tampilan (scripts/render/), dengan
+# mengalikan posisi satuan dengan PPU. Selama masa transisi R1-R4, node view
+# di-skala balik 1/PPU supaya sejajar dengan lapis PixelCanvas lama yang masih
+# 1 piksel = 1 satuan.
+const PPU = 4
 
-# juice keruntuhan
+var GESER_SPEED = 220.0     # piksel dunia per detik saat menahan WASD
+
+# ---------------------------------------------------------------------------
+# Bake cahaya (R4, docs/09 §6)
 #
-# RETAK_AMBANG 0.65 dipilih supaya dua ruas kolom dalam paling bawah (rasio
-# beban 301/420 = 0.717) menunjukkan retakan sepanjang 19% sejak awal. Itu
-# memberi tahu pemain di mana jalur bebannya terberat tanpa satu pun teks.
-# Kolom terluar (0.474) tidak menampilkan apa pun. Naikkan ke 0.75 kalau
-# retakan hanya boleh muncul sebagai peringatan menjelang gagal.
-var SHAKE_MAX        = 3.0    # piksel simulasi
+# light dan vis hidup di GRID PETAK 60x40 (8 satuan per petak) — 2.400 sel,
+# bukan 153.600. Satu bake penuh cuma ~600 sinar di area fasad dan selesai
+# dalam hitungan milidetik, jadi seluruh mesin cicilan (bake per baris,
+# tombol MULAI terkunci) DIBUANG. Boleh dipanggang ulang kapan saja.
+const BAKE_LANGKAH = 2.0    # panjang satu langkah sinar
+const BAKE_MAX     = 220    # langkah maksimal sebelum sinar dianggap lolos
+
+# ---------------------------------------------------------------------------
+# Erosi — pembongkaran sebagai KOSMETIK (TAHAP B, docs/06 §5)
+#
+# Seluruh sistem rangka/beban/keruntuhan-berantai/pelemahan DIBUANG. Fasad
+# yang lama dirambati sulur melapuk sepetak (EROSI_PETAK x EROSI_PETAK
+# satuan) demi sepetak, gugur jadi puing, mengendap jadi tanah baru. Ia
+# hadiah visual atas ketekunan — BUKAN jalan menang.
+#
+# LAPUK_LAJU: laju lapuk per detik pada petak yang penuh tertutup rambatan.
+# 0.015 berarti fasad gugur setelah ~67 detik dirambati penuh — cukup lama
+# untuk terasa "sudah lama di sini", cukup cepat untuk terlihat dalam satu
+# sesi. Kalau pemain mulai sengaja menumbuhkan demi meruntuhkan, angka ini
+# terlalu tinggi.
+var LAPUK_LAJU = 0.015
+
+const EROSI_PETAK = 4    # sisi petak lapuk, satuan
+const EROSI_PUING = 3    # bongkah puing per petak yang gugur
+const EROSI_DEBU  = 8    # debu per petak yang gugur
+
+const PUING_GRAVITASI   = 240.0
+const PUING_MAX         = 3000
+
+# getaran kamera — dipakai Pane.guncang(); sejak keruntuhan berantai dibuang
+# tidak ada yang memicunya, tapi mekanismenya disimpan untuk gempa/peristiwa
+# nanti
+var SHAKE_MAX        = 6.0    # piksel dunia
 var SHAKE_DECAY      = 0.30   # detik sampai reda
-var FREEZE_TIME      = 0.08
-var RETAK_AMBANG     = 0.65
 
-const SHAKE_PER_PANJANG = 0.06
-const DEBU_MIN       = 20
-const DEBU_MAX       = 40
 const DEBU_MAX_TOTAL = 400
-const DEBU_NAIK      = 9.0
+const DEBU_NAIK      = 18.0
 const DEBU_UMUR      = 1.1
 
-# melemahkan struktur
-#
-# Kapasitas member = integritas_member * min(integritas kedua joint)
-#                    * KAPASITAS_MAX
-# Member hanya sekuat sambungan terlemahnya.
-#
-# WEAKEN_RATE adalah knob pacing utama. Dengan kapasitas 420:
-#
-#   KOLOM1.3 (beban 301)  joint harus turun ke 0.717  ->  5,7 detik kontak
-#   KOLOM0.3 (beban 199)  joint harus turun ke 0.474  -> 10,5 detik kontak
-#
-# Menyerang titik paling terbebani otomatis paling cepat, dan itu mengajarkan
-# jalur beban tanpa satu pun teks.
-#
-# Nilai lama 0.12 hanya butuh 1,2 detik dan itu terlalu mudah. Setelah satu
-# garis kolom habis, tetangganya melonjak ke stress 0.955 sehingga serangan
-# berikutnya cuma perlu 0,9 detik — kurva kesulitannya menurun sendiri, dan
-# endgame memuncak bersamaan dengan bertambahnya regu perawatan.
-var WEAKEN_RATE = 0.05
+# Seberapa lebar celah yang masih bisa direntang sulur. Sejak TAHAP B satu-
+# satunya lubang adalah petak erosi 4 satuan — lebih lebar dari jembatan ini,
+# TAPI bekas rambatan (world.tutup) adalah pijakan kekal, jadi sulur tidak
+# pernah terkurung oleh erosinya sendiri.
+const VINE_JEMBATAN = 3
 
-# Seberapa lebar celah yang masih bisa direntang sulur. Lubang hasil
-# carve_member selebar 3 piksel, jadi titik tengahnya berjarak 2 piksel dari
-# fasad di kedua sisi — nilai 2 pas untuk menyeberanginya. Kawasan yang
-# benar-benar runtuh tetap tidak bisa diseberangi.
-const VINE_JEMBATAN = 2
+# Dipakai untuk menskalakan jumlah regu dari tutupan; kondisi menang
+# sesungguhnya sejak TAHAP F adalah tiga babak di bawah.
+const COVERAGE_GOAL = 0.55
 
-const JOINT_RADIUS       = 3.0     # jangkauan melemahkan
-const JOINT_TARIK_RADIUS = 12.0    # jangkauan tigmotropisme ke joint
-const JOINT_TARIK_MAX    = 0.262   # 15 derajat, batas deviasi dari arah pemain
+# ---------------------------------------------------------------------------
+# Tiga babak (TAHAP F, docs/06 §6) — busur Terra Nil: bangun, penuhi
+# spesifikasi, tinggalkan jejak permanen.
+#
+#   I   MENYUSUP      jangkau akuifer + pijakan di fasad   (kunci: ekonomi)
+#   II  MENGHIJAUKAN  tutupan per ZONA, semua kuadran      (kunci: perhatian)
+#   III MENETAP       pohon permanen                        (kunci: waktu)
+#
+# Target per zona, bukan persentase global: angka global bisa dipenuhi
+# dengan menumpuk semuanya di satu sudut gelap, dan itu membuat peta vis
+# tidak berarti apa-apa.
+var BABAK1_PIJAK = 0.02   # tutupan minimal yang dihitung "punya pijakan"
+var ZONA_TARGET  = 0.45   # tutupan yang harus dicapai TIAP kuadran
+var BABAK3_POHON = 4      # pohon permanen untuk menutup permainan
+
+# ---------------------------------------------------------------------------
+# Perhatian & kalender (TAHAP D, docs/06 §4)
+#
+# SATU angka untuk seluruh gedung — seberapa sadar pengelola bahwa ada
+# masalah tanaman. BUKAN panas per-sulur; itu dilarang hidup lagi.
+#
+# Naik dari: tumbuh di area terlihat (peta vis — inilah makna vis sekarang),
+# jendela yang tertutup (penghuni mengeluh), rambatan di pintu (pengelola
+# melewatinya tiap hari). Turun dari: waktu.
+#
+# Kalibrasi PERHATIAN_TUMBUH: sulur 9.6 titik/detik pada vis rata-rata 0.5
+# menyumbang ~4.8 "terlihat"/detik; 0.0008 membuat satu malam penuh (34 s)
+# pertumbuhan sembrono menaikkan ~0.13 — dua-tiga hari ceroboh menembus
+# ambang. Tumbuh di bayangan (vis 0.2) 2,5x lebih pelan.
+var PERHATIAN_TUMBUH  = 0.0008   # per satuan "terlihat" saat titik tumbuh
+var PERHATIAN_JENDELA = 0.012    # per detik, saat SEMUA jendela tertutup
+var PERHATIAN_PINTU   = 0.010    # per detik, saat seluruh pintu terambati
+var PERHATIAN_LURUH   = 0.002    # peluruhan per detik (~0.13 per hari)
+
+# Tempo respons dipercepat (playtest 12 Agustus: "menjalar sejak hari 1,
+# tukang kebun baru muncul hari 5"): inspeksi tiap 2 hari + jeda 1 hari =
+# regu pertama bisa tiba hari ke-3. Jendela reaksinya tetap satu hari penuh.
+var AMBANG_RAWAT  = 0.5    # inspeksi menjadwalkan perawatan di atas ini
+var INSPEKSI_TIAP = 2      # inspeksi tiap sekian hari
+var JEDA_RAWAT    = 1      # perawatan datang sekian hari setelah dijadwalkan
+
+# Eskalasi antar siklus (G6): kota makin peduli seiring hari. Tiap
+# ESKALASI_TIAP hari tingkat waspada naik satu (maks ESKALASI_MAX):
+# ambang inspeksi turun 6% per tingkat (Cycle.ambang_efektif), regu
+# menggergaji 8% lebih cepat per tingkat (Cycle.faktor_gergaji), dan mulai
+# tingkat 2 pemanjat melayani SEMUA zona, bukan hanya zona atas. Semua
+# kenaikan DIUMUMKAN lewat kartu — eskalasi pun tunduk pada pilar "ancaman
+# selalu diumumkan". Run 30 menit tidak pernah dua siklus yang sama.
+var ESKALASI_TIAP = 4
+var ESKALASI_MAX  = 4
+
+# Setelah hari perawatan lewat, pengelola menganggap masalahnya tertangani —
+# perhatian dikalikan ini (dan bobot zona ikut separuh).
+var PERHATIAN_SETELAH_RAWAT = 0.5
+# Memutus sulur (X) merontokkan daun-daunnya — pemangkasan sukarela yang
+# menurunkan perhatian. Inilah pendamaian dua makna X di docs/06 §2.5:
+# satu tombol, jawaban terhadap pemanjat SEKALIGUS cara merapikan diri
+# sebelum inspeksi.
+var PERHATIAN_PANGKAS = 0.04
+
+# Empat kuadran fasad — sasaran perawatan diumumkan per zona
+const ZONA_NAMA = ["BARAT ATAS", "TIMUR ATAS", "BARAT BAWAH", "TIMUR BAWAH"]
+
+# Pencahayaan 2D.
+#
+# Batasan "tanpa Light2D" DILONGGARKAN 8 Agustus 2026. Alasannya hilang: PC
+# Intel HD OpenGL 2.1 berhenti jadi target sejak pindah ke Godot 4, dan Iris Xe
+# menanganinya tanpa keringat.
+#
+# Malam tidak lagi berupa ColorRect gelap yang ditimpakan ke seluruh layar —
+# itu meredupkan segalanya secara merata dan hasilnya datar. Sekarang:
+# CanvasModulate meredupkan kanvas, lalu PointLight2D di jendela-jendela yang
+# menyala mengembalikan cahaya secara setempat. Efeknya gedung terlihat
+# DIHUNI, dan malam jadi punya bentuk, bukan cuma lebih gelap.
+#
+# Yang menjaga identitas visual: tekstur lampu dibuat prosedural dengan falloff
+# BERTANGGA (LAMPU_TINGKAT tingkat, bukan gradien halus) dan disaring nearest,
+# jadi cahayanya tetap terbaca sebagai pixel art. Gradien lembut akan merusak
+# aturan "tanpa gradien" di docs/01-konteks-game.md §5.
+# Nilai di bawah ini disetel dari tangkapan layar, bukan tebakan. Pada
+# RADIUS 30 / ENERGI 1.1 jendelanya blown-out putih dan lingkaran cahayanya
+# saling tindih sampai menutupi seluruh fasad — 30 px simulasi berarti 120 px
+# di layar. RADIUS 14 membuat tiap lampu tetap milik jendelanya sendiri, dan
+# ENERGI 0.55 menahannya di bawah titik jenuh sehingga warna hangatnya
+# benar-benar terlihat alih-alih memutih.
+var NIGHT_GELAP  = 1.0     # 0 = malam tidak menggelap sama sekali
+var LAMPU_ENERGI = 0.55    # kecerahan tiap jendela yang menyala
+
+# Dicerahkan 12 Agu (playtest kelima: "malam terlalu gelap, sulit main di
+# pane atas") — malam harus terbaca sebagai suasana, bukan penalti visual.
+const C_MALAM       = Color(0.34, 0.38, 0.55)   # warna kanvas saat malam penuh
+# Senja (G8, angka docs/08 §8.2): pemberhentian antara siang dan malam —
+# biru ditahan lebih tinggi supaya beton mendingin tapi hijau daun tidak
+# ikut mati. Tanpa tahap ini malam datang seperti sakelar.
+const C_SENJA       = Color(0.72, 0.70, 0.80)
+const C_LAMPU       = Color("FFD9A0")           # cahaya hangat dari dalam
+# TAHAP A: radius digandakan bersama dunia, dan `texture_scale` turun dari
+# SCALE (4) ke 1 — sprite tidak lagi diskalakan, jadi satu texel lampu = satu
+# piksel dunia. Hasil di layar identik dengan sebelumnya pada zoom 4.
+const LAMPU_RADIUS  = 28    # jangkauan, dalam piksel dunia
+const LAMPU_TINGKAT = 4     # jumlah tangga falloff; kecil = makin pixel art
+const LAMPU_JUMLAH  = 9     # berapa jendela yang menyala (dari 54 yang ada)
+
+# Tinggi panel tuning yang bisa digulir. Jendela 1080, panel mulai di y=12,
+# dan teks bantuan duduk di y=1034.
+const PANEL_TINGGI = 930
 
 const SUN_RAY = Vector2(-0.34, -0.94)
 
@@ -183,10 +373,39 @@ const T_CONCRETE = 3
 const T_WALL     = 4
 const T_WINDOW   = 5
 const T_LEDGE    = 6
-const T_PIPE     = 7
+const T_PIPE     = 7    # tidak dipakai tata letak sejak TAHAP C; enum dijaga
 const T_NEIGHBOR = 8
 const T_DOOR     = 9
 const T_PUING    = 10
+
+# Terrain bawah tanah (TAHAP C, docs/06 §3). Pane bawah berhenti jadi pita
+# kosong: tiap terrain punya fungsi DAN risikonya sendiri — atas = terlihat,
+# bawah = terasa.
+const T_AKUIFER  = 11   # sumber air utama; besar, jarang, dijaga beton
+const T_HUMUS    = 12   # mempercepat pertumbuhan akar
+const T_BATU     = 13   # penghalang keras — TIDAK bisa ditembus, putari
+const T_GORONG   = 14   # koridor cepat; akar tumbuh 2x di dalamnya
+const T_UTILITAS = 15   # kabel & pipa induk — MENYENTUHNYA menaikkan perhatian
+
+# Menembus beton (docs/02 §7 — akhirnya dibangun). Klik ujung akar yang
+# menempel beton: ia berhenti, energi terkuras COST_CRACK selama
+# CRACK_DURATION detik, lalu terowongan pendek terbuka. Energi habis di
+# tengah = kemajuan MEMBEKU, tidak hilang. Lempeng beton lebih tebal dari
+# satu terowongan, jadi menjangkau akuifer butuh beberapa kali menembus —
+# itulah harga air terbaik.
+var COST_CRACK     = 40.0
+var CRACK_DURATION = 3.0
+const TEMBUS_PANJANG = 6    # panjang terowongan per sekali menembus, satuan
+
+var HUMUS_LAJU  = 1.6    # pengali laju akar di atas humus
+var GORONG_LAJU = 2.0    # pengali laju akar di dalam gorong-gorong
+
+# Akar yang menyentuh utilitas mengganggu layanan gedung — teknisi dipanggil.
+# Disalurkan lewat kanal `terlihat` yang sama dengan vis. Diukur: akar
+# menyeberangi pita utilitas 7 satuan dalam ~0,6 detik, jadi 90 * 0.0008 *
+# 0.6 ≈ +0.043 perhatian per lintasan — terasa, apalagi kalau beberapa akar
+# bolak-balik. Menyusuri pita memanjang jauh lebih mahal lagi.
+var UTILITAS_SEEN = 90.0
 
 # Detik hening setelah puing berhenti berjatuhan, sebelum peta cahaya
 # dipanggang ulang. Tumpukan puing mengubah siluet gedung, jadi bayangannya
@@ -221,10 +440,18 @@ var PUING_LAMBAT = 0.45
 var POHON_LAJU  = 0.25   # kemajuan berakar per detik; 1.0 = jadi pohon
 var POHON_HASIL = 0.25   # tambahan air DAN cahaya per pohon
 
-const POHON_JARAK  = 12.0   # jarak minimal antar pohon
+# TANAM DENGAN SENGAJA (G5): tombol T pada sulur terpilih yang ujungnya
+# berdiri di puing — untai itu DIKORBANKAN (mati, berhenti jadi alat) dan
+# sebatang pohon berdiri di titiknya. Mahal dua kali: energi terbesar di
+# permainan + kehilangan satu untai. Berakar-pasif tetap ada sebagai jalan
+# lambat; pemain aktif menutup babak III lebih cepat dan memilih SUSUNAN
+# hutannya sendiri — kemenangan sebagai rangkaian keputusan, bukan timer.
+var COST_TANAM = 80.0
+
+const POHON_JARAK  = 24.0   # jarak minimal antar pohon
 const POHON_MAX    = 20
-const POHON_TINGGI = 22     # tinggi maksimal
-const POHON_TUMBUH = 3.0    # piksel tinggi per detik
+const POHON_TINGGI = 44     # tinggi maksimal
+const POHON_TUMBUH = 6.0    # piksel tinggi per detik
 
 const C_SKY       = Color("8B96A3")
 const C_WALL      = Color("6E7784")
@@ -244,11 +471,9 @@ const C_TIP       = Color("B8E986")
 const C_WARDEN    = Color("3A3F49")
 const C_ALERT     = Color("C25A4A")
 
+const C_BANGKAI   = Color("6E6154")   # sulur mati mengering
 const C_PUING     = Color("6B6B64")
+const C_PUING_HL  = Color("7D7D75")   # sisi bongkah yang kena cahaya
+const C_PUING_DK  = Color("55554F")   # celah antar bongkah
 const C_DEBU      = Color("9A9A92")
 const C_RETAK     = Color("3A3A36")
-
-# debug rangka (tahan B)
-const C_FRAME_OK  = Color("5EC24A")
-const C_FRAME_BAD = Color("C25A4A")
-const C_JOINT     = Color("B8E986")

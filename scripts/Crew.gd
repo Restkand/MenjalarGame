@@ -1,21 +1,27 @@
-extends Reference
+extends RefCounted
 
-# Regu perawatan gedung — antagonis darat.
+# Regu perawatan gedung — TERJADWAL (TAHAP E), bekerja seperti tukang kebun
+# sungguhan (dirombak setelah playtest 12 Agustus).
 #
-# Menggantikan sistem stealth lama sepenuhnya. Mereka tidak mengintai dan tidak
-# "mencurigai" apa pun: begitu menemukan tanaman dalam jangkauan, mereka
-# berjalan ke sana dan mencabutnya sepotong demi sepotong.
+# Regu HANYA datang pada hari perawatan yang diumumkan kalender, masuk dari
+# tepi layar, dan MEMOTONG SULUR DI PANGKALNYA: mereka mencari titik sulur
+# yang melintas di pita jangkauan tanah pada paruh zona yang dijadwalkan,
+# menggergajinya beberapa detik, dan seluruh rambatan di atas potongan itu
+# lenyap. Zona bersih -> pulang.
 #
-# Jangkauan mereka hanya pita di sekitar garis tanah — fasad bagian bawah dan
-# tanah dangkal. Sulur yang sudah tinggi aman dari mereka; itu urusan pemanjat
-# (Langkah C).
+# Regu TIDAK PERNAH menyentuh akar. Pengelola gedung tidak melihat bawah
+# tanah — yang ia lihat rambatan di dinding (playtest: "kenapa dia sibuk
+# merapikan bawah tanah padahal tanamannya menjalar di gedung?"). Risiko
+# bawah tanah datang dari kanal lain: utilitas. Atas = terlihat, bawah =
+# terasa.
 #
-# Counterplay pemain ada tiga: tumbuh di bayangan (ditemukan belakangan),
-# menyebar (satu regu hanya bisa di satu tempat), dan menumbuhkan ulang.
+# Counterplay pemain: pangkas sendiri sebelum hari-H (X), alihkan rambatan
+# ke paruh zona lain, atau timbun regu dengan puing (CREW_PINGSAN).
 
-var units    = []     # {x, dir, sasaran, kerja, pingsan}
+var units    = []     # {x, s, i, kerja, pingsan, pulang}
 var dipotong = 0      # potongan yang terjadi frame ini; dibaca lalu dinolkan
 var ditimpa  = 0      # regu yang baru tertimbun frame ini
+var _gergaji = 1.0    # faktor durasi gergaji dari eskalasi (G6)
 
 
 func reset():
@@ -24,131 +30,160 @@ func reset():
 	ditimpa = 0
 
 
-func update(delta, sim, world, structure, phase):
+func update(delta, sim, world, erosi, cycle):
 	dipotong = 0
 	ditimpa = 0
 
-	# Regu pulang saat malam. Itu yang memberi malam artinya: sulur merambat
-	# tanpa gangguan, dan siang jadi soal mempertahankan hasilnya.
-	if phase != Config.PHASE_DAY:
+	# hanya siang di hari perawatan; selain itu tidak ada satu regu pun
+	if cycle.phase != Config.PHASE_DAY or not cycle.rawat_hari_ini():
 		units = []
 		return
 
-	_sesuaikan_jumlah(structure)
+	# separuh dunia milik zona yang dijadwalkan (kuadran barat/timur)
+	var barat = cycle.rawat_zona_idx % 2 == 0
+	var x0 = 0.0 if barat else Config.W / 2.0
+	var x1 = Config.W / 2.0 if barat else float(Config.W)
+
+	_gergaji = cycle.faktor_gergaji()
+	_sesuaikan_jumlah(cycle, barat)
+
+	var sisa = []
 	for u in units:
 		if u.pingsan > 0.0:
 			u.pingsan = max(0.0, u.pingsan - delta)
+			sisa.append(u)
 			continue
-		if _tertimpa(u, structure):
+		if _tertimpa(u, erosi):
 			u.pingsan = Config.CREW_PINGSAN
-			u.sasaran = null
+			u.s = null
 			u.kerja = 0.0
 			ditimpa += 1
+			sisa.append(u)
 			continue
-		_update_unit(u, delta, sim, world)
+		if u.pulang:
+			# berjalan ke tepi terdekat, lalu hilang — pekerjaan selesai
+			u.x += (-1.0 if u.x < Config.W / 2.0 else 1.0) \
+					* Config.CREW_SPEED * delta
+			if u.x > 4.0 and u.x < Config.W - 4.0:
+				sisa.append(u)
+			continue
+		_update_unit(u, delta, sim, world, x0, x1)
+		sisa.append(u)
+	units = sisa
 
 
 # Puing yang jatuh melewati ketinggian badan menimbun regu di bawahnya.
-# Inilah jawaban pemain: waktukan keruntuhan saat mereka sedang berada di
-# bawah reruntuhan.
-func _tertimpa(u, structure):
-	if structure.falling.empty():
+func _tertimpa(u, erosi):
+	if erosi.falling.is_empty():
 		return false
-	for p in structure.falling:
-		if p.y < Config.GROUND_Y - 10.0 or p.y > Config.GROUND_Y:
+	for p in erosi.falling:
+		if p.y < Config.GROUND_Y - 20.0 or p.y > Config.GROUND_Y:
 			continue
 		if abs(p.x - u.x) <= Config.CREW_LEBAR:
 			return true
 	return false
 
 
-# Yang tertimbun tidak dihitung — HUD harus menunjukkan ancaman yang nyata.
+# Yang tertimbun dan yang sedang pulang tidak dihitung — HUD harus
+# menunjukkan ancaman yang nyata.
 func aktif():
 	var n = 0
 	for u in units:
-		if u.pingsan <= 0.0:
+		if u.pingsan <= 0.0 and not u.pulang:
 			n += 1
 	return n
 
 
-# Tekanan naik seiring kerusakan, jadi justru saat pemain hampir menang
-# situasinya paling genting. Itu memberi permainan busur, bukan garis datar.
-func _sesuaikan_jumlah(structure):
-	var n = 1 + int((1.0 - structure.integritas_total())
+# Titik sasaran unit ini — dipakai AktorView untuk garis & arah hadap.
+func titik_sasaran(u):
+	if u.s == null or u.s.points.is_empty():
+		return null
+	return u.s.points[int(min(u.i, u.s.points.size() - 1))]
+
+
+# Jumlah regu = seberapa cemas pengelola saat inspeksi. Masuk dari tepi
+# layar di sisi zona — kedatangan mereka terlihat, bukan muncul dari udara.
+func _sesuaikan_jumlah(cycle, barat):
+	var n = 1 + int(clamp(cycle.rawat_kekuatan, 0.0, 1.0)
 			* float(Config.CREW_MAX - 1))
 	n = int(clamp(n, 1, Config.CREW_MAX))
 	while units.size() < n:
 		units.append({
-			"x": rand_range(20.0, Config.W - 20.0),
-			"dir": 1.0 if randf() < 0.5 else -1.0,
-			"sasaran": null,
+			"x": 6.0 if barat else Config.W - 6.0,
+			"s": null,
+			"i": 0,
 			"kerja": 0.0,
 			"pingsan": 0.0,
+			"pulang": false,
 		})
 	while units.size() > n:
-		units.remove(units.size() - 1)
+		units.remove_at(units.size() - 1)
 
 
-func _update_unit(u, delta, sim, world):
-	if u.sasaran != null and not _bisa_diraih(u.sasaran):
-		u.sasaran = null
-	if u.sasaran == null:
-		u.sasaran = _cari(sim, world, u.x)
+func _update_unit(u, delta, sim, world, x0, x1):
+	if u.s != null and not _sah(u.s, u.i, x0, x1):
+		u.s = null
+	if u.s == null:
+		var t = _cari_zona(sim, u.x, x0, x1)
+		if t == null:
+			# zona bersih — pulang. Tidak ada patroli.
+			u.pulang = true
+			return
+		u.s = t.s
+		u.i = t.i
 		u.kerja = 0.0
 
-	if u.sasaran == null:
-		_patroli(u, delta)
-		return
-
-	var dx = u.sasaran.tip.x - u.x
+	var sasar = u.s.points[u.i]
+	var dx = sasar.x - u.x
 	if abs(dx) > Config.CREW_JANGKAUAN:
 		u.x = u.x + sign(dx) * Config.CREW_SPEED * delta
 		u.kerja = 0.0
 		return
 
+	# menggergaji pangkal — beberapa detik, lalu SELURUH bagian di atas
+	# potongan lenyap. Itulah kerja tukang kebun, dan itulah kenapa hari
+	# perawatan pantas ditakuti walau sudah diumumkan dua hari sebelumnya.
+	# Pangkal yang DIPERKUAT (G2) butuh dua kali durasi — jendela lebih lebar
+	# untuk menimbun regu dengan puing atau merelakan dengan tenang. Regu
+	# yang berpengalaman (eskalasi, G6) menggergaji lebih cepat.
+	var durasi = Config.CREW_POTONG * (2.0 if u.s.kokoh else 1.0) * _gergaji
 	u.kerja = u.kerja + delta
-	if u.kerja < Config.CREW_CABUT:
+	if u.kerja < durasi:
 		return
 	u.kerja = 0.0
-	u.sasaran.trim(Config.CREW_PANJANG)
-	dipotong += 1
-	if not u.sasaran.alive:
-		u.sasaran = null
+	# gergaji meninggalkan BANGKAI yang mengering (G3), bukan lenyap sekejap
+	if sim.gergaji(u.s, u.i):
+		dipotong += 1
+	u.s = null
 
 
-func _patroli(u, delta):
-	u.x = u.x + u.dir * Config.CREW_SPEED * 0.5 * delta
-	if u.x < 14.0:
-		u.x = 14.0
-		u.dir = 1.0
-	elif u.x > Config.W - 14.0:
-		u.x = Config.W - 14.0
-		u.dir = -1.0
-
-
-# Hanya pita di sekitar garis tanah. Sulur tinggi di luar jangkauan mereka.
-func _bisa_diraih(s):
-	if not s.alive or s.points.size() < 6:
+# Titik potong sah: milik sulur hidup, di paruh zona, dan di dalam pita
+# jangkauan tanah (regu tidak memanjat — fasad tinggi urusan pemanjat).
+func _sah(s, i, x0, x1):
+	if not s.alive or s.is_root or i >= s.points.size():
 		return false
-	if s.is_root:
-		return s.tip.y <= Config.GROUND_Y + Config.CREW_BAND_BAWAH
-	return s.tip.y >= Config.GROUND_Y - Config.CREW_BAND_ATAS
+	var p = s.points[i]
+	return p.x >= x0 and p.x < x1 \
+			and p.y >= Config.GROUND_Y - Config.CREW_BAND_ATAS \
+			and p.y <= Config.GROUND_Y + 2.0
 
 
-func _cari(sim, world, ux):
+# Cari titik PALING PANGKAL (indeks terkecil) tiap sulur yang melintas di
+# pita jangkauan pada paruh zona; ambil yang terdekat dengan posisi regu.
+# Memotong di pangkal = kerusakan maksimal, persis prioritas tukang kebun.
+func _cari_zona(sim, ux, x0, x1):
 	var terbaik = null
-	var skor_terbaik = -1.0
+	var jarak = 1e9
 	for s in sim.strands:
-		if not _bisa_diraih(s):
+		if not s.alive or s.is_root or s.points.size() < 8:
 			continue
-		var d = abs(s.tip.x - ux)
-		if d > Config.CREW_CARI:
-			continue
-		# Dekat = mudah ditemukan, terang = mencolok. vis bernilai 0 di bawah
-		# tanah, jadi akar hanya ditemukan lewat kedekatan.
-		var skor = (1.0 - d / Config.CREW_CARI) \
-				+ world.vis_at(int(round(s.tip.x)), int(round(s.tip.y))) * 0.6
-		if skor > skor_terbaik:
-			skor_terbaik = skor
-			terbaik = s
+		var i = 2
+		while i < s.points.size():
+			if _sah(s, i, x0, x1):
+				var d = abs(s.points[i].x - ux)
+				if d < jarak:
+					jarak = d
+					terbaik = {"s": s, "i": i}
+				break   # cukup titik pertama (paling pangkal) per sulur
+			i += 4
 	return terbaik

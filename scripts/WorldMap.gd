@@ -1,112 +1,284 @@
-extends Reference
+extends RefCounted
 
-var image
+# Sejak R2 dunia TIDAK punya Image lagi — grid satuan adalah satu-satunya
+# kebenaran, dan tampilannya diterjemahkan TerrainView (TileMapLayer) plus
+# FasadView (jendela/pintu/ledge). Perubahan grid ditandai per PETAK 8x8
+# lewat tile_kotor, lalu view yang menggambar ulang petak itu.
+
 var grid
 var light
 var vis
-var members = []
-var joints  = []
-var panels  = []       # massa dinding di antara rangka
+var windows = []       # titik tengah tiap jendela — dipakai lampu & FasadView
+var fitur   = []       # {jenis, rect} — pintu & ledge, digambar FasadView
 var settled            # puing yang sudah mengendap, 0/1 per piksel
+var settled_n = 0      # jumlah sel mengendap — PuingTanahView redraw saat berubah
 var puing_atas = 0     # baris tertinggi yang sudah tertutup puing
-var solve_order = []   # id member dalam urutan topologis atas-ke-bawah
+
+var tile_kotor = {}    # Vector2i petak -> true; diambil TerrainView tiap frame
+
+var kolam = []         # cadangan akuifer (G4); diisi build()
+var pesan_kering = ""  # pengumuman kolam yang habis; dibaca-kosongkan main
+
+# Peta rambatan (TAHAP B). tutup[i] = 1 berarti sel itu pernah dirambati
+# sulur. Tiga peran sekaligus:
+#   1. pijakan KEKAL — vine_ok() menerimanya, jadi sulur tidak kehilangan
+#      pijakan saat fasad di bawahnya gugur oleh erosi
+#   2. bahan bakar erosi — sel fasad baru yang tertutup dilaporkan ke Erosi
+#      lewat rambatan_baru
+#   3. kemajuan pemain — tutupan() = sel fasad tertutup / luas fasad
+var tutup
+var rambatan_baru = []   # Vector2i petak-erosi yang baru mendapat sel tertutup
+var facade_luas = 0      # sel fasad saat build; penyebut tutupan()
+var tutup_luas  = 0      # sel fasad yang sudah dirambati
+
+# Pengumpan perhatian (TAHAP D): keluhan penghuni datang dari jendela yang
+# tertutup dan pintu yang terambati, dan zona dengan rambatan paling mencolok
+# (berbobot vis) jadi sasaran perawatan yang diumumkan.
+var jendela_luas = 0
+var pintu_luas   = 0
+var tutup_jendela = 0
+var tutup_pintu   = 0
+var zona_bobot = [0.0, 0.0, 0.0, 0.0]   # indeks = Config.ZONA_NAMA
+
+# Tutupan per kuadran (TAHAP F): sasaran babak II adalah TIAP zona, bukan
+# angka global — menumpuk semuanya di satu sudut gelap tidak lagi menang.
+var zona_luas  = [0, 0, 0, 0]
+var zona_tutup = [0, 0, 0, 0]
+
+const PETAK = 8        # satuan per petak TileMap (32 px / PPU 4)
+
+var _pw = 0            # lebar grid petak (Config.W / PETAK), diisi build()
 
 
 func build():
-	image = Image.new()
-	image.create(Config.W, Config.H, false, Image.FORMAT_RGBA8)
-	grid = PoolByteArray(); grid.resize(Config.W * Config.H)
-	light = PoolRealArray(); light.resize(Config.W * Config.H)
-	vis = PoolRealArray(); vis.resize(Config.W * Config.H)
-	settled = PoolByteArray(); settled.resize(Config.W * Config.H)
+	grid = PackedByteArray(); grid.resize(Config.W * Config.H)
+	tutup = PackedByteArray(); tutup.resize(Config.W * Config.H)
+	rambatan_baru = []
+	tutup_luas = 0
+	# light & vis per PETAK 8x8, bukan per satuan (R4) — 2.400 sel.
+	# light default 1.0: area di luar fasad (langit, atas tumpukan puing di
+	# tepi) dianggap tersinari penuh; vis default 0 (tak ada yang melihat).
+	_pw = Config.W / PETAK
+	var _ph = Config.H / PETAK
+	light = PackedFloat32Array(); light.resize(_pw * _ph)
+	light.fill(1.0)
+	vis = PackedFloat32Array(); vis.resize(_pw * _ph)
+	settled = PackedByteArray(); settled.resize(Config.W * Config.H)
+	settled_n = 0
 	puing_atas = Config.H
 
-	image.lock()
-	_rect(0, 0, Config.W, Config.GROUND_Y, Config.C_SKY, Config.T_SKY)
-	_rect(0, Config.GROUND_Y, Config.W, Config.H - Config.GROUND_Y,
-			Config.C_SOIL, Config.T_SOIL_DRY)
-	_rect(0, 128, 74, 32, Config.C_SOIL_WET, Config.T_SOIL_WET)
-	_rect(168, 132, 72, 28, Config.C_SOIL_WET, Config.T_SOIL_WET)
-	_rect(60, 120, 26, 12, Config.C_CONCRETE, Config.T_CONCRETE)
-	_rect(198, 142, 22, 5, Config.C_PIPE, Config.T_PIPE)
+	_rect(0, 0, Config.W, Config.GROUND_Y, Config.T_SKY)
 
-	# gedung tetangga di kiri — sumber bayangan
-	_rect(0, 34, 40, 78, Config.C_NEIGHBOR, Config.T_NEIGHBOR)
+	# -----------------------------------------------------------------------
+	# Bawah tanah (TAHAP C, docs/06 §3) — pane penuh dengan deposit dan
+	# bahayanya sendiri, bukan lagi pita kosong.
+	#
+	# Puzzle airnya: tanah lembap yang tersebar memberi air kecil untuk
+	# bertahan, tapi AKUIFER — sumber besar — dikurung lempeng beton yang
+	# hanya bisa ditembus dengan membayar energi. Batu tidak bisa ditembus
+	# sama sekali dan memaksa memutar; gorong-gorong mempercepat; utilitas
+	# di bawah gedung membangunkan teknisi kalau disentuh.
+	# -----------------------------------------------------------------------
+	_rect(0, Config.GROUND_Y, Config.W, Config.H - Config.GROUND_Y,
+			Config.T_SOIL_DRY)
+
+	# tanah lembap — air kecil, tersebar, cukup untuk hidup hemat
+	_rect(20, 230, 70, 30, Config.T_SOIL_WET)
+	_rect(300, 210, 50, 25, Config.T_SOIL_WET)
+	_rect(430, 250, 40, 30, Config.T_SOIL_WET)
+
+	# humus — mempercepat akar; ditaruh di jalur menuju kedua akuifer
+	_rect(180, 220, 50, 25, Config.T_HUMUS)
+	_rect(260, 250, 40, 25, Config.T_HUMUS)
+
+	# batu — penghalang mati, harus diputari
+	_rect(90, 250, 40, 40, Config.T_BATU)
+	_rect(350, 230, 50, 40, Config.T_BATU)
+	_rect(200, 285, 40, 30, Config.T_BATU)
+
+	# gorong-gorong — koridor cepat melintasi tengah peta
+	_rect(130, 262, 220, 9, Config.T_GORONG)
+
+	# utilitas — pita layanan tepat di bawah gedung, plus satu jalur turun.
+	# Celah x 236..250 disisakan supaya akar pertama (lahir di SEED_X=240)
+	# tidak langsung menyalakan alarm.
+	_rect(150, 200, 86, 7, Config.T_UTILITAS)
+	_rect(250, 200, 80, 7, Config.T_UTILITAS)
+	_rect(324, 207, 7, 45, Config.T_UTILITAS)
+
+	# dua akuifer di dasar peta, masing-masing terkurung cangkang beton.
+	# Tebal tudung ~10 satuan = dua kali menembus (TEMBUS_PANJANG 6).
+	_rect(40, 285, 130, 35, Config.T_CONCRETE)
+	_rect(55, 296, 100, 22, Config.T_AKUIFER)
+	_rect(390, 285, 90, 35, Config.T_CONCRETE)
+	_rect(402, 296, 66, 22, Config.T_AKUIFER)
+
+	# cadangan tiap kolam (G4): permukaan airnya turun saat disedot akar.
+	# `level` = kedalaman float yang sudah terkuras; `terkuras` = baris yang
+	# sudah dikonversi jadi tanah lembap.
+	kolam = [
+		{"x0": 55, "x1": 154, "y0": 296, "y1": 317,
+				"level": 0.0, "terkuras": 0, "nama": "BARAT"},
+		{"x0": 402, "x1": 467, "y0": 296, "y1": 317,
+				"level": 0.0, "terkuras": 0, "nama": "TIMUR"},
+	]
+	pesan_kering = ""
+
+	# -----------------------------------------------------------------------
+	# Atas tanah
+	# -----------------------------------------------------------------------
+
+	# gedung tetangga di kiri — sumber bayangan; matahari datang dari atas-kiri
+	_rect(0, 60, 84, 132, Config.T_NEIGHBOR)
+	# tetangga kanan hanya membingkai; terlalu jauh dari arah sinar untuk
+	# membayangi fasad
+	_rect(400, 104, 80, 88, Config.T_NEIGHBOR)
 
 	# fasad utama
 	_rect(Config.FACADE_X0, Config.FACADE_Y0,
 			Config.FACADE_X1 - Config.FACADE_X0,
 			Config.FACADE_Y1 - Config.FACADE_Y0,
-			Config.C_WALL, Config.T_WALL)
+			Config.T_WALL)
 
-	# jendela
-	for jy in range(22, 100, 20):
-		for jx in range(54, 190, 22):
-			_rect(jx, jy, 10, 12, Config.C_WINDOW, Config.T_WINDOW)
+	# jendela — titik tengahnya dicatat supaya lampu malam & FasadView tahu di
+	# mana harus berdiri, dan supaya keduanya padam saat jendelanya runtuh
+	# 6 baris x 9 kolom = 54 jendela. Barisnya menempati y 40-55, 66-81, 92-107,
+	# 118-133, 144-159, 170-185; ledge dan pipa sengaja diletakkan di sela-sela
+	# itu supaya tidak menimpa satu pun jendela.
+	windows = []
+	for jy in range(40, 180, 26):
+		for jx in range(110, 372, 30):
+			_rect(jx, jy, 14, 16, Config.T_WINDOW)
+			windows.append(Vector2(jx + 7, jy + 8))
 
-	# ledge — penghalang yang harus diputari
-	_rect(46, 58, 60, 3, Config.C_LEDGE, Config.T_LEDGE)
-	_rect(134, 38, 60, 3, Config.C_LEDGE, Config.T_LEDGE)
-	_rect(100, 82, 70, 3, Config.C_LEDGE, Config.T_LEDGE)
+	# Fitur fasad yang digambar FasadView di atas ubin dinding. Grid tetap
+	# memegang bentuk persisnya, jadi tigmotropisme dan vis tidak berubah —
+	# fitur hanyalah gambarnya.
+	fitur = []
+
+	# ledge — penghalang yang harus diputari. Tebalnya 4 px, bukan 3: sinar
+	# matahari sekarang melangkah 2 unit sekaligus (Config.BAKE_LANGKAH), dan
+	# penghalang setipis 3 px bisa terlewati di antara dua langkah.
+	for r in [Rect2i(100, 110, 110, 4), Rect2i(254, 58, 120, 4),
+			Rect2i(190, 136, 130, 4)]:
+		_rect(r.position.x, r.position.y, r.size.x, r.size.y, Config.T_LEDGE)
+		fitur.append({"jenis": "ledge", "rect": r})
 
 	# pintu
-	_rect(108, 92, 24, 20, Config.C_DOOR, Config.T_DOOR)
+	_rect(220, 160, 40, 32, Config.T_DOOR)
+	fitur.append({"jenis": "pintu", "rect": Rect2i(220, 160, 40, 32)})
 
 	# jalur pipa vertikal — koridor gelap untuk menyelinap
-	_rect(74, Config.FACADE_Y0, 4, 100, Config.C_LEDGE, Config.T_LEDGE)
+	_rect(156, Config.FACADE_Y0, 6, 168, Config.T_LEDGE)
+	fitur.append({"jenis": "ledge",
+			"rect": Rect2i(156, Config.FACADE_Y0, 6, 168)})
 
-	image.unlock()
-	_bake_light()
-	_bake_vis()
-	_build_frame()
+	tile_kotor = {}   # TerrainView membangun ulang penuh setelah build()
+
+	# luas fasad — penyebut tutupan(). Dihitung SEKALI di sini: sel yang
+	# nanti gugur oleh erosi tetap dihitung tertutup (bekas rambatannya
+	# tinggal), jadi penyebutnya tidak boleh ikut menyusut.
+	facade_luas = 0
+	jendela_luas = 0
+	pintu_luas = 0
+	tutup_jendela = 0
+	tutup_pintu = 0
+	zona_bobot = [0.0, 0.0, 0.0, 0.0]
+	zona_luas = [0, 0, 0, 0]
+	zona_tutup = [0, 0, 0, 0]
+	for i in range(grid.size()):
+		var k = grid[i]
+		if k == Config.T_WALL or k == Config.T_WINDOW \
+				or k == Config.T_DOOR or k == Config.T_LEDGE:
+			facade_luas += 1
+			zona_luas[_zona(i % Config.W, i / Config.W)] += 1
+			if k == Config.T_WINDOW:
+				jendela_luas += 1
+			elif k == Config.T_DOOR:
+				pintu_luas += 1
+
+	bake_semua()
 
 
-func _rect(x, y, w, h, col, kind):
+func _rect(x, y, w, h, kind):
 	for j in range(y, y + h):
 		for i in range(x, x + w):
 			if i < 0 or i >= Config.W or j < 0 or j >= Config.H:
 				continue
-			image.set_pixel(i, j, col)
 			grid.set(j * Config.W + i, kind)
 
 
-func _bake_light():
-	_bake_light_from(Config.FACADE_Y0)
+# ---------------------------------------------------------------------------
+# Bake cahaya & keterlihatan — GRID PETAK (R4, docs/09 §6)
+#
+# light dan vis hidup per petak 8x8 satuan: 60x40 = 2.400 sel, ~600 sinar di
+# area fasad. Selesai dalam hitungan milidetik, jadi boleh dipanggang ulang
+# kapan saja — seluruh mesin cicilan lama (bake_langkah, tombol MULAI
+# terkunci) sudah dibuang. Resolusi 8-satuan cukup: vis dipakai sebagai laju
+# perhatian, bukan gambar.
+# ---------------------------------------------------------------------------
+
+func bake_semua():
+	_bake_petak(int(Config.FACADE_Y0 / PETAK))
 
 
-# Dipanggil ulang setelah tumpukan puing stabil. Hanya baris dari y_awal ke
-# bawah yang dihitung ulang: sinar matahari datang dari atas-kiri, jadi puing
-# hanya bisa membayangi titik yang berada DI BAWAHNYA. Memanggang ulang seluruh
-# fasad berarti 3800 sinar dan itu hitch yang terasa di Intel HD.
-func rebake_light_from(y_awal):
-	var y0 = int(clamp(y_awal, Config.FACADE_Y0, Config.FACADE_Y1 - 1))
-	# jaga tetap selaras dengan kisi 2 px milik _bake_light_from
-	y0 -= (y0 - Config.FACADE_Y0) % 2
-	_bake_light_from(y0)
-	_bake_vis_from(y0)
+# Dipanggil tiap tumpukan puing stabil / fasad gugur. Sinar datang dari
+# atas-kiri, jadi perubahan siluet hanya membayangi baris DI BAWAHNYA.
+func rebake_dari(y_awal):
+	_bake_petak(int(clamp(y_awal, Config.FACADE_Y0, Config.FACADE_Y1 - 1))
+			/ PETAK)
 
 
-func _bake_light_from(y_awal):
-	var y = y_awal
-	while y < Config.FACADE_Y1:
-		var x = Config.FACADE_X0
-		while x < Config.FACADE_X1:
-			var v = 1.0 if _ray_clear(x, y) else 0.16
-			for dy in range(0, 2):
-				for dx in range(0, 2):
-					var i = (y + dy) * Config.W + (x + dx)
-					if i >= 0 and i < light.size():
-						light.set(i, v)
-			x += 2
-		y += 2
+func _bake_petak(ty0):
+	var tx0 = Config.FACADE_X0 / PETAK
+	var tx1 = int(ceil(float(Config.FACADE_X1) / PETAK))
+	var ty1 = int(ceil(float(Config.FACADE_Y1) / PETAK))
+	for ty in range(ty0, ty1):
+		var cy = ty * PETAK + PETAK / 2
+		var h = clamp(float(cy - Config.FACADE_Y0) \
+				/ float(Config.FACADE_Y1 - Config.FACADE_Y0), 0.0, 1.0)
+		for tx in range(tx0, tx1):
+			var cx = tx * PETAK + PETAK / 2
+			var l = 1.0 if _ray_clear(cx, cy) else 0.16
+			light.set(ty * _pw + tx, l)
+
+			# vis petak: dasar + cahaya + ketinggian, lalu isi petaknya —
+			# jendela/pintu menonjol, ledge meneduhkan
+			var jendela = 0
+			var pintu = 0
+			var ledge = 0
+			for dy in range(PETAK):
+				var bar = (ty * PETAK + dy) * Config.W + tx * PETAK
+				for dx in range(PETAK):
+					var k = grid[bar + dx]
+					if k == Config.T_WINDOW:
+						jendela += 1
+					elif k == Config.T_DOOR:
+						pintu += 1
+					elif k == Config.T_LEDGE:
+						ledge += 1
+			var v = 0.20 + 0.48 * l + 0.28 * h
+			if jendela >= 8:
+				v += 0.30
+			if pintu >= 8 or cy > Config.FACADE_Y1 - 26:
+				v += 0.30
+			if ledge >= 8:
+				v -= 0.28
+			vis.set(ty * _pw + tx, clamp(v, 0.0, 1.0))
 
 
+# Melangkah BAKE_LANGKAH unit sekaligus, bukan 1. Separuh biaya, dan penghalang
+# yang perlu dikenali (tetangga, ledge 4 px, tumpukan puing) semuanya lebih
+# tebal daripada satu langkah. Yang bisa terlewat hanya tepi paling tipis
+# sebuah tumpukan puing — bayangannya bocor sedikit, dan itu diterima.
 func _ray_clear(sx, sy):
 	var x = float(sx)
 	var y = float(sy)
-	for _i in range(170):
-		x += Config.SUN_RAY.x
-		y += Config.SUN_RAY.y
+	var dx = Config.SUN_RAY.x * Config.BAKE_LANGKAH
+	var dy = Config.SUN_RAY.y * Config.BAKE_LANGKAH
+	for _i in range(Config.BAKE_MAX):
+		x += dx
+		y += dy
 		if y < 0 or x < 0:
 			return true
 		var k = at(int(round(x)), int(round(y)))
@@ -118,197 +290,23 @@ func _ray_clear(sx, sy):
 	return true
 
 
-func _bake_vis():
-	_bake_vis_from(Config.FACADE_Y0)
-
-
-func _bake_vis_from(y_awal):
-	for y in range(y_awal, Config.FACADE_Y1):
-		for x in range(Config.FACADE_X0, Config.FACADE_X1):
-			var i = y * Config.W + x
-			var h = float(y - Config.FACADE_Y0) \
-					/ float(Config.FACADE_Y1 - Config.FACADE_Y0)
-			var v = 0.20 + 0.48 * light[i] + 0.28 * h
-			var k = grid[i]
-			if k == Config.T_WINDOW:
-				v += 0.30
-			if k == Config.T_DOOR or y > Config.FACADE_Y1 - 14:
-				v += 0.30
-			if k == Config.T_LEDGE:
-				v -= 0.28
-			vis.set(i, clamp(v, 0.0, 1.0))
-
-
-# ---------------------------------------------------------------------------
-# Rangka struktural
-#
-# Lapisan data murni di atas grid terrain. grid, image, light, dan vis tidak
-# tersentuh sama sekali. Belum ada perhitungan beban dan belum ada keruntuhan
-# — itu TAHAP 3.
-#
-# Kolom dan balok disimpan sebagai RUAS antar-joint, bukan satu member utuh,
-# supaya beban punya kisi untuk mengalir. Di layar tetap tampak 4 kolom dan
-# 5 balok.
-#
-# _kolom_id() dan _balok_id() menghitung id dari koordinat kisi, jadi urutan
-# pembuatan di _build_frame() mengikat: SELURUH ruas kolom dibuat lebih dulu,
-# baru seluruh ruas balok.
-# ---------------------------------------------------------------------------
-
-func _build_frame():
-	members = []
-	joints = []
-	panels = []
-	solve_order = []
-
-	var cx = []   # x tiap garis kolom
-	for i in range(Config.FRAME_COLS):
-		cx.append(Config.FACADE_X0 + int(round(
-				float(i) * float(Config.FACADE_X1 - 1 - Config.FACADE_X0)
-				/ float(Config.FRAME_COLS - 1))))
-
-	var ry = []   # y tiap level balok
-	for j in range(Config.FRAME_ROWS):
-		ry.append(Config.FACADE_Y0 + int(round(
-				float(j) * float(Config.FACADE_Y1 - 1 - Config.FACADE_Y0)
-				/ float(Config.FRAME_ROWS - 1))))
-
-	# joint di tiap perpotongan — id = j * FRAME_COLS + i
-	for j in range(Config.FRAME_ROWS):
-		for i in range(Config.FRAME_COLS):
-			joints.append({
-				"id": joints.size(),
-				"x": cx[i],
-				"y": ry[j],
-				"col": i,
-				"row": j,
-				"member_terhubung": [],
-				"integritas": 1.0,
-			})
-
-	# ruas kolom — wajib dibuat lebih dulu, lihat _kolom_id()
-	for i in range(Config.FRAME_COLS):
-		for j in range(Config.FRAME_ROWS - 1):
-			_add_member(Config.M_KOLOM, cx[i], ry[j], cx[i], ry[j + 1],
-					_joint_id(i, j), _joint_id(i, j + 1))
-
-	# ruas balok
-	for j in range(Config.FRAME_ROWS):
-		for i in range(Config.FRAME_COLS - 1):
-			_add_member(Config.M_BALOK, cx[i], ry[j], cx[i + 1], ry[j],
-					_joint_id(i, j), _joint_id(i + 1, j))
-
-	_link_supports()
-	_build_solve_order()
-
-	# Panel dinding di antara rangka. INI massa gedung yang sebenarnya.
-	# Member cuma garis selebar 3 piksel, jadi tanpa panel, menghancurkan
-	# seluruh rangka nyaris tidak mengubah apa pun di layar — persis yang
-	# terjadi di playtest: STRUKTUR 0% tapi gedungnya masih berdiri utuh.
-	# Empat member yang mengurung tiap panel dicatat sebagai penopangnya.
-	for j in range(Config.FRAME_ROWS - 1):
-		for i in range(Config.FRAME_COLS - 1):
-			panels.append({
-				"x0": cx[i], "y0": ry[j],
-				"x1": cx[i + 1], "y1": ry[j + 1],
-				"alive": true,
-				"rangka": [
-					_balok_id(i, j), _balok_id(i, j + 1),
-					_kolom_id(i, j), _kolom_id(i + 1, j),
-				],
-			})
-
-
-# Urutan topologis: di tiap level, balok dulu baru ruas kolom. Keduanya hanya
-# menyuapi ruas di bawahnya, jadi satu sapuan atas-ke-bawah sudah cukup — tidak
-# perlu algoritma graf. Structure.gd memakai daftar ini dan karenanya tidak
-# perlu tahu apa pun tentang bentuk kisinya.
-func _build_solve_order():
-	solve_order = []
-	for j in range(Config.FRAME_ROWS):
-		for i in range(Config.FRAME_COLS - 1):
-			solve_order.append(_balok_id(i, j))
-		for i in range(Config.FRAME_COLS):
-			var kid = _kolom_id(i, j)
-			if kid >= 0:
-				solve_order.append(kid)
-
-
-func _add_member(tipe, x0, y0, x1, y1, ja, jb):
-	var m = {
-		"id": members.size(),
-		"x0": x0, "y0": y0,
-		"x1": x1, "y1": y1,
-		"tipe": tipe,
-		"panjang": Vector2(x1 - x0, y1 - y0).length(),
-		"alive": true,
-		"integritas": 1.0,
-		"beban": 0.0,
-		"member_bawah": [],
-		"joint_a": ja,
-		"joint_b": jb,
-	}
-	members.append(m)
-	joints[ja].member_terhubung.append(m.id)
-	joints[jb].member_terhubung.append(m.id)
-	return m.id
-
-
-func _link_supports():
-	# Ruas kolom ditopang ruas kolom di bawahnya. Yang paling bawah berdiri di
-	# pondasi, jadi member_bawah-nya kosong.
-	for i in range(Config.FRAME_COLS):
-		for j in range(Config.FRAME_ROWS - 1):
-			var below = _kolom_id(i, j + 1)
-			if below >= 0:
-				members[_kolom_id(i, j)].member_bawah.append(below)
-
-	# Ruas balok ditopang ruas kolom yang menggantung di bawah kedua joint
-	# ujungnya. Di level paling bawah tidak ada kolom di bawahnya — pondasi.
-	for j in range(Config.FRAME_ROWS):
-		for i in range(Config.FRAME_COLS - 1):
-			var b = members[_balok_id(i, j)]
-			for k in [i, i + 1]:
-				var kid = _kolom_id(k, j)
-				if kid >= 0:
-					b.member_bawah.append(kid)
-
-
-func _joint_id(i, j):
-	return j * Config.FRAME_COLS + i
-
-
-func _kolom_id(i, j):
-	# ruas kolom pada garis kolom i, antara level balok j dan j+1
-	if i < 0 or i >= Config.FRAME_COLS or j < 0 or j >= Config.FRAME_ROWS - 1:
-		return -1
-	return i * (Config.FRAME_ROWS - 1) + j
-
-
-func _balok_id(i, j):
-	# ruas balok pada level j, antara garis kolom i dan i+1
-	if i < 0 or i >= Config.FRAME_COLS - 1 or j < 0 or j >= Config.FRAME_ROWS:
-		return -1
-	return Config.FRAME_COLS * (Config.FRAME_ROWS - 1) \
-			+ j * (Config.FRAME_COLS - 1) + i
-
-
 func at(x, y):
 	if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 		return Config.T_NEIGHBOR
 	return grid[y * Config.W + x]
 
 
+# light dan vis dibaca lewat petak — pemanggil tetap memakai koordinat satuan
 func light_at(x, y):
 	if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 		return 0.0
-	return light[y * Config.W + x]
+	return light[(y / PETAK) * _pw + (x / PETAK)]
 
 
 func vis_at(x, y):
 	if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 		return 0.0
-	return vis[y * Config.W + x]
+	return vis[(y / PETAK) * _pw + (x / PETAK)]
 
 
 # Permukaan yang bisa dicengkeram tanaman. Termasuk PUING: tumpukan reruntuhan
@@ -323,17 +321,17 @@ func on_facade(x, y):
 # Permukaan yang bisa dipijak sulur. Inilah predikat yang dipakai pertumbuhan,
 # BUKAN on_facade() mentah.
 #
-# Lubang hasil keruntuhan hanya selebar 3 piksel. Kalau sulur tidak bisa
-# menyeberanginya, fasad terpotong jadi panel-panel terpisah dan sulur
-# terkurung selamanya — persis yang terjadi di playtest. Jadi sulur boleh
-# merentang sejauh VINE_JEMBATAN piksel, seperti sulur sungguhan melewati
-# retakan.
+# Tiga lapis, berurutan dari yang termurah:
+#   1. fasad/puing biasa
+#   2. BEKAS RAMBATAN (tutup) — pijakan kekal. Fasad yang gugur oleh erosi
+#      tetap bisa dipijak sulur yang pernah merambatinya; tanpa ini erosi
+#      menghukum pemain justru karena berhasil menutup fasad
+#   3. jembatan VINE_JEMBATAN piksel melewati celah sempit
 #
-# Hanya arah sumbu yang dipindai, bukan kotak penuh: member selalu tegak atau
-# mendatar, jadi celahnya pasti sejajar sumbu. 8 lookup, bukan 25 — penting
-# karena normal_at() memanggil solid_at() 24 kali per tabrakan.
-#
-# Dibatasi ke dalam kotak fasad supaya sulur tidak melayang keluar siluet.
+# Hanya arah sumbu yang dipindai untuk jembatan, bukan kotak penuh — 8
+# lookup, bukan 25; penting karena normal_at() memanggil solid_at() 24 kali
+# per tabrakan. Dibatasi ke dalam kotak fasad supaya sulur tidak melayang
+# keluar siluet.
 func vine_ok(x, y):
 	var ix = int(round(x))
 	var iy = int(round(y))
@@ -342,6 +340,8 @@ func vine_ok(x, y):
 	if ix < Config.FACADE_X0 or ix >= Config.FACADE_X1 \
 			or iy < Config.FACADE_Y0 or iy >= Config.FACADE_Y1:
 		return false
+	if tutup[iy * Config.W + ix] == 1:
+		return true
 	for d in range(1, Config.VINE_JEMBATAN + 1):
 		if on_facade(ix + d, iy) or on_facade(ix - d, iy) \
 				or on_facade(ix, iy + d) or on_facade(ix, iy - d):
@@ -350,34 +350,268 @@ func vine_ok(x, y):
 
 
 # ---------------------------------------------------------------------------
-# Perusakan — kebalikan dari _rect()
+# Rambatan (TAHAP B) — dipanggil Strand tiap kali sulur mencatat titik baru
 # ---------------------------------------------------------------------------
 
-# Menghapus piksel di sepanjang member, menyisakan lubang tembus pandang.
-# image berubah, jadi pemanggil wajib meminta PixelCanvas.refresh_world().
-func carve_member(m):
-	image.lock()
-	var n = int(max(abs(m.x1 - m.x0), abs(m.y1 - m.y0)))
-	for k in range(n + 1):
-		var t = float(k) / float(max(1, n))
-		var px = int(round(m.x0 + (m.x1 - m.x0) * t))
-		var py = int(round(m.y0 + (m.y1 - m.y0) * t))
-		for dy in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
-			for dx in range(-Config.MEMBER_TEBAL, Config.MEMBER_TEBAL + 1):
-				_carve_px(px + dx, py + dy)
-	image.unlock()
+# Tandai 3x3 di sekitar titik sulur sebagai "pernah dirambati" — kira-kira
+# selebar badan sulur. Sel fasad yang baru tertutup dilaporkan ke Erosi
+# (per petak-erosi) dan dihitung ke tutupan. Sel puing hanya diberi pijakan
+# kekal, tanpa erosi dan tanpa hitungan tutupan.
+func rambati(px, py):
+	for dy in range(-1, 2):
+		var y = py + dy
+		if y < 0 or y >= Config.H:
+			continue
+		for dx in range(-1, 2):
+			var x = px + dx
+			if x < 0 or x >= Config.W:
+				continue
+			var i = y * Config.W + x
+			if tutup[i] == 1:
+				continue
+			var k = grid[i]
+			if k == Config.T_WALL or k == Config.T_WINDOW \
+					or k == Config.T_DOOR or k == Config.T_LEDGE:
+				tutup.set(i, 1)
+				tutup_luas += 1
+				rambatan_baru.append(Vector2i(
+						x / Config.EROSI_PETAK, y / Config.EROSI_PETAK))
+				# pengumpan perhatian: jendela/pintu yang tertutup, dan
+				# bobot zona berbanding nilai vis (mencolok = berat)
+				if k == Config.T_WINDOW:
+					tutup_jendela += 1
+				elif k == Config.T_DOOR:
+					tutup_pintu += 1
+				var z = _zona(x, y)
+				zona_bobot[z] += vis_at(x, y)
+				zona_tutup[z] += 1
+			elif k == Config.T_PUING:
+				tutup.set(i, 1)
 
 
-# Sepotong panel, dari baris ya sampai yb. Panel diluruhkan sedikit demi
-# sedikit dari atas ke bawah, bukan dihapus sekaligus, supaya pemain melihat
-# dindingnya jatuh alih-alih menghilang begitu saja.
-func carve_rows(p, ya, yb):
-	image.lock()
-	for y in range(max(p.y0, ya), min(p.y1, yb) + 1):
-		for x in range(p.x0, p.x1 + 1):
-			_carve_px(x, y)
-	image.unlock()
+# Kebalikan rambati() — dipanggil saat sulur DIPANGKAS (regu, pemanjat, atau
+# X pemain). Inilah yang membuat hukuman regu TERASA: bar HIJAU dan zona
+# benar-benar mundur, bukan cuma garis di layar yang memendek (playtest 11
+# Agustus: "punishment tidak terasa" — karena dulu tutup permanen).
+# Sel bisa dibangun lagi dengan merambat ulang.
+func hapus_rambatan(px, py):
+	for dy in range(-1, 2):
+		var y = py + dy
+		if y < 0 or y >= Config.H:
+			continue
+		for dx in range(-1, 2):
+			var x = px + dx
+			if x < 0 or x >= Config.W:
+				continue
+			var i = y * Config.W + x
+			if tutup[i] == 0:
+				continue
+			tutup.set(i, 0)
+			var k = grid[i]
+			if k == Config.T_WALL or k == Config.T_WINDOW \
+					or k == Config.T_DOOR or k == Config.T_LEDGE:
+				tutup_luas = max(0, tutup_luas - 1)
+				zona_tutup[_zona(x, y)] = max(0, zona_tutup[_zona(x, y)] - 1)
+				if k == Config.T_WINDOW:
+					tutup_jendela = max(0, tutup_jendela - 1)
+				elif k == Config.T_DOOR:
+					tutup_pintu = max(0, tutup_pintu - 1)
 
+
+# Erosi memanggil ini tiap frame: ambil sel-fasad-baru-tertutup (per petak
+# erosi; satu entri per sel), kosongkan.
+func ambil_rambatan_baru():
+	if rambatan_baru.is_empty():
+		return []
+	var keluar = rambatan_baru
+	rambatan_baru = []
+	return keluar
+
+
+# Bagian fasad yang sudah dirambati, 0..1. Kemajuan pemain — dan kondisi
+# menang sementara sampai TAHAP F menggantinya dengan target per zona.
+func tutupan():
+	if facade_luas == 0:
+		return 0.0
+	return float(tutup_luas) / float(facade_luas)
+
+
+func zona_tutupan(i):
+	if zona_luas[i] == 0:
+		return 1.0   # kuadran tanpa fasad dianggap selesai
+	return float(zona_tutup[i]) / float(zona_luas[i])
+
+
+# Akar menyedot kolam akuifer di dekat titik ini (G4): permukaan airnya
+# turun, dan baris teratas yang terkuras berubah jadi tanah lembap — sisa
+# basah, air kecil. Kolam yang habis diumumkan lewat pesan_kering.
+func sedot_di(p, jumlah):
+	for k in kolam:
+		if p.x < k.x0 - 6 or p.x > k.x1 + 6 \
+				or p.y < k.y0 - 6 or p.y > k.y1 + 6:
+			continue
+		var dalam = k.y1 - k.y0 + 1
+		if k.terkuras >= dalam:
+			return
+		k.level += jumlah
+		while k.terkuras < int(k.level) and k.terkuras < dalam:
+			var y = k.y0 + k.terkuras
+			for x in range(k.x0, k.x1 + 1):
+				if grid[y * Config.W + x] == Config.T_AKUIFER:
+					grid.set(y * Config.W + x, Config.T_SOIL_WET)
+					_tandai_petak(x, y)
+			k.terkuras += 1
+			if k.terkuras >= dalam:
+				pesan_kering = "Akuifer %s TERKURAS HABIS" % k.nama
+			elif k.terkuras == dalam / 2:
+				pesan_kering = "Akuifer %s tinggal separuh — permukaannya turun" \
+						% k.nama
+		return
+
+
+# Apakah ada bekas rambatan di sekitar titik ini — syarat tunas ulang (G2).
+func ada_rambatan(p):
+	var px = int(round(p.x))
+	var py = int(round(p.y))
+	for dy in range(-2, 3):
+		var y = py + dy
+		if y < 0 or y >= Config.H:
+			continue
+		for dx in range(-2, 3):
+			var x = px + dx
+			if x < 0 or x >= Config.W:
+				continue
+			if tutup[y * Config.W + x] == 1:
+				return true
+	return false
+
+
+func rasio_jendela_tertutup():
+	if jendela_luas == 0:
+		return 0.0
+	return float(tutup_jendela) / float(jendela_luas)
+
+
+func rasio_pintu_tertutup():
+	if pintu_luas == 0:
+		return 0.0
+	return float(tutup_pintu) / float(pintu_luas)
+
+
+# Kuadran fasad tempat sebuah sel berada — indeks ke Config.ZONA_NAMA.
+func _zona(x, y):
+	var tx = (Config.FACADE_X0 + Config.FACADE_X1) / 2
+	var ty = (Config.FACADE_Y0 + Config.FACADE_Y1) / 2
+	return (0 if x < tx else 1) + (0 if y < ty else 2)
+
+
+# Zona dengan rambatan paling mencolok — sasaran perawatan yang diumumkan
+# kalender saat inspeksi.
+func zona_teratas_idx():
+	var best = 0
+	for i in range(1, 4):
+		if zona_bobot[i] > zona_bobot[best]:
+			best = i
+	return best
+
+
+# ---------------------------------------------------------------------------
+# Menembus beton (TAHAP C)
+# ---------------------------------------------------------------------------
+
+# Apakah ujung akar menempel beton — syarat memulai menembus.
+func dekat_beton(p):
+	var px = int(round(p.x))
+	var py = int(round(p.y))
+	for dy in range(-3, 4):
+		for dx in range(-3, 4):
+			if at(px + dx, py + dy) == Config.T_CONCRETE:
+				return true
+	return false
+
+
+# Menembus selesai: gali terowongan pendek searah pertumbuhan akar. HANYA
+# beton yang tergali — batu tetap mustahil, dan itu disengaja: beton adalah
+# gerbang berbayar, batu adalah dinding.
+func tembus_beton(p, angle):
+	var arah = Vector2(cos(angle), sin(angle))
+	for langkah in range(0, Config.TEMBUS_PANJANG + 1):
+		var c = p + arah * float(langkah)
+		var cx = int(round(c.x))
+		var cy = int(round(c.y))
+		for dy in range(-2, 3):
+			for dx in range(-2, 3):
+				if dx * dx + dy * dy > 5:
+					continue
+				var x = cx + dx
+				var y = cy + dy
+				if x < 0 or x >= Config.W \
+						or y < Config.GROUND_Y or y >= Config.H:
+					continue
+				if grid[y * Config.W + x] == Config.T_CONCRETE:
+					grid.set(y * Config.W + x, Config.T_SOIL_DRY)
+					_tandai_petak(x, y)
+
+
+# Erosi menggugurkan satu petak: lubangi semua sel gedung di kotak itu.
+# Mengembalikan true kalau memang ada yang terlubangi.
+func carve_kotak(x0, y0, sisi):
+	var ada = false
+	for y in range(y0, y0 + sisi):
+		for x in range(x0, x0 + sisi):
+			if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
+				continue
+			var k = grid[y * Config.W + x]
+			if k == Config.T_WALL or k == Config.T_WINDOW \
+					or k == Config.T_DOOR or k == Config.T_LEDGE:
+				_carve_px(x, y)
+				ada = true
+	return ada
+
+
+# ---------------------------------------------------------------------------
+# Terjemahan grid -> petak TileMap (dipakai TerrainView)
+# ---------------------------------------------------------------------------
+
+# Terrain sebuah petak 8x8: mayoritas isi grid-nya. Fitur fasad (jendela,
+# pintu, ledge) dihitung sebagai DINDING — gambarnya urusan FasadView, ubin
+# di belakangnya tetap dinding. Puing di atas tanah digambar per sel oleh
+# PuingTanahView (ubinnya dipetakan ke langit di TerrainView.ATLAS).
+func tile_terrain(tx, ty):
+	var hitung = {}
+	for dy in range(PETAK):
+		var y = ty * PETAK + dy
+		for dx in range(PETAK):
+			var k = grid[y * Config.W + tx * PETAK + dx]
+			if k == Config.T_WINDOW or k == Config.T_DOOR \
+					or k == Config.T_LEDGE:
+				k = Config.T_WALL
+			hitung[k] = hitung.get(k, 0) + 1
+	var best = Config.T_SKY
+	var n = -1
+	for k in hitung:
+		if hitung[k] > n:
+			n = hitung[k]
+			best = k
+	return best
+
+
+func _tandai_petak(x, y):
+	tile_kotor[Vector2i(x / PETAK, y / PETAK)] = true
+
+
+# TerrainView memanggil ini tiap frame: ambil semua petak kotor, kosongkan.
+func ambil_tile_kotor():
+	if tile_kotor.is_empty():
+		return []
+	var keluar = tile_kotor.keys()
+	tile_kotor = {}
+	return keluar
+
+
+# ---------------------------------------------------------------------------
+# Perusakan — kebalikan dari _rect()
+# ---------------------------------------------------------------------------
 
 # Hanya melubangi bagian gedung. Tanah, pipa, dan beton bawah tanah tidak
 # tersentuh walau kuas melebar melewati garis tanah.
@@ -388,8 +622,8 @@ func _carve_px(x, y):
 	if k != Config.T_WALL and k != Config.T_WINDOW \
 			and k != Config.T_DOOR and k != Config.T_LEDGE:
 		return
-	image.set_pixel(x, y, Config.C_SKY)
 	grid.set(y * Config.W + x, Config.T_SKY)
+	_tandai_petak(x, y)
 
 
 # Puing hanya bertumpu pada tanah dan puing lain. Gedung TIDAK menghalangi:
@@ -402,13 +636,12 @@ func blocked(x, y):
 	return settled[y * Config.W + x] != 0
 
 
-# Satu lock untuk sekumpulan puing yang mengendap di frame yang sama.
-# Menulis ke image dan settled saja — grid sengaja tidak disentuh, supaya
-# tabrakan tanaman belum berubah. Itu urusan TAHAP 6.
+# Sekumpulan puing yang mengendap di frame yang sama. Menulis ke settled dan
+# grid — sejak TAHAP 6 puing adalah terrain sungguhan yang bisa ditumbuhi,
+# dan sejak R2 gambarnya diurus TerrainView lewat petak kotor.
 func settle_many(points):
-	if points.empty():
+	if points.is_empty():
 		return
-	image.lock()
 	for p in points:
 		# 2x2, sama seperti saat melayang, supaya tumpukan tidak mendadak
 		# menyusut jadi sebutir begitu mendarat
@@ -418,85 +651,10 @@ func settle_many(points):
 				var y = int(p.y) + dy
 				if x < 0 or x >= Config.W or y < 0 or y >= Config.H:
 					continue
+				if settled[y * Config.W + x] == 0:
+					settled_n += 1
 				settled.set(y * Config.W + x, 1)
-				# Sekarang juga ditulis ke grid: puing jadi terrain sungguhan,
-				# bukan sekadar piksel di gambar. Inilah yang membuatnya bisa
-				# ditumbuhi dan ikut memberi bayangan.
 				grid.set(y * Config.W + x, Config.T_PUING)
-				image.set_pixel(x, y, Config.C_PUING)
+				_tandai_petak(x, y)
 				if y < puing_atas:
 					puing_atas = y
-	image.unlock()
-
-
-# Member hanya sekuat sambungan terlemahnya. Satu-satunya sumber kebenaran
-# untuk kapasitas — dipakai deteksi gagal, warna debug, dan retakan.
-func kapasitas(m):
-	return m.integritas * min(joints[m.joint_a].integritas,
-			joints[m.joint_b].integritas) * Config.KAPASITAS_MAX
-
-
-# Joint terdekat yang masih layak diserang: belum habis, dan setidaknya satu
-# member yang menempel padanya masih hidup.
-func nearest_joint(p, radius):
-	var best = radius
-	var found = null
-	for j in joints:
-		if j.integritas <= 0.0:
-			continue
-		var hidup = false
-		for mid in j.member_terhubung:
-			if members[mid].alive:
-				hidup = true
-				break
-		if not hidup:
-			continue
-		var d = p.distance_to(Vector2(j.x, j.y))
-		if d < best:
-			best = d
-			found = j
-	return found
-
-
-# Kaki gedung terdekat — ruas KOLOM paling bawah. Sasaran akar.
-#
-# Sengaja bukan "semua member ber-member_bawah kosong": balok level dasar juga
-# memenuhi syarat itu, padahal tidak ada yang bertumpu padanya, jadi
-# meruntuhkannya tidak memicu apa pun. Lebih buruk, akar lahir 2 piksel di
-# bawah balok dasar dan akan menggerogotinya sia-sia sejak frame pertama.
-# Ruas kolom bawahlah yang memikul seluruh gedung.
-func foundation_at(p, radius):
-	var best = radius
-	var found = null
-	for m in members:
-		if not m.alive or m.tipe != Config.M_KOLOM or m.integritas <= 0.0:
-			continue
-		if m.member_bawah.size() > 0:
-			continue
-		var d = _dist_seg(p, Vector2(m.x0, m.y0), Vector2(m.x1, m.y1))
-		if d < best:
-			best = d
-			found = m
-	return found
-
-
-func member_at(p, radius):
-	var best = radius
-	var found = -1
-	for m in members:
-		if not m.alive:
-			continue
-		var d = _dist_seg(p, Vector2(m.x0, m.y0), Vector2(m.x1, m.y1))
-		if d < best:
-			best = d
-			found = m.id
-	return found
-
-
-func _dist_seg(p, a, b):
-	var ab = b - a
-	var l2 = ab.length_squared()
-	if l2 < 0.0001:
-		return p.distance_to(a)
-	var t = clamp((p - a).dot(ab) / l2, 0.0, 1.0)
-	return p.distance_to(a + ab * t)

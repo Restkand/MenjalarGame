@@ -505,3 +505,10 @@ const T_DINDING_DALAM = 22  # dinding kamar / cangkang — padat
 const T_VENT          = 23  # saluran ventilasi — bisa dilalui, menembus dinding
 const T_POROS         = 24  # poros lift — udara vertikal
 const T_TERALIS       = 25  # gerbang statis P2 — padat sampai upgrade (P7)
+const T_KERAN         = 26  # pipa bocor interior — stasiun AIR (P3)
+
+# P3 (docs/13 §3.1 & §4): menjalar = tumbuh, dan sumber daya beralamat
+var RAMBAT_TUMBUH_BIAYA = 1.2   # energi per satuan memperpanjang jaringan
+var AIR_ISI             = 18.0  # isi energi/dtk di akuifer / keran bocor
+var CAHAYA_ISI          = 12.0  # isi energi/dtk di bawah matahari (siang, terang)
+var CAHAYA_JENDELA      = 8.0   # isi energi/dtk dekat jendela cerah interior

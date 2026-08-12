@@ -42,6 +42,7 @@ func _draw():
 		Config.T_VENT: Color("31353C"),
 		Config.T_POROS: Color("1B1E23"),
 		Config.T_TERALIS: Color("6B6B64"),
+		Config.T_KERAN: Color("4A6B7C"),   # stasiun air (P3) — biru pipa
 	}
 	# latar ruang satu rect besar; run hanya untuk sel yang bukan ruang
 	draw_rect(Rect2(Config.FACADE_X0 * ppu, Config.FACADE_Y0 * ppu,

@@ -22,6 +22,7 @@ const HudCls         = preload("res://scripts/Hud.gd")
 const AvatarCls      = preload("res://scripts/Avatar.gd")
 const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
 const InteriorViewCls = preload("res://scripts/render/InteriorView.gd")
+const JejakViewCls   = preload("res://scripts/render/JejakView.gd")
 
 var world
 var sim
@@ -48,6 +49,8 @@ var avatar
 var avatar_view
 var _lompat_tekan = false   # edge tombol Spasi, dikosongkan tiap frame
 var _masuk_tekan = false    # edge tombol E (masuk/keluar gedung, P2)
+var _sumber_air_dikenal = false      # flash penemuan sekali (P3)
+var _sumber_cahaya_dikenal = false
 
 
 var _babak_terakhir = 1
@@ -165,6 +168,11 @@ func _ready():
 	var interior = InteriorViewCls.new(world, avatar)
 	interior.z_index = 4
 	pane_atas.tempel(interior)
+	# jejak sulur yang ditumbuhkan avatar (P3) — di atas interior, di bawah
+	# avatar
+	var jejak_view = JejakViewCls.new(avatar)
+	jejak_view.z_index = 4
+	pane_atas.tempel(jejak_view)
 	avatar_view = AvatarViewCls.new(avatar)
 	avatar_view.z_index = 5
 	pane_atas.tempel(avatar_view)
@@ -213,6 +221,8 @@ func _restart():
 	_puing_cooldown = 0.0
 	if playing:
 		avatar.mulai(Vector2(Config.SEED_X + 14.0, float(Config.GROUND_Y)))
+	_sumber_air_dikenal = false
+	_sumber_cahaya_dikenal = false
 	hud.sembunyikan_kartu()
 	is_steering = false
 	playing = false
@@ -427,6 +437,27 @@ func _process(delta):
 		if avatar.layu_baru:
 			avatar.layu_baru = false
 			hud.flash_msg("LAYU — kembali ke simpul jaringan terakhir")
+
+		# --- sumber daya (P3, docs/13 §4): air & cahaya PUNYA ALAMAT -------
+		var apx = int(round(avatar.pos.x))
+		var apy = int(round(avatar.pos.y - 2.0))
+		avatar.mengisi = false
+		if world.dekat_air(apx, apy, avatar.di_dalam):
+			avatar.isi(Config.AIR_ISI * dt)
+			avatar.mengisi = true
+			if not _sumber_air_dikenal:
+				_sumber_air_dikenal = true
+				hud.flash_msg("SUMBER AIR — energi terisi selama di dekatnya")
+		elif cycle.phase == Config.PHASE_DAY:
+			if not avatar.di_dalam and world.light_at(apx, apy) > 0.5:
+				avatar.isi(Config.CAHAYA_ISI * dt)
+				avatar.mengisi = true
+				if not _sumber_cahaya_dikenal:
+					_sumber_cahaya_dikenal = true
+					hud.flash_msg("MATAHARI — energi terisi di area terang saat siang")
+			elif avatar.di_dalam and world.di_gerbang_interior(apx, apy):
+				avatar.isi(Config.CAHAYA_JENDELA * dt)
+				avatar.mengisi = true
 
 		babak.update(dt, sim, world)
 		if babak.babak != _babak_terakhir:

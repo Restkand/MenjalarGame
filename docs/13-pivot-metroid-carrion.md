@@ -69,6 +69,22 @@ Aksi:
 Layu (energi habis saat LEPAS): bangun di simpul terakhir; perhatian kota
 naik sedikit — bukan game over, tapi terasa.
 
+**§3.1 — Dua jangkar fantasi** (13 Agu, menjawab pertanyaan pemilik proyek
+"bagaimana makhluk selucu itu menjadi tanaman merambat, dan bagaimana ia
+membunuh"):
+
+1. **Bergerak adalah tumbuh.** Merambat KELUAR dari tepi jaringan =
+   MEMPERPANJANG tanaman: jalur yang dilalui avatar menjadi sulur baru,
+   dibayar energi per satuan jarak (RAMBAT_TUMBUH_BIAYA). Tanaman yang
+   memenuhi gedung adalah JEJAK TUBUH pemain, bukan simulasi yang
+   ditonton. (Dibangun di P3 — inilah pengikat ekonomi sumber daya.)
+2. **Jaringan yang membunuh, bukan makhluknya.** Lilit/bunuh (P5) selalu
+   disalurkan LEWAT jaringan: sulur meledak dari permukaan terdekat,
+   melilit penjaga, menyeretnya ke dalam dedaunan. Makhluk = kehendak,
+   tanaman = tubuh, energi = getah. Konsekuensi desain: serangan hanya
+   bisa dilakukan saat dekat jaringan — memperpanjang jaringan = memperluas
+   jangkauan ancaman. Tanpa darah; korban lenyap ke dalam dedaunan.
+
 ## 4. Dunia: satu gedung = peta Metroid
 
 - **Interior gedung DIBANGUN** (baru): lantai-lantai berisi kamar,

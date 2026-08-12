@@ -526,6 +526,12 @@ func _bangun_interior():
 	for jy in range(40, 180, 26):
 		_rect_dalam(102, jy + 1, 276, 3, Config.T_VENT)
 
+	# keran bocor (P3): stasiun AIR interior — dua titik, sengaja di
+	# tingkat 2 barat dan tingkat 4 timur supaya eksplorasi ditarik
+	# menyebar. Digambar InteriorView sebagai tetesan biru.
+	_rect_dalam(130, 128, 4, 6, Config.T_KERAN)
+	_rect_dalam(344, 76, 4, 6, Config.T_KERAN)
+
 
 func _rect_dalam(x, y, w, h, kind):
 	for yy in range(y, min(y + h, Config.H)):
@@ -552,6 +558,25 @@ func padat_avatar(px, py, di_dalam):
 func di_gerbang_interior(px, py):
 	var k = at(px, py)
 	return k == Config.T_WINDOW or k == Config.T_DOOR
+
+
+# Dekat sumber AIR (P3)? Di luar: akuifer (dicapai lewat jaringan akar);
+# di dalam: keran bocor. Radius 3 supaya "berdiri di sebelahnya" cukup.
+func dekat_air(px, py, di_dalam):
+	for dy in range(-3, 4):
+		var y = py + dy
+		if y < 0 or y >= Config.H:
+			continue
+		for dx in range(-3, 4):
+			var x = px + dx
+			if x < 0 or x >= Config.W:
+				continue
+			if di_dalam:
+				if dalam[y * Config.W + x] == Config.T_KERAN:
+					return true
+			elif grid[y * Config.W + x] == Config.T_AKUIFER:
+				return true
+	return false
 
 
 # --- jaringan avatar (P1, docs/13) ----------------------------------------

@@ -25,6 +25,9 @@ var simpul_dalam = false   # simpul berada di interior?
 var di_tanah = false
 var di_dalam = false       # P2: sedang di interior gedung
 var layu_baru = false      # sekali-baca oleh main untuk pesan HUD
+var mengisi = false        # P3: sedang di sumber (untuk denyut view)
+var jejak = []             # P3: jalur sulur yang DITUMBUHKAN avatar —
+                           # [{pos, dalam}] digambar JejakView
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 
 
@@ -37,7 +40,14 @@ func mulai(p):
 	simpul_dalam = false
 	di_tanah = false
 	di_dalam = false
+	mengisi = false
+	jejak = []
 	_tempel_jeda = 0.0
+
+
+# P3: isi energi dari sumber — dipanggil main yang tahu fase & cahaya
+func isi(jumlah):
+	energi = min(Config.AVATAR_ENERGI_MAX, energi + jumlah)
 
 
 # arah: (-1..1 per sumbu); lompat & masuk: true hanya di frame tombol ditekan
@@ -94,12 +104,36 @@ func _rambat(dt, arah, lompat, world):
 	if arah == Vector2.ZERO:
 		return
 	var langkah = arah.normalized() * Config.AVATAR_RAMBAT * dt
-	# coba gerak penuh; kalau keluar jaringan, coba per sumbu (menyusur)
+	# coba gerak penuh; kalau keluar jaringan, coba per sumbu (menyusur).
+	# Kandidat yang tidak benar-benar bergerak DILEWATI — kandidat sumbu
+	# dengan komponen nol adalah "gerakan nol yang selalu sah" dan diam-diam
+	# menyumbat cabang tumbuh di bawah.
 	for calon in [pos + langkah, pos + Vector2(langkah.x, 0.0),
 			pos + Vector2(0.0, langkah.y)]:
+		if calon.distance_squared_to(pos) < 0.0001:
+			continue
 		if world.jaringan_di(int(round(calon.x)), int(round(calon.y))):
 			pos = calon
 			return
+
+	# MENJALAR = TUMBUH (P3, docs/13 §3.1): di tepi jaringan, terus menekan
+	# arah = memperpanjang tanaman. Jalurnya jadi sulur baru (jejak +
+	# jaringan), dibayar energi per satuan — dan hanya menembus sel yang
+	# TIDAK padat: menembus beton tetap urusan bor (P7).
+	var tumbuh_ke = pos + langkah
+	var cx = int(round(tumbuh_ke.x))
+	var cy = int(round(tumbuh_ke.y))
+	if world.padat_avatar(cx, cy, di_dalam):
+		return
+	var biaya = langkah.length() * Config.RAMBAT_TUMBUH_BIAYA
+	if energi <= biaya + 4.0:
+		return   # sisakan napas — jangan layu karena tumbuh
+	energi -= biaya
+	pos = tumbuh_ke
+	world.tandai_jaringan(cx, cy)
+	if jejak.is_empty() \
+			or jejak[jejak.size() - 1].pos.distance_to(pos) >= 1.5:
+		jejak.append({"pos": pos, "dalam": di_dalam})
 
 
 func _lepas(dt, arah, lompat, world):

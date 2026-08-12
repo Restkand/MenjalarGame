@@ -27,6 +27,12 @@ func _draw():
 	var p = avatar.pos * ppu + Vector2(0.0, -Config.AVATAR_TINGGI * ppu * 0.5)
 	var denyut = 1.0 + sin(_t * 5.0) * 0.12
 
+	# sedang mengisi dari sumber (P3): cincin mengembang — "minum"
+	if avatar.mengisi:
+		var isi_c = Config.C_TIP
+		isi_c.a = 0.35 * (1.0 - fmod(_t, 0.8) / 0.8)
+		draw_arc(p, 10.0 + fmod(_t, 0.8) * 14.0, 0.0, TAU, 24, isi_c, 2.0)
+
 	if avatar.moda == avatar.MERAMBAT:
 		var cincin = Config.C_TIP
 		cincin.a = 0.25

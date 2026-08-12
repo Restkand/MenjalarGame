@@ -263,7 +263,30 @@ docs/12 (kitab gaya) tetap hukum.
 - Harness 4 asersi: masuk (mendarat flush di lantai), jangkar (energi
   80-25, jaringan tertanda), teralis padat vs poros terbuka, keluar.
 
-Berikutnya: **P3 — sumber daya** (docs/13 §9).
+**P3 SELESAI** — menjalar = tumbuh, dan sumber daya beralamat:
+
+- **docs/13 §3.1 (baru, WAJIB dibaca)**: dua jangkar fantasi yang menjawab
+  pertanyaan pemilik proyek — (1) merambat keluar tepi jaringan =
+  MEMPERPANJANG tanaman (jalurnya jadi sulur, bayar RAMBAT_TUMBUH_BIAYA
+  1.2/satuan, berhenti sebelum layu), (2) serangan P5 nanti disalurkan
+  LEWAT jaringan (sulur melilit dari permukaan; makhluk = kehendak).
+- `Avatar._rambat`: cabang tumbuh — kalau kandidat gerak keluar jaringan
+  dan selnya tidak padat, bergerak = menandai jaringan + append `jejak`.
+  JEBAKAN yang sudah dimakan: kandidat menyusur-sumbu dengan komponen nol
+  adalah "gerakan nol yang selalu sah" yang menyumbat cabang tumbuh —
+  kandidat tanpa perpindahan WAJIB dilewati.
+- `render/JejakView.gd`: sulur yang ditumbuhkan avatar (polyline batang +
+  daun kecil berselang), difilter per lapis (luar/dalam).
+- Sumber daya (dihitung di main yang tahu fase & cahaya): AIR = akuifer
+  (luar) / T_KERAN keran bocor interior (dua titik, tingkat 2 barat &
+  4 timur) lewat `world.dekat_air()`, isi AIR_ISI 18/dtk; CAHAYA = siang
+  di area `light_at > 0.5` luar (CAHAYA_ISI 12) atau dekat jendela
+  interior (CAHAYA_JENDELA 8). `avatar.mengisi` → cincin denyut view;
+  flash penemuan sekali per jenis.
+- Harness: tumbuh 100 satuan membakar 90→5 energi + 27 titik jejak;
+  keran menaikkan energi meski LEPAS menguras; matahari mengisi.
+
+Berikutnya: **P4 — penjaga & alarm** (docs/13 §9).
 
 Segala sesuatu di bawah baris ini adalah RIWAYAT arah sebelumnya —
 konteks berharga untuk reuse, bukan arah kerja:

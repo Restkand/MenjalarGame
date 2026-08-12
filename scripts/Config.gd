@@ -345,7 +345,9 @@ const ZONA_NAMA = ["BARAT ATAS", "TIMUR ATAS", "BARAT BAWAH", "TIMUR BAWAH"]
 var NIGHT_GELAP  = 1.0     # 0 = malam tidak menggelap sama sekali
 var LAMPU_ENERGI = 0.55    # kecerahan tiap jendela yang menyala
 
-const C_MALAM       = Color(0.20, 0.24, 0.40)   # warna kanvas saat malam penuh
+# Dicerahkan 12 Agu (playtest kelima: "malam terlalu gelap, sulit main di
+# pane atas") — malam harus terbaca sebagai suasana, bukan penalti visual.
+const C_MALAM       = Color(0.34, 0.38, 0.55)   # warna kanvas saat malam penuh
 # Senja (G8, angka docs/08 §8.2): pemberhentian antara siang dan malam —
 # biru ditahan lebih tinggi supaya beton mendingin tapi hijau daun tidak
 # ikut mati. Tanpa tahap ini malam datang seperti sakelar.

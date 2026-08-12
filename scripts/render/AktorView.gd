@@ -58,11 +58,13 @@ func _draw():
 	for u in crew.units:
 		var pos = Vector2(u.x, Config.GROUND_Y) * ppu
 
-		# tertimbun puing — tergeletak redup, tidak bekerja
+		# tertimbun puing — tergeletak rapi DI ATAS garis tanah, redup.
+		# Rotasi -90 memetakan (x,y)->(y,-x): badan setebal ~20 px rebah
+		# antara 2 dan 22 px di atas tanah, kepala ke kiri titik jatuhnya.
 		if u.pingsan > 0.0:
-			draw_set_transform(pos + Vector2(0.0, -10.0), -PI / 2.0,
+			draw_set_transform(pos + Vector2(26.0, -12.0), -PI / 2.0,
 					Vector2.ONE)
-			_frame("regu_diam", Vector2(-24.0, -54.0),
+			_frame("regu_diam", Vector2(-24.0, -64.0),
 					Color(0.62, 0.62, 0.68))
 			continue
 

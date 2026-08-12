@@ -15,11 +15,14 @@ extends Node2D
 var sim
 var atlas
 var _t = 0.0
+var kering = false     # musim kering: rona daun mengering (TanamanView)
+var _ada_bunga = false # atlas punya sel bunga (kolom 8)?
 
 
 func _init(s):
 	sim = s
 	atlas = load("res://aset/daun_atlas.png")
+	_ada_bunga = atlas != null and atlas.get_width() >= 216
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 
@@ -70,15 +73,38 @@ func _gambar_lapis(lapis):
 				warna = Color(0.5 * rona, 0.62 * rona, 0.5 * rona)
 			else:
 				warna = Color(rona * 0.96, rona, rona * 0.94)
+			# musim kering (papan acuan §6): rona bergeser ke cokelat kering
+			if kering:
+				warna = warna * Color(1.02, 0.82, 0.55)
 			# angin (G8): tiap daun bergoyang dengan fase dari posisinya —
 			# gelombang menyapu kanopi, bukan seluruh daun serempak
 			var angin = sin(_t * 1.3 + l.pos.x * 0.11 + l.pos.y * 0.07) * 0.055
+			var dasar = l.get("sudut", -PI / 2.0) + PI / 2.0 + angin
+			# GEROMBOL (playtest kelima: "daun terasa tempelan") — tiap titik
+			# daun digambar sebagai rumpun tiga helai: dua helai samping yang
+			# lebih kecil dan sedikit gelap, lalu helai utama menutupinya.
+			# Rumpun membaca sebagai massa dedaunan, bukan stiker tunggal.
+			# Hanya daun yang sudah membuka (bukan kuncup) yang bergerombol.
+			if t >= 0.3:
+				for sisi in [-0.55, 0.55]:
+					draw_set_transform(l.pos * ppu, dasar + sisi,
+							Vector2(sk * 0.66, sk * 0.66))
+					draw_texture_rect_region(atlas,
+							Rect2(Vector2(-14.0, -24.0), Vector2(28.0, 28.0)),
+							Rect2(v * 24, 0, 24, 24), warna * 0.88)
 			# BERJANGKAR di pangkalnya: transform di titik tempel pada sumbu
 			# sulur, diputar searah `sudut`, pangkal terbenam 4 px di bawah
 			# batang supaya sambungannya tidak pernah terlihat putus.
-			draw_set_transform(l.pos * ppu,
-					l.get("sudut", -PI / 2.0) + PI / 2.0 + angin,
-					Vector2(sk, sk))
+			draw_set_transform(l.pos * ppu, dasar, Vector2(sk, sk))
 			draw_texture_rect_region(atlas,
 					Rect2(Vector2(-14.0, -24.0), Vector2(28.0, 28.0)),
 					Rect2(v * 24, 0, 24, 24), warna)
+			# bunga bermunculan (papan acuan §8): daun tua terpilih (hash
+			# posisi, deterministik) memunculkan bunga kecil di lapis depan
+			if _ada_bunga and lapis == 1 and t >= 1.0 and not kering \
+					and int(l.pos.x * 7.0 + l.pos.y * 13.0) % 11 == 0:
+				draw_set_transform(l.pos * ppu, dasar,
+						Vector2(sk * 0.5, sk * 0.5))
+				draw_texture_rect_region(atlas,
+						Rect2(Vector2(-12.0, -30.0), Vector2(24.0, 24.0)),
+						Rect2(8 * 24, 0, 24, 24), Color.WHITE)

@@ -37,6 +37,8 @@ var _lbl_laju      # laju energi "+N/dtk" — mengajarkan min() lewat angka
 var _p_fill
 var _lbl_tren      # panah tren perhatian
 var _lbl_waktu     # indikator jeda / 2x
+var _lbl_jeda      # banner besar saat jeda — playtest 12 Agu: indikator kecil
+                   # di pita tidak terbaca, pemain mengira game macet
 var _lbl_kalender
 var _p_garis       # garis ambang di bar perhatian — bergeser saat eskalasi
 var _garis_tmp     # garis terakhir yang dibuat _bar()
@@ -126,6 +128,17 @@ func _pita_atas():
 	_lbl_kalender.add_theme_font_size_override("font_size", 13)
 	_lbl_kalender.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hb.add_child(_lbl_kalender)
+
+	# banner jeda: besar, di tengah, tidak mungkin terlewat
+	_lbl_jeda = Label.new()
+	_lbl_jeda.text = "❚❚  JEDA — tekan Spasi untuk lanjut"
+	_lbl_jeda.add_theme_font_size_override("font_size", 30)
+	_lbl_jeda.add_theme_color_override("font_color", Config.C_WARN)
+	_lbl_jeda.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_lbl_jeda.position = Vector2(0, Config.HUD_ATAS + 24)
+	_lbl_jeda.size = Vector2(1920, 40)
+	_lbl_jeda.visible = false
+	add_child(_lbl_jeda)
 
 
 # Ikon + angka dengan BINGKAI yang bisa disorot — penanda leher botol.
@@ -414,6 +427,7 @@ func flash_msg(text):
 
 
 func set_waktu(jeda, laju):
+	_lbl_jeda.visible = jeda
 	if jeda:
 		_lbl_waktu.text = "❚❚ JEDA"
 		_lbl_waktu.add_theme_color_override("font_color", Config.C_WARN)

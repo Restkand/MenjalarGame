@@ -55,6 +55,12 @@ func _buat_root(pane):
 	return r
 
 
+# status musim kering (papan acuan §6): daun mengering rona kalau
+# musimnya kering — diteruskan main tiap frame, murah
+func set_kering(k):
+	_daun.kering = k
+
+
 func sinkron():
 	var hidup = {}
 	for s in _sim.strands:

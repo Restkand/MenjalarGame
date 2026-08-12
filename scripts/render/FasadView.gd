@@ -34,6 +34,20 @@ func _r(rect):
 func _draw():
 	var ppu = float(Config.PPU)
 
+	# jalan raya (playtest 12 Agu): trotoar beton di sepanjang garis tanah
+	# dengan siar antar lempeng dan bibir jalan gelap — digambar paling awal
+	# supaya kaki gedung, pintu, dan aktor duduk di atasnya
+	var gy = float(Config.GROUND_Y)
+	draw_rect(Rect2(0.0, (gy - 3.0) * ppu, Config.W * ppu, 3.0 * ppu),
+			Color("8D8D85"))
+	var sx = 0
+	while sx < Config.W:
+		draw_rect(Rect2(float(sx) * ppu, (gy - 3.0) * ppu,
+				1.0, 3.0 * ppu), Color("6B6B64"))
+		sx += 10
+	draw_rect(Rect2(0.0, (gy - 0.75) * ppu, Config.W * ppu, 0.75 * ppu),
+			Color("55554F"))
+
 	# jendela: sprite PixelLab 56x64 (gelombang 2, docs/12) — kanvas persis
 	# 14x16 satuan, jadi digambar 1:1 pada rect fiturnya
 	for w in world.windows:

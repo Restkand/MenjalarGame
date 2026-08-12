@@ -392,6 +392,7 @@ func _process(delta):
 						% int(Config.BABAK3_POHON))
 
 	tanaman.sinkron()
+	tanaman.set_kering(cycle.musim_kering())
 	terrain.sinkron()
 
 	# view menggambar dirinya sendiri; main hanya menyuapi data yang tidak
@@ -499,7 +500,14 @@ func _unhandled_input(event):
 	# bercabang cukup di klik kanan
 	if event is InputEventKey and event.pressed and not event.echo:
 		if _kunci(event, KEY_SPACE):
-			_jeda = not _jeda
+			# Jebakan playtest 12 Agu: saat kartu fase tampil, Spasi adalah
+			# refleks "lewati" — dulu ia malah men-toggle jeda diam-diam dan
+			# pemain mengira game macet. Kartu tampil = Spasi melewati kartu.
+			if _kartu_t > 0.0:
+				_kartu_t = 0.0
+				hud.sembunyikan_kartu()
+			else:
+				_jeda = not _jeda
 			return
 		elif _kunci(event, KEY_1):
 			_laju_waktu = 1.0

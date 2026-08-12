@@ -189,6 +189,14 @@ Dicatat per gelombang: tanggal, jumlah generasi terpakai, seed ubin terpilih.
 | 12 Agu | 4 — batang sulur/akar + pohon varian 2 | 4 | 27 / 2000 |
 | 12 Agu | 6 — banner layar judul | 2 | 29 / 2000 (angka resmi get_balance) |
 | 12 Agu | 5 — karakter Regu Perawat + 6 animasi (26 frame) | 10 | 39 / 2000 |
+| 12 Agu | polish playtest kelima (pintu transparan, tetangga, 4 tanah, bunga) | 7 | 46 / 2000 |
+
+Pelajaran pass polish: (1) ubin varian papan catur harus PUNYA NILAI TERANG
+SAMA — dua generasi berbeda hampir selalu beda nilai dan malah membentuk
+papan catur; varian yang aman adalah cermin/rotasi dari ubin yang sama.
+(2) Sprite fitur yang duduk di atas ubin (pintu) digenerate TRANSPARAN
+tanpa dinding di belakangnya — dinding bawaan sprite tidak akan pernah
+menyatu dengan ubin fasad.
 
 Gelombang 5 sempat ditunda (rencana lama: batch edit_image — payload base64
 ~15rb karakter rawan korup di jalur MCP). Jalur yang akhirnya dipakai dan

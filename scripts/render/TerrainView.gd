@@ -70,7 +70,8 @@ func _buat_tileset():
 	var src = TileSetAtlasSource.new()
 	src.texture = load("res://aset/terrain_atlas.png")
 	src.texture_region_size = Vector2i(32, 32)
-	for i in range(13):
+	# kolom 13 = varian kedua tanah kering (papan catur, lihat _set_petak)
+	for i in range(14):
 		src.create_tile(Vector2i(i, 0))
 	ts.add_source(src, 0)
 	return ts
@@ -119,4 +120,9 @@ func _set_petak(layer, tx, ty):
 	if k == Config.T_SKY and layer == _atas:
 		layer.erase_cell(Vector2i(tx, ty))
 		return
-	layer.set_cell(Vector2i(tx, ty), 0, Vector2i(ATLAS[k], 0))
+	var kolom = ATLAS[k]
+	# tanah kering: dua varian berselang papan catur — pola pengulangan
+	# ubin jauh lebih sulit terbaca (playtest kelima: "tanah terlihat kasar")
+	if k == Config.T_SOIL_DRY and (tx + ty) % 2 == 1:
+		kolom = 13
+	layer.set_cell(Vector2i(tx, ty), 0, Vector2i(kolom, 0))

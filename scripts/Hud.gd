@@ -462,14 +462,14 @@ func _build_overlay():
 	vb.add_child(banner)
 
 	var judul = Label.new()
-	judul.text = "MENJALAR"
+	judul.text = "TENDRIL"
 	judul.add_theme_font_size_override("font_size", 84)
 	judul.add_theme_color_override("font_color", Config.C_LEAF)
 	judul.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(judul)
 
 	var tagline = Label.new()
-	tagline.text = "tumbuh pelan-pelan, hijaukan kotanya"
+	tagline.text = "GROW. HIDE. SURVIVE."
 	tagline.add_theme_color_override("font_color", Config.C_WINDOW)
 	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(tagline)

@@ -241,9 +241,17 @@ tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 Status: **TAHAP A–F dan R1–R6 selesai — seluruh peta jalan docs/06 dan
 docs/09 tuntas.** Arah kerja sekarang: **`docs/11-peta-jalan-g-plus.md`**
 (G1–G10), disusun dari review jujur 12 Agustus dan DISETUJUI PENUH pemilik
-proyek. Berikutnya: **G1** (jeda + percepat 2×). Tiga temuan terbesar
-review yang menjadi tulangnya: kepadatan keputusan per menit rendah,
-ekonomi mati setelah babak I, dan belum ada audio.
+proyek. Tiga temuan terbesar review yang menjadi tulangnya: kepadatan
+keputusan per menit rendah, ekonomi mati setelah babak I, dan belum ada
+audio.
+
+**G1 SELESAI** — kontrol waktu: Spasi = jeda (bercabang pindah SEPENUHNYA ke
+klik kanan), 1/2 = kecepatan simulasi. `dt = delta * _laju_waktu` hanya
+untuk simulasi (erosi/sim/cycle/crew/climber/babak); kamera, kartu, dan
+animasi view tetap delta asli. Hari perawatan otomatis menarik waktu ke 1×
+(`_kartu_fase`). Indikator "❚❚ JEDA"/"▶▶ 2×" di pita atas
+(`Hud.set_waktu`). Terverifikasi: 2× menggandakan jam tepat, jeda membeku
+sempurna. **Berikutnya: G2** (tunas ulang + perkuat pangkal).
 
 HUD dua-pita (docs/08 §3, dibangun setelah R6):
 

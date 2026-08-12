@@ -40,6 +40,10 @@ var _fase_terakhir = Config.PHASE_DAY
 var _kartu_t = 0.0        # sisa waktu kartu pergantian fase; > 0 = jeda
 var _flash_potong = 0.0   # peredam supaya "regu memangkas" tidak spam
 
+# kontrol waktu (G1): Spasi = jeda, 1/2 = kecepatan simulasi
+var _jeda = false
+var _laju_waktu = 1.0
+
 var pane_atas
 var pane_bawah
 
@@ -163,6 +167,8 @@ func _restart():
 	_babak_terakhir = 1
 	_fase_terakhir = Config.PHASE_DAY
 	_kartu_t = 0.0
+	_jeda = false
+	_laju_waktu = 1.0
 	hud.sembunyikan_kartu()
 	is_steering = false
 	playing = false
@@ -233,6 +239,10 @@ func _kamera(delta):
 # lewat tembok teks tutorial.
 func _kartu_fase():
 	_kartu_t = Config.KARTU_DETIK
+	# momen penting tidak boleh terlewat dipercepat: hari perawatan selalu
+	# menarik waktu kembali ke kecepatan normal
+	if cycle.rawat_hari_ini():
+		_laju_waktu = 1.0
 	if cycle.phase == Config.PHASE_NIGHT:
 		hud.tampil_kartu("MALAM",
 				"sulur merambat — bayangan aman, tempat terang menaikkan perhatian")
@@ -287,9 +297,14 @@ func _process(delta):
 	var m = _mouse_dunia()
 	_kamera(delta)
 
+	# Kontrol waktu (G1): jeda membekukan SIMULASI saja — kamera, kartu, dan
+	# animasi view tetap hidup. Laju 2x hanya mengalikan delta simulasi;
+	# delta kamera/UI tidak pernah disentuh.
+	var dt = 0.0 if _jeda else delta * _laju_waktu
+
 	# erosi berjalan juga sebelum MULAI — puing yang masih melayang setelah
 	# reset harus tetap jatuh
-	erosi.update(delta)
+	erosi.update(dt)
 
 	# kartu pergantian fase menjeda simulasi; render dan kamera tetap hidup
 	if _kartu_t > 0.0:
@@ -297,18 +312,18 @@ func _process(delta):
 		hud.kartu_pudar(_kartu_t)
 		if _kartu_t <= 0.0:
 			hud.sembunyikan_kartu()
-	elif playing and not won:
+	elif not _jeda and playing and not won:
 		# `terlihat` = jumlah nilai vis di tiap titik yang tumbuh frame ini —
 		# inilah yang menaikkan perhatian pengelola gedung
-		var terlihat = sim.update(delta, is_steering, m, world, cycle.phase)
-		cycle.update(delta, sim, world, terlihat)
+		var terlihat = sim.update(dt, is_steering, m, world, cycle.phase)
+		cycle.update(dt, sim, world, terlihat)
 
 		if cycle.phase != _fase_terakhir:
 			_fase_terakhir = cycle.phase
 			_kartu_fase()
 
-		crew.update(delta, sim, world, erosi, cycle)
-		climbers.update(delta, sim, world, cycle)
+		crew.update(dt, sim, world, erosi, cycle)
+		climbers.update(dt, sim, world, cycle)
 		if crew.dipotong > 0 or climbers.dipotong > 0:
 			sim.ensure_selection(cycle.phase)
 			# hukuman harus TERLIHAT: sekali per beberapa detik, umumkan
@@ -317,7 +332,7 @@ func _process(delta):
 				hud.flash_msg("Sulur dipotong di pangkalnya — tutupan zona anjlok!")
 		_flash_potong = max(0.0, _flash_potong - delta)
 
-		babak.update(delta, sim, world)
+		babak.update(dt, sim, world)
 		if babak.babak != _babak_terakhir:
 			_babak_terakhir = babak.babak
 			if babak.babak == 2:
@@ -353,6 +368,7 @@ func _process(delta):
 					"tidak ada untai hidup dan tidak ada pohon\ntekan R untuk mencoba lagi")
 
 	suasana.set_night(cycle.night_amount())
+	hud.set_waktu(_jeda, _laju_waktu)
 	hud.refresh(sim, cycle, world, crew, climbers, babak)
 
 
@@ -406,6 +422,21 @@ func _unhandled_input(event):
 	if not playing or won:
 		return
 
+	# --- kontrol waktu (G1) — Spasi pindah tugas dari bercabang ke jeda;
+	# bercabang cukup di klik kanan
+	if event is InputEventKey and event.pressed and not event.echo:
+		if _kunci(event, KEY_SPACE):
+			_jeda = not _jeda
+			return
+		elif _kunci(event, KEY_1):
+			_laju_waktu = 1.0
+			_jeda = false
+			return
+		elif _kunci(event, KEY_2):
+			_laju_waktu = 2.0
+			_jeda = false
+			return
+
 	if event is InputEventMouseButton and event.pressed:
 		var m = _mouse_dunia()
 		if event.button_index == MOUSE_BUTTON_LEFT:
@@ -424,9 +455,7 @@ func _unhandled_input(event):
 				_try_branch()
 
 	if event is InputEventKey and event.pressed and not event.echo:
-		if _kunci(event, KEY_SPACE):
-			_try_branch()
-		elif _kunci(event, KEY_X):
+		if _kunci(event, KEY_X):
 			# putus sulur di kursor — menjatuhkan pemanjat di atasnya, DAN
 			# merontokkan daun-daunnya: pemangkasan sukarela yang menurunkan
 			# perhatian (pendamaian dua makna X, lihat Config.PERHATIAN_PANGKAS)

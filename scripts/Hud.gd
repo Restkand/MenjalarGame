@@ -36,6 +36,7 @@ var _e_fill
 var _lbl_laju      # laju energi "+N/dtk" — mengajarkan min() lewat angka
 var _p_fill
 var _lbl_tren      # panah tren perhatian
+var _lbl_waktu     # indikator jeda / 2x
 var _lbl_kalender
 var _p_prev = 0.0
 var _p_akum = 0.0
@@ -110,6 +111,12 @@ func _pita_atas():
 	var isi = Control.new()
 	isi.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hb.add_child(isi)
+
+	# indikator kontrol waktu — hanya tampil saat tidak normal
+	_lbl_waktu = Label.new()
+	_lbl_waktu.add_theme_font_size_override("font_size", 15)
+	_lbl_waktu.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hb.add_child(_lbl_waktu)
 
 	_ikon(hb, "ikon_kalender")
 	_lbl_kalender = Label.new()
@@ -372,7 +379,7 @@ func _build_overlay():
 	vb.add_child(jarak2)
 
 	var kontrol = Label.new()
-	kontrol.text = "klik kiri  arahkan        klik kanan  bercabang        X  putus sulur\nklik akar di beton  menembus        WASD  geser        roda  zoom        Tab  panel"
+	kontrol.text = "klik kiri  arahkan        klik kanan  bercabang        X  putus sulur        klik akar di beton  menembus\nSpasi  jeda        1 / 2  kecepatan        WASD  geser        roda  zoom        Tab  panel"
 	kontrol.add_theme_color_override("font_color", Color(0.48, 0.51, 0.54))
 	kontrol.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(kontrol)
@@ -390,6 +397,17 @@ func show_overlay():
 func flash_msg(text):
 	_msg = text
 	_msg_t = 2.6
+
+
+func set_waktu(jeda, laju):
+	if jeda:
+		_lbl_waktu.text = "❚❚ JEDA"
+		_lbl_waktu.add_theme_color_override("font_color", Config.C_WARN)
+	elif laju > 1.0:
+		_lbl_waktu.text = "▶▶ %d×" % int(laju)
+		_lbl_waktu.add_theme_color_override("font_color", Config.C_TIP)
+	else:
+		_lbl_waktu.text = ""
 
 
 # ---------------------------------------------------------------------------

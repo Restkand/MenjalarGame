@@ -20,6 +20,7 @@ var _transisi_t = 0.0     # sisa waktu memutar detach/attach
 var _transisi = ""
 var _moda_lalu = -1
 var _pos_lalu = Vector2()
+var _jarak = 0.0          # jarak tempuh — penggerak frame lokomotasi
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
 
@@ -54,8 +55,14 @@ func _process(delta):
 		_meta_t = 0.6
 	_meta_t = max(0.0, _meta_t - delta)
 
-	# pilih state: transisi > gerak per moda > idle
-	var bergerak = _pos_lalu.distance_to(avatar.pos) > delta * 3.0
+	# pilih state: transisi > gerak per moda > idle. Frame lokomotasi
+	# dimajukan oleh JARAK TEMPUH, bukan waktu — tanpa ini tubuh meliuk
+	# lepas sinkron dari perpindahan dan jalannya terbaca "meluncur"
+	# (temuan playtest pemilik proyek).
+	var pindah = _pos_lalu.distance_to(avatar.pos)
+	var bergerak = pindah > delta * 3.0
+	if bergerak:
+		_jarak += pindah
 	_pos_lalu = avatar.pos
 	if _transisi_t > 0.0 and _anim.has(_transisi):
 		_state = _transisi
@@ -92,9 +99,14 @@ func _draw():
 			var total = 0.28 if _state == "detach" else 0.20
 			var maju = 1.0 - _transisi_t / total
 			fr = int(clamp(maju * a.n, 0.0, a.n - 1.0))
+		elif _state == "idle":
+			# idle berbasis waktu, 8 fps — napas pelan (papan: 8-12 fps)
+			fr = int(_t * 8.0) % a.n
 		else:
-			# loop 10 fps (papan: 8-12 fps agar natural)
-			fr = int(_t * 10.0) % a.n
+			# lokomotasi berbasis jarak: satu frame tiap ~2.5 satuan —
+			# jalan 24 u/s ≈ 10 fps, rambat 34 u/s ≈ 13 fps, dan saat
+			# berhenti liukannya ikut berhenti (tidak ada moonwalk)
+			fr = int(_jarak / 2.5) % a.n
 		# hadap kiri = cermin
 		draw_set_transform(p, 0.0, Vector2(avatar.hadap, 1.0))
 		draw_texture_rect_region(a.tex,

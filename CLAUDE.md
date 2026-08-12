@@ -6,7 +6,18 @@ merambat menjadikan sebuah gedung sebagai tubuhnya.
 ## Sumber kebenaran desain (KEDUANYA ditulis pemilik proyek)
 
 1. **`docs/GDD-TENDRIL.md`** — desain game menyeluruh (45 bagian).
-2. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
+2. **`docs/SPP-TENDRIL-SPRITE.md`** — prompt pack produksi sprite (63
+   bagian): SEMUA sprite karakter wajib dari prompt di sini, urutan §62.
+3. **`docs/ADR-TENDRIL-MASTER-A.md`** — keputusan art director:
+   **MASTER A LOCKED** (silhouette/proporsi/daun/S-curve/palet terkunci;
+   ujung tumbuh sudah di-refine jadi tunas menggulung via inpaint),
+   idle/detach/attach KEEP, merambat & lepas sudah di-refine dari master
+   refined, **Jump/Fall/Land DILARANG sebelum playtest** (§19), prioritas
+   = AvatarView Godot → playtest "apakah terasa hidup saat dikendalikan".
+   Sprite kanon di `aset/konsep_tendril/` (master + 5 strip animasi,
+   48px/frame, palet kanon; idle/detach/attach masih memakai ujung-daun
+   master pra-refine — sengaja, menunggu putusan playtest §21).
+4. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
    papan acuan visualnya. Kanon untuk SEGALA hal tentang sang Ujung
    Tumbuh: anatomi (ujung bercahaya sensitif cahaya, daun muda kamuflase,
    sulur fleksibel, node pertumbuhan), palet hijau kanon (#102016,
@@ -146,7 +157,9 @@ menyalahkan mekanik.
 
 ## Langkah berikutnya
 
-Menunggu arahan pemilik proyek, dengan usulan sesuai GDD §41+§42:
-tuntaskan Phase 1 (menempel dinding/plafon permukaan yang diizinkan
-material §12 + state machine §28), karena MOVEMENT → FEEL adalah akar
-segalanya.
+**MOVEMENT PLAYTEST oleh pemilik proyek** (ADR §18-19): AvatarView sudah
+memutar 5 animasi TENDRIL (idle/merambat/lepas loop 10 fps + transisi
+detach 0.28 dtk & attach 0.20 dtk sesuai target CDD §15-16). Pertanyaan
+playtest: "apakah TENDRIL terasa hidup saat dikendalikan?" Hasilnya
+menentukan LOCK atau REROLL (lepas prioritas #1, merambat #2). Jump/Fall/
+Land baru boleh SETELAH playtest lolos (ADR §20).

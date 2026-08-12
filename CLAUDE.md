@@ -258,6 +258,25 @@ HUD dua-pita (docs/08 §3, dibangun setelah R6):
   lalu band memegang teksnya; sorotan `C_TIP` tetap satu-hal-satu-waktu.
 - Panel tuning turun ke y=52 (di bawah pita), help ke (440, 986).
 
+Paket keterbacaan kedua (playtest keempat, 12 Agustus — "energi & perhatian
+masih membingungkan, regu sibuk di bawah tanah"):
+
+- **Regu memotong sulur DI PANGKALNYA** (`Crew._cari_zona` mencari titik
+  paling-pangkal tiap sulur di pita jangkauan; `TreeSim.pangkas(s,i)` —
+  dipakai juga tombol X): seluruh bagian di atas potongan lenyap sekali
+  gergaji (`CREW_POTONG` 2.4 dtk), sisa tunggul 2 titik yang bisa tumbuh
+  lagi. **Regu TIDAK PERNAH menyentuh akar** — dulu regu zona BAWAH tak
+  bisa meraih ujung sulur tinggi sehingga malah menggali akar, terbaca
+  absurd ("pengelola tidak melihat bawah tanah"). Risiko bawah tanah tetap
+  kanal utilitas. `CREW_CABUT`/`CREW_BAND_BAWAH` dihapus.
+- Tempo respons: `INSPEKSI_TIAP` 2, `JEDA_RAWAT` 1 — regu pertama bisa tiba
+  hari ke-3, bukan ke-5 ("menjalar sejak hari 1, tukang kebun baru datang
+  hari 5"). Jendela reaksi tetap satu hari penuh.
+- Keterbacaan ekonomi: label `+N/dtk` di samping bar energi ("malam +0" =
+  fotosintesis siang saja), panah tren ▲/—/▼ di samping bar perhatian
+  (cuplikan 0,7 dtk), dan kartu fajar menyebut rumus dengan angka hari itu:
+  "energi siang ini: min(AIR 1, CAHAYA 84) — kejar yang kecil".
+
 R6 yang sudah berdiri — `PixelCanvas` MATI, semua visual adalah view:
 
 - `scripts/render/AktorView.gd` — regu & pemanjat sprite PixelLab 48×64,

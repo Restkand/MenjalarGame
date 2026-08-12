@@ -16,7 +16,7 @@ const SPECS = [
 	["JEDA_RAWAT",     1.0,  5.0, 1.0],
 	["PERHATIAN_LURUH", 0.0, 0.02, 0.001],
 	["CREW_SPEED",     5.0, 60.0, 1.0],
-	["CREW_CABUT",     0.1,  3.0, 0.05],
+	["CREW_POTONG",    0.5,  6.0, 0.1],
 	["CREW_MAX",       1.0,  8.0, 1.0],
 	["CREW_PINGSAN",   0.0, 20.0, 0.5],
 	["CLIMB_CABUT",    0.1,  3.0, 0.05],

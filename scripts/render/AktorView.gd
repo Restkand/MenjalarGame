@@ -52,9 +52,10 @@ func _draw():
 					Color(0.62, 0.62, 0.68))
 			continue
 
-		var bekerja = u.kerja > 0.0 and u.sasaran != null
-		var jalan = u.pulang or (u.sasaran != null
-				and abs(u.sasaran.tip.x - u.x) > Config.CREW_JANGKAUAN)
+		var sasar = crew.titik_sasaran(u)
+		var bekerja = u.kerja > 0.0 and sasar != null
+		var jalan = u.pulang or (sasar != null
+				and abs(sasar.x - u.x) > Config.CREW_JANGKAUAN)
 		var nama = "regu_diam"
 		if bekerja:
 			nama = "regu_kerja_%d" % f
@@ -62,17 +63,17 @@ func _draw():
 			nama = "regu_jalan_%d" % f
 
 		var hadap = 1.0
-		if u.sasaran != null:
-			hadap = 1.0 if u.sasaran.tip.x >= u.x else -1.0
+		if sasar != null:
+			hadap = 1.0 if sasar.x >= u.x else -1.0
 		elif u.pulang:
 			hadap = -1.0 if u.x < Config.W / 2.0 else 1.0
 
-		# garis ke sasaran digambar dulu supaya badan menutupinya — pemain
-		# harus langsung tahu tanaman mana yang sedang dicabut
+		# garis ke titik potong digambar dulu supaya badan menutupinya —
+		# pemain harus langsung tahu sulur mana yang sedang digergaji
 		if bekerja:
 			var c = Config.C_ALERT
 			c.a = 0.75
-			draw_line(pos + Vector2(0.0, -44.0), u.sasaran.tip * ppu, c, 2.0)
+			draw_line(pos + Vector2(0.0, -44.0), sasar * ppu, c, 2.0)
 
 		draw_set_transform(pos, 0.0, Vector2(hadap, 1.0))
 		draw_texture(_tex[nama], Vector2(-24.0, -64.0))

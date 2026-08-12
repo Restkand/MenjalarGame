@@ -33,8 +33,13 @@ var _air_style
 var _cahaya_lbl
 var _cahaya_style
 var _e_fill
+var _lbl_laju      # laju energi "+N/dtk" — mengajarkan min() lewat angka
 var _p_fill
+var _lbl_tren      # panah tren perhatian
 var _lbl_kalender
+var _p_prev = 0.0
+var _p_akum = 0.0
+var _p_delta = 0.0
 
 # band pesan
 var _band
@@ -87,9 +92,20 @@ func _pita_atas():
 
 	_ikon(hb, "ikon_energi")
 	_e_fill = _bar(hb, Config.C_LEAF, 220.0)
+	# laju pemasukan energi, angka hidup — sebab-akibat min(Air, Cahaya)
+	# terlihat langsung: air 1 membuat laju anjlok walau cahaya 84
+	_lbl_laju = Label.new()
+	_lbl_laju.add_theme_font_size_override("font_size", 13)
+	_lbl_laju.add_theme_color_override("font_color", REDUP)
+	_lbl_laju.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hb.add_child(_lbl_laju)
 
 	_ikon(hb, "ikon_perhatian")
 	_p_fill = _bar(hb, Config.C_WINDOW, 220.0, Config.AMBANG_RAWAT)
+	_lbl_tren = Label.new()
+	_lbl_tren.add_theme_font_size_override("font_size", 15)
+	_lbl_tren.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hb.add_child(_lbl_tren)
 
 	var isi = Control.new()
 	isi.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -392,7 +408,30 @@ func refresh(sim, w, world, crew, climbers, babak):
 			0.0, 1.0), 12)
 	_e_fill.color = Config.C_ALERT if sim.starved else Config.C_LEAF
 
+	# laju energi hanya mengalir SIANG hari, dari sisi yang lebih kecil
+	if w.phase == Config.PHASE_DAY:
+		_lbl_laju.text = "+%d/dtk" \
+				% int(round(min(sim.water, sim.light) * Config.ENERGY_RATE))
+	else:
+		_lbl_laju.text = "malam +0"
+
 	_p_fill.size = Vector2(220.0 * clamp(w.perhatian, 0.0, 1.0), 12)
+
+	# tren perhatian, dicuplik tiap 0,7 detik supaya panahnya tenang
+	_p_akum += get_process_delta_time()
+	if _p_akum >= 0.7:
+		_p_delta = w.perhatian - _p_prev
+		_p_prev = w.perhatian
+		_p_akum = 0.0
+	if _p_delta > 0.003:
+		_lbl_tren.text = "▲"
+		_lbl_tren.add_theme_color_override("font_color", Config.C_WARN)
+	elif _p_delta < -0.0005:
+		_lbl_tren.text = "▼"
+		_lbl_tren.add_theme_color_override("font_color", Config.C_LEAF)
+	else:
+		_lbl_tren.text = "—"
+		_lbl_tren.add_theme_color_override("font_color", REDUP)
 
 	# --- kalender (selalu terlihat, docs/08 §3.2) ---------------------------
 	var ph = "SIANG" if w.phase == Config.PHASE_DAY else "MALAM"

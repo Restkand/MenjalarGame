@@ -257,9 +257,13 @@ func _kartu_fase():
 					% [int(round(cycle.perhatian * 100)),
 					int(round(Config.AMBANG_RAWAT * 100))]
 	else:
-		isi = "akar mencari air — inspeksi dalam %d hari" % cycle.inspeksi_dalam()
+		# pengajaran ekonomi dengan angka hari ini: energi mengalir dari
+		# sisi yang LEBIH KECIL, dan hanya saat siang
+		isi = "energi siang ini: min(AIR %d, CAHAYA %d) — kejar yang kecil" \
+				% [int(sim.water), int(sim.light)]
+		isi += "\ninspeksi dalam %d hari" % cycle.inspeksi_dalam()
 		if cycle.rawat_hari >= 0:
-			isi += "\nPERAWATAN hari %d — zona %s" \
+			isi += " — PERAWATAN hari %d, zona %s" \
 					% [cycle.rawat_hari, cycle.rawat_zona]
 	hud.tampil_kartu(judul, isi)
 
@@ -310,7 +314,7 @@ func _process(delta):
 			# hukuman harus TERLIHAT: sekali per beberapa detik, umumkan
 			if _flash_potong <= 0.0:
 				_flash_potong = 4.0
-				hud.flash_msg("Regu memangkas — tutupan zona berkurang!")
+				hud.flash_msg("Sulur dipotong di pangkalnya — tutupan zona anjlok!")
 		_flash_potong = max(0.0, _flash_potong - delta)
 
 		babak.update(delta, sim, world)

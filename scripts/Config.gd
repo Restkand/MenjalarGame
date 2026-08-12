@@ -47,8 +47,12 @@ var KARTU_DETIK = 2.8
 # inspeksi * (MAX-1), bekerja di zona yang dijadwalkan, lalu pulang begitu
 # zonanya bersih. MAX kembali normal karena tekanannya kini berjadwal, bukan
 # banjir.
+# Dirombak playtest 12 Agustus: regu MEMOTONG SULUR DI PANGKALNYA (seluruh
+# bagian di atas potongan lenyap sekali gergaji), dan TIDAK pernah menyentuh
+# akar — pengelola tidak melihat bawah tanah. CREW_POTONG adalah lama
+# menggergaji satu sulur; cukup panjang untuk ditimbun puing atau direlakan.
 var CREW_SPEED   = 36.0   # piksel per detik
-var CREW_CABUT   = 0.55   # detik per potongan
+var CREW_POTONG  = 2.4    # detik menggergaji sebelum sulur putus di pangkal
 var CREW_MAX     = 3      # regu terbanyak dalam satu hari perawatan
 var CREW_PINGSAN = 6.0    # detik tertimbun sebelum bangkit lagi
 
@@ -71,7 +75,7 @@ const CREW_LEBAR = 6.0    # setengah lebar badan, untuk deteksi tertimpa
 # cepat untuk sampai. Pada setengahnya dibutuhkan 33 detik, lebih lama dari
 # satu siang penuh, sehingga pemanjat tidak akan pernah tiba di ujung.
 var CLIMB_SPEED   = 50.0   # titik sulur yang dilalui per detik
-# Lebih lambat daripada CREW_CABUT: mereka bekerja canggung di ketinggian, dan
+# Lambat: mereka bekerja canggung di ketinggian, dan
 # itu memberi pemain waktu bereaksi. Memutus sulur lebih awal jauh lebih murah
 # daripada terlambat, karena yang hilang adalah pertumbuhan di atas potongan.
 var CLIMB_CABUT   = 1.2    # detik per potongan setelah sampai di ujung
@@ -84,10 +88,9 @@ var CLIMB_PINGSAN = 8.0    # detik setelah jatuh sebelum mencoba lagi
 const CLIMB_BASIS     = 140.0
 const CLIMB_MIN_TITIK = 80   # sulur harus cukup panjang untuk dipanjat
 
-const CREW_JANGKAUAN  = 10.0    # sedekat apa untuk mulai mencabut
-const CREW_PANJANG    = 28      # titik yang dipotong tiap potongan
-const CREW_BAND_ATAS  = 45.0    # setinggi apa di fasad mereka bisa meraih
-const CREW_BAND_BAWAH = 48.0    # sedalam apa mereka bisa menggali
+const CREW_JANGKAUAN  = 10.0    # sedekat apa untuk mulai menggergaji
+const CREW_PANJANG    = 28      # titik per potongan PEMANJAT (regu: pangkal)
+const CREW_BAND_ATAS  = 45.0    # setinggi apa di fasad regu bisa meraih
 
 const DEAD_ZONE = 14.0
 const C_WARN = Color("D8A34A")
@@ -250,9 +253,12 @@ var PERHATIAN_JENDELA = 0.012    # per detik, saat SEMUA jendela tertutup
 var PERHATIAN_PINTU   = 0.010    # per detik, saat seluruh pintu terambati
 var PERHATIAN_LURUH   = 0.002    # peluruhan per detik (~0.13 per hari)
 
+# Tempo respons dipercepat (playtest 12 Agustus: "menjalar sejak hari 1,
+# tukang kebun baru muncul hari 5"): inspeksi tiap 2 hari + jeda 1 hari =
+# regu pertama bisa tiba hari ke-3. Jendela reaksinya tetap satu hari penuh.
 var AMBANG_RAWAT  = 0.5    # inspeksi menjadwalkan perawatan di atas ini
-var INSPEKSI_TIAP = 3      # inspeksi tiap sekian hari
-var JEDA_RAWAT    = 2      # perawatan datang sekian hari setelah dijadwalkan
+var INSPEKSI_TIAP = 2      # inspeksi tiap sekian hari
+var JEDA_RAWAT    = 1      # perawatan datang sekian hari setelah dijadwalkan
 
 # Setelah hari perawatan lewat, pengelola menganggap masalahnya tertangani —
 # perhatian dikalikan ini (dan bobot zona ikut separuh).

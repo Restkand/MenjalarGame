@@ -316,22 +316,34 @@ func sever_at(p):
 	if found == null or found_i < 2:
 		return null
 
-	# jejak rambatan bagian yang dibuang ikut terhapus — memutus sulur adalah
-	# pemangkasan sungguhan, bar HIJAU/zona ikut mundur
-	if _world != null:
-		for i in range(found_i + 1, found.points.size()):
-			_world.hapus_rambatan(int(round(found.points[i].x)),
-					int(round(found.points[i].y)))
-
-	found.points.resize(found_i + 1)
-	found.tip = Vector2(found.points[found_i].x, found.points[found_i].y)
-	found.angle = found.angle + PI
-	var keep = []
-	for l in found.leaves:
-		if l.pos.distance_to(found.tip) < 80.0:
-			keep.append(l)
-	found.leaves = keep
+	pangkas(found, found_i)
 	return {"s": found, "i": found_i}
+
+
+# Memotong untai pada indeks titik i: seluruh bagian di atasnya hilang,
+# jejak rambatannya terhapus (bar HIJAU/zona mundur), daun-daunnya rontok.
+# Dipakai sever_at (tombol X pemain) dan regu perawatan (potong di pangkal).
+func pangkas(s, i, world = null):
+	if world == null:
+		world = _world
+	i = max(i, 2)   # sisakan tunggul — untai tetap hidup dan bisa tumbuh lagi
+	if i >= s.points.size() - 1:
+		return false
+
+	if world != null:
+		for j in range(i + 1, s.points.size()):
+			world.hapus_rambatan(int(round(s.points[j].x)),
+					int(round(s.points[j].y)))
+
+	s.points.resize(i + 1)
+	s.tip = Vector2(s.points[i].x, s.points[i].y)
+	s.angle = s.angle + PI
+	var keep = []
+	for l in s.leaves:
+		if l.pos.distance_to(s.tip) < 80.0:
+			keep.append(l)
+	s.leaves = keep
+	return true
 
 
 func alive_count():

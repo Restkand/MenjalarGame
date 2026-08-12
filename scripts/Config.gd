@@ -424,6 +424,14 @@ var PUING_LAMBAT = 0.45
 var POHON_LAJU  = 0.25   # kemajuan berakar per detik; 1.0 = jadi pohon
 var POHON_HASIL = 0.25   # tambahan air DAN cahaya per pohon
 
+# TANAM DENGAN SENGAJA (G5): tombol T pada sulur terpilih yang ujungnya
+# berdiri di puing — untai itu DIKORBANKAN (mati, berhenti jadi alat) dan
+# sebatang pohon berdiri di titiknya. Mahal dua kali: energi terbesar di
+# permainan + kehilangan satu untai. Berakar-pasif tetap ada sebagai jalan
+# lambat; pemain aktif menutup babak III lebih cepat dan memilih SUSUNAN
+# hutannya sendiri — kemenangan sebagai rangkaian keputusan, bukan timer.
+var COST_TANAM = 80.0
+
 const POHON_JARAK  = 24.0   # jarak minimal antar pohon
 const POHON_MAX    = 20
 const POHON_TINGGI = 44     # tinggi maksimal

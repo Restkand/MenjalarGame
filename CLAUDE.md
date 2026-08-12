@@ -279,7 +279,15 @@ diumumkan lewat `pesan_kering` → flash. (2) **musim kering** —
 `Cycle.kering_hari/akhir`, tiap KERING_SIKLUS (6) hari, diumumkan 2 hari
 sebelumnya (kartu + kalender), lamanya KERING_LAMA (2) hari; selama itu
 tanah lembap dihitung kering (`TreeSim._water(world, delta, kering)`).
-**Berikutnya: G5** (tanam pohon dengan sengaja).
+
+**G5 SELESAI** — tanam pohon dengan sengaja: tombol T pada sulur terpilih
+yang ujungnya `on_puing` → `TreeSim.tanam_sengaja()` (COST_TANAM 80,
+termahal di permainan) menanam pohon di titik itu dan MENGORBANKAN untainya
+(alive=false, bangkainya tinggal). Kode gagal ("pilih"/"puing"/"jarak"/
+"penuh"/"energi") → pesan HUD spesifik. Berakar-pasif tetap jalan lambat.
+Catatan harness: `_world` TreeSim baru terisi di sim.update() pertama
+setelah MULAI — uji yang memanggil API sim di frame yang sama akan gagal
+palsu. **Berikutnya: G6** (eskalasi antar siklus).
 
 HUD dua-pita (docs/08 §3, dibangun setelah R6):
 

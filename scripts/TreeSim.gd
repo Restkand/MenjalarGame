@@ -350,6 +350,28 @@ func _bangkai_step(delta, world):
 	bangkai = sisa
 
 
+# TANAM DENGAN SENGAJA (G5): korbankan sulur terpilih yang berdiri di puing
+# menjadi pohon di titik ujungnya. Mengembalikan "" saat berhasil, atau kode
+# alasan gagal untuk pesan HUD. Berakar-pasif (_berakar) tetap jalan lambat.
+func tanam_sengaja():
+	if selected == null or not selected.alive or selected.is_root:
+		return "pilih"
+	if _world == null or not selected.on_puing(_world):
+		return "puing"
+	if trees.size() >= Config.POHON_MAX:
+		return "penuh"
+	for t in trees:
+		if Vector2(t.x, t.y).distance_to(selected.tip) < Config.POHON_JARAK:
+			return "jarak"
+	if energy < Config.COST_TANAM:
+		return "energi"
+	energy -= Config.COST_TANAM
+	trees.append({"x": selected.tip.x, "y": selected.tip.y, "tinggi": 1.0})
+	# untai dikorbankan — berhenti tumbuh, bangkainya tinggal di dunia
+	selected.alive = false
+	return ""
+
+
 # PERKUAT PANGKAL (G2): sulur terpilih menebal, gergaji regu butuh dua kali
 # durasi. Sekali dan permanen untuk untai itu.
 func perkuat():

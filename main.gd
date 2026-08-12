@@ -365,7 +365,7 @@ func _process(delta):
 				hud.flash_msg("BABAK II — hijaukan TIAP zona sampai %d%%"
 						% int(round(Config.ZONA_TARGET * 100)))
 			else:
-				hud.flash_msg("BABAK III — tumbuhkan %d pohon permanen"
+				hud.flash_msg("BABAK III — tanam %d pohon permanen (T di sulur atas puing)"
 						% int(Config.BABAK3_POHON))
 
 	tanaman.sinkron()
@@ -481,7 +481,26 @@ func _unhandled_input(event):
 			_try_branch(m, ada_ujung)
 
 	if event is InputEventKey and event.pressed and not event.echo:
-		if _kunci(event, KEY_F):
+		if _kunci(event, KEY_T):
+			# tanam pohon dengan sengaja (G5) — korbankan sulur di puing
+			var hasil = sim.tanam_sengaja()
+			match hasil:
+				"":
+					sim.ensure_selection(cycle.phase)
+					hud.flash_msg("Pohon ditanam — permanen, kebal regu  (-%d energi)"
+							% int(Config.COST_TANAM))
+				"pilih":
+					hud.flash_msg("Tanam: pilih sulur dulu (klik kiri)")
+				"puing":
+					hud.flash_msg("Pohon hanya bisa ditanam di ujung sulur yang berdiri di PUING")
+				"jarak":
+					hud.flash_msg("Terlalu dekat dengan pohon lain")
+				"penuh":
+					hud.flash_msg("Hutan sudah penuh")
+				"energi":
+					hud.flash_msg("Energi kurang — tanam butuh %d"
+							% int(Config.COST_TANAM))
+		elif _kunci(event, KEY_F):
 			# perkuat pangkal sulur terpilih (G2)
 			if sim.perkuat():
 				hud.flash_msg("Pangkal diperkuat — gergaji regu butuh 2x lebih lama  (-%d energi)"

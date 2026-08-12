@@ -11,6 +11,7 @@ var id         = 0
 var _acc       = 0.0
 var _leaf_acc  = 0.0
 var _daun_kiri = false # sisi daun berikutnya — berselang-seling kiri-kanan
+var _tunas_t   = 0.0   # jeda sampai daun susulan berikutnya
 var berakar    = 0.0   # kemajuan menjadi pohon saat berdiri di atas puing
 var tembus     = -1.0  # menembus beton: -1 = tidak; 0..1 = kemajuan bor
 
@@ -104,42 +105,74 @@ func grow(delta, steer, t, world, laju = 1.0):
 		if _leaf_acc >= Config.LEAF_SPACING:
 			_leaf_acc -= Config.LEAF_SPACING
 			_spawn_leaf(world)
+		_tunas_step(delta, world)
 
 	return gained
 
 
-# Daun MENEMPEL di sumbu sulur dan menunjuk keluar darinya, berselang-seling
-# kiri-kanan — seperti tanaman sungguhan (gambar acuan mekanik merambat,
-# panel 2). Tiap titik tumbuh menabur RUMPUN 2-3 daun yang tersebar sedikit
-# di sepanjang batang, bukan sehelai — sehelai per titik terbaca jarang dan
-# berjarak (playtest 12 Agustus), sedangkan acuan menuntut sulur yang
-# benar-benar rimbun.
+# Pertumbuhan daun meniru panel "Tahap Pertumbuhan" acuan: ujung menanam
+# tunas, batang tua terus menambah daun susulan, dan tiap daun membesar
+# pelan dari kuncup — kerimbunan datang dari WAKTU tumbuh, bukan taburan.
+
+# Tunas di ujung yang sedang merambat.
 func _spawn_leaf(world):
-	if leaves.size() > 200 or not world.on_facade(tip.x, tip.y):
+	if not world.on_facade(tip.x, tip.y):
 		return
-	var arah = Vector2(cos(angle), sin(angle))
-	var n = 2 if randf() < 0.6 else 3
-	for _i in range(n):
-		var side = -1.0 if _daun_kiri else 1.0
-		_daun_kiri = not _daun_kiri
-		leaves.append({
-			"pos": Vector2(tip.x, tip.y) - arah * randf_range(0.0, 3.5),
-			# tegak lurus arah sulur, dengan goyangan alami
-			"sudut": angle + side * PI / 2.0 + randf_range(-0.6, 0.6),
-			"age": 0.0,
-			"varian": randi() % 8,
-			"skala": randf_range(0.85, 1.35),
-			# kedalaman kanopi: daun belakang digambar duluan, lebih gelap
-			# dan sedikit lebih besar — tumpukan jadi terbaca sebagai rimbun
-			# bertingkat, bukan stiker bertumpuk
-			"lapis": 0 if randf() < 0.45 else 1,
-			"rona": randf_range(0.82, 1.05),
-		})
+	_buat_daun(Vector2(tip.x, tip.y), angle)
+
+
+# Daun susulan di titik acak sepanjang batang — panel "daun bertambah":
+# sulur yang hidup makin lama makin lebat, di seluruh tubuhnya.
+func _tunas_step(delta, world):
+	_tunas_t += delta
+	if _tunas_t < Config.TUNAS_TIAP:
+		return
+	_tunas_t = 0.0
+	if points.size() < 12:
+		return
+	var i = randi() % (points.size() - 6) + 4
+	var p = points[i]
+	if not world.vine_ok(p.x, p.y):
+		return
+	# arah batang setempat, dari titik tetangganya
+	var d = points[min(i + 2, points.size() - 1)] - points[max(i - 2, 0)]
+	_buat_daun(Vector2(p.x, p.y), atan2(d.y, d.x))
+
+
+func _buat_daun(p, arah_batang):
+	if leaves.size() > 200:
+		return
+	var side = -1.0 if _daun_kiri else 1.0
+	_daun_kiri = not _daun_kiri
+	# keluar dari batang, lalu dicondongkan ke ATAS — daun sungguhan mencari
+	# cahaya, dan condong fototropik inilah yang membuat acuan terlihat
+	# hidup: apa pun arah batangnya, mayoritas daun mendongak
+	var keluar = arah_batang + side * PI / 2.0
+	var sudut = lerp_angle(keluar, -PI / 2.0, 0.45) + randf_range(-0.35, 0.35)
+	# satu jenis dominan (daun lebar), diselingi dua bentuk pendamping —
+	# kerimbunan yang koheren, bukan mozaik delapan bentuk
+	var varian = 3
+	var acak = randf()
+	if acak > 0.85:
+		varian = 5
+	elif acak > 0.55:
+		varian = 1
+	leaves.append({
+		"pos": p,
+		"sudut": sudut,
+		"age": 0.0,
+		"varian": varian,
+		"skala": randf_range(0.8, 1.25),
+		# kedalaman kanopi: daun belakang digambar duluan, lebih gelap dan
+		# sedikit lebih besar
+		"lapis": 0 if randf() < 0.45 else 1,
+		"rona": randf_range(0.82, 1.05),
+	})
 
 
 func age_leaves(delta):
 	for l in leaves:
-		l.age = min(1.5, l.age + delta)
+		l.age = min(Config.DAUN_DEWASA, l.age + delta)
 
 
 # retreat_to_facade() dihapus di TAHAP B — lihat catatan di TreeSim.

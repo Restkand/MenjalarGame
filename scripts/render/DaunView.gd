@@ -33,7 +33,7 @@ func _process(_delta):
 		n += s.leaves.size()
 		if not muda:
 			for l in s.leaves:
-				if l.age < 1.5:
+				if l.age < Config.DAUN_DEWASA:
 					muda = true
 					break
 	if n != _n or muda:
@@ -62,8 +62,11 @@ func _gambar_lapis(lapis):
 			if int(l.get("lapis", 1)) != lapis:
 				continue
 			var v = int(l.get("varian", 0))
-			# daun lahir kecil lalu membesar selama 1,5 detik (§9 Logika)
-			var sk = l.get("skala", 1.0) * (0.5 + 0.5 * min(1.0, l.age / 1.5))
+			# dari KUNCUP ke dewasa selama DAUN_DEWASA detik — bagian muda
+			# sulur selalu bertabur kuncup kecil, bagian tua berdaun besar,
+			# persis tahapan tunas -> lebat di gambar acuan
+			var sk = l.get("skala", 1.0) \
+					* (0.3 + 0.7 * min(1.0, l.age / Config.DAUN_DEWASA))
 			var rona = l.get("rona", 1.0)
 			var warna
 			if lapis == 0:

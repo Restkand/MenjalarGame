@@ -101,10 +101,18 @@ const GROUND_Y = 192
 
 const MAX_STRANDS = 24
 const SEED_X = 240
-# Diturunkan dua kali (14 -> 8 -> 5, playtest 12 Agustus): kerimbunan acuan
-# menuntut daun RAPAT — tiap titik tumbuh kini menabur rumpun 2-3 daun,
-# jadi rata-rata satu daun tiap ~2 satuan batang.
-const LEAF_SPACING = 5.0
+# Pertumbuhan daun meniru panel "Tahap Pertumbuhan" acuan (playtest 12
+# Agustus): daun BENAR-BENAR tumbuh, bukan ditempel jadi.
+#
+#   1. Ujung yang merambat menanam TUNAS kecil tiap LEAF_SPACING satuan.
+#   2. Tiap tunas membesar pelan selama DAUN_DEWASA detik — bagian muda
+#      sulur selalu penuh kuncup kecil, bagian tua berdaun besar.
+#   3. Batang yang hidup terus MENAMBAH daun baru di titik acak sepanjang
+#      tubuhnya tiap TUNAS_TIAP detik ("daun bertambah" -> "lebat" ->
+#      "mendominasi") — kerimbunan datang dari WAKTU, bukan dari taburan.
+const LEAF_SPACING = 6.0
+const TUNAS_TIAP   = 2.0    # detik antar daun susulan per sulur
+const DAUN_DEWASA  = 30.0   # detik dari kuncup sampai ukuran penuh
 
 # Berapa titik yang disimpan tiap untai, dan berapa titik terakhir yang
 # digambar ulang tiap frame ke lapisan pohon yang akumulatif.

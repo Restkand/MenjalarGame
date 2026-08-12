@@ -12,6 +12,8 @@ const SPECS = [
 	["PUING_LAMBAT",   0.0,  1.0, 0.05],
 	["LAPUK_LAJU",     0.0,  0.2, 0.005],
 	["AMBANG_RAWAT",   0.1,  1.0, 0.05],
+	["AKUIFER_SEDOT",  0.0,  0.5, 0.01],
+	["KERING_SIKLUS",  3.0, 12.0, 1.0],
 	["INSPEKSI_TIAP",  1.0,  7.0, 1.0],
 	["JEDA_RAWAT",     1.0,  5.0, 1.0],
 	["PERHATIAN_LURUH", 0.0, 0.02, 0.001],

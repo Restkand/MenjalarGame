@@ -32,6 +32,10 @@ var rawat_zona     = ""
 var rawat_zona_idx = -1    # indeks Config.ZONA_NAMA; 0-1 = zona ATAS
 var rawat_kekuatan = 0.0   # perhatian saat inspeksi — menentukan jumlah regu
 
+# Musim kering (G4): diumumkan dua hari sebelumnya, seperti semua ancaman.
+var kering_hari  = -1      # hari mulai; -1 = tidak ada jadwal
+var kering_akhir = -1      # hari pertama SETELAH musim kering berakhir
+
 
 func reset():
 	phase = Config.PHASE_DAY
@@ -42,10 +46,16 @@ func reset():
 	rawat_zona = ""
 	rawat_zona_idx = -1
 	rawat_kekuatan = 0.0
+	kering_hari = -1
+	kering_akhir = -1
 
 
 func rawat_hari_ini():
 	return rawat_hari == hari
+
+
+func musim_kering():
+	return kering_hari >= 0 and hari >= kering_hari and hari < kering_akhir
 
 
 func phase_len():
@@ -105,6 +115,16 @@ func _fajar(world):
 		perhatian *= Config.PERHATIAN_SETELAH_RAWAT
 		for i in range(4):
 			world.zona_bobot[i] *= 0.5
+
+	# musim kering yang usai dibersihkan; yang baru dijadwalkan tiap
+	# KERING_SIKLUS hari, diumumkan dua hari sebelumnya (kartu & kalender)
+	if kering_akhir >= 0 and hari >= kering_akhir:
+		kering_hari = -1
+		kering_akhir = -1
+	if kering_hari < 0 and hari > 2 \
+			and hari % max(3, int(Config.KERING_SIKLUS)) == 0:
+		kering_hari = hari + 2
+		kering_akhir = kering_hari + max(1, int(Config.KERING_LAMA))
 
 	if inspeksi_dalam() == 0:
 		_inspeksi(world)

@@ -268,8 +268,18 @@ menyusut dari ujung selama `BANGKAI_UMUR` (50 dtk ≈ satu hari) dan
 bertahap, dan tunas ulang bisa menyambung selama bekasnya belum terkikis.
 `render/BangkaiView.gd` menggambar polyline kering (C_BANGKAI) yang
 menyusut. X pemain tetap `pangkas()` instan — pemangkasan sukarela memang
-harus langsung bersih. **Berikutnya: G4** (akuifer menyusut + musim
-kering).
+harus langsung bersih.
+
+**G4 SELESAI** — air tidak pernah selesai: (1) **akuifer menyusut** —
+`WorldMap.kolam` (dua kolam bernama BARAT/TIMUR); tiap akar penyedot
+memanggil `sedot_di()` (AKUIFER_SEDOT 0.09 baris/dtk/akar), baris teratas
+berubah `T_SOIL_WET` (kelihatan di peta), akar HARUS mengejar permukaan
+yang turun (scan ±4 gagal begitu tertinggal — teruji), separuh/habis
+diumumkan lewat `pesan_kering` → flash. (2) **musim kering** —
+`Cycle.kering_hari/akhir`, tiap KERING_SIKLUS (6) hari, diumumkan 2 hari
+sebelumnya (kartu + kalender), lamanya KERING_LAMA (2) hari; selama itu
+tanah lembap dihitung kering (`TreeSim._water(world, delta, kering)`).
+**Berikutnya: G5** (tanam pohon dengan sengaja).
 
 HUD dua-pita (docs/08 §3, dibangun setelah R6):
 

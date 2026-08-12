@@ -252,6 +252,13 @@ func _kartu_fase():
 	# fajar — hari baru
 	var judul = "HARI %d" % cycle.hari
 	var isi = ""
+	if cycle.musim_kering() and cycle.hari == cycle.kering_hari \
+			and not cycle.rawat_hari_ini():
+		judul = "MUSIM KERING"
+		isi = "tanah lembap tak memberi air %d hari — hanya akuifer yang bertahan" \
+				% (cycle.kering_akhir - cycle.hari)
+		hud.tampil_kartu(judul, isi)
+		return
 	if cycle.rawat_hari_ini():
 		judul = "REGU PERAWATAN DATANG"
 		isi = "zona %s dibersihkan hari ini — lindungi, timbun, atau relakan" \
@@ -276,6 +283,10 @@ func _kartu_fase():
 		if cycle.rawat_hari >= 0:
 			isi += " — PERAWATAN hari %d, zona %s" \
 					% [cycle.rawat_hari, cycle.rawat_zona]
+	# musim kering yang mendekat menumpang di kartu apa pun
+	if cycle.kering_hari >= 0 and cycle.hari < cycle.kering_hari:
+		isi += "\nMUSIM KERING dalam %d hari — pastikan akar mencapai akuifer" \
+				% (cycle.kering_hari - cycle.hari)
 	hud.tampil_kartu(judul, isi)
 
 
@@ -324,8 +335,14 @@ func _process(delta):
 	elif not _jeda and playing and not won:
 		# `terlihat` = jumlah nilai vis di tiap titik yang tumbuh frame ini —
 		# inilah yang menaikkan perhatian pengelola gedung
-		var terlihat = sim.update(dt, is_steering, m, world, cycle.phase)
+		var terlihat = sim.update(dt, is_steering, m, world, cycle.phase,
+				cycle.musim_kering())
 		cycle.update(dt, sim, world, terlihat)
+
+		# kolam akuifer yang menyusut mengumumkan dirinya sendiri
+		if world.pesan_kering != "":
+			hud.flash_msg(world.pesan_kering)
+			world.pesan_kering = ""
 
 		if cycle.phase != _fase_terakhir:
 			_fase_terakhir = cycle.phase

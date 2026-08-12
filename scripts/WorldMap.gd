@@ -16,6 +16,9 @@ var puing_atas = 0     # baris tertinggi yang sudah tertutup puing
 
 var tile_kotor = {}    # Vector2i petak -> true; diambil TerrainView tiap frame
 
+var kolam = []         # cadangan akuifer (G4); diisi build()
+var pesan_kering = ""  # pengumuman kolam yang habis; dibaca-kosongkan main
+
 # Peta rambatan (TAHAP B). tutup[i] = 1 berarti sel itu pernah dirambati
 # sulur. Tiga peran sekaligus:
 #   1. pijakan KEKAL — vine_ok() menerimanya, jadi sulur tidak kehilangan
@@ -109,6 +112,17 @@ func build():
 	_rect(55, 296, 100, 22, Config.T_AKUIFER)
 	_rect(390, 285, 90, 35, Config.T_CONCRETE)
 	_rect(402, 296, 66, 22, Config.T_AKUIFER)
+
+	# cadangan tiap kolam (G4): permukaan airnya turun saat disedot akar.
+	# `level` = kedalaman float yang sudah terkuras; `terkuras` = baris yang
+	# sudah dikonversi jadi tanah lembap.
+	kolam = [
+		{"x0": 55, "x1": 154, "y0": 296, "y1": 317,
+				"level": 0.0, "terkuras": 0, "nama": "BARAT"},
+		{"x0": 402, "x1": 467, "y0": 296, "y1": 317,
+				"level": 0.0, "terkuras": 0, "nama": "TIMUR"},
+	]
+	pesan_kering = ""
 
 	# -----------------------------------------------------------------------
 	# Atas tanah
@@ -426,6 +440,33 @@ func zona_tutupan(i):
 	if zona_luas[i] == 0:
 		return 1.0   # kuadran tanpa fasad dianggap selesai
 	return float(zona_tutup[i]) / float(zona_luas[i])
+
+
+# Akar menyedot kolam akuifer di dekat titik ini (G4): permukaan airnya
+# turun, dan baris teratas yang terkuras berubah jadi tanah lembap — sisa
+# basah, air kecil. Kolam yang habis diumumkan lewat pesan_kering.
+func sedot_di(p, jumlah):
+	for k in kolam:
+		if p.x < k.x0 - 6 or p.x > k.x1 + 6 \
+				or p.y < k.y0 - 6 or p.y > k.y1 + 6:
+			continue
+		var dalam = k.y1 - k.y0 + 1
+		if k.terkuras >= dalam:
+			return
+		k.level += jumlah
+		while k.terkuras < int(k.level) and k.terkuras < dalam:
+			var y = k.y0 + k.terkuras
+			for x in range(k.x0, k.x1 + 1):
+				if grid[y * Config.W + x] == Config.T_AKUIFER:
+					grid.set(y * Config.W + x, Config.T_SOIL_WET)
+					_tandai_petak(x, y)
+			k.terkuras += 1
+			if k.terkuras >= dalam:
+				pesan_kering = "Akuifer %s TERKURAS HABIS" % k.nama
+			elif k.terkuras == dalam / 2:
+				pesan_kering = "Akuifer %s tinggal separuh — permukaannya turun" \
+						% k.nama
+		return
 
 
 # Apakah ada bekas rambatan di sekitar titik ini — syarat tunas ulang (G2).

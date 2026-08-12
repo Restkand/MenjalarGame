@@ -39,14 +39,14 @@ func _make(x, y, a, is_root, gen):
 
 
 # mengembalikan total nilai keterlihatan pertumbuhan frame ini
-func update(delta, steering, mouse, world, phase):
+func update(delta, steering, mouse, world, phase, kering = false):
 	# Disimpan supaya select_near() dan ensure_selection() bisa memeriksa
 	# apakah sebuah untai berdiri di atas puing, tanpa harus mengubah
 	# tanda tangan mereka di Cycle dan main.
 	_world = world
 	time += delta
 	_bangkai_step(delta, world)
-	water = _water(world)
+	water = _water(world, delta, kering)
 	light = _light(world)
 
 	# Fotosintesis hanya terjadi siang hari
@@ -168,7 +168,7 @@ func _tembus_step(s, world, delta):
 	s.tembus = -1.0
 
 
-func _water(world):
+func _water(world, delta, kering):
 	# Pohon berakar dalam dan berdaun lebar, jadi ia menyumbang ke KEDUA sisi
 	# min(Air, Cahaya). Itulah yang melepas cekikan ekonomi dan membebaskan
 	# akar dari tugas ganda.
@@ -177,7 +177,9 @@ func _water(world):
 	for s in strands:
 		if not s.alive or not s.is_root:
 			continue
-		# akuifer adalah hadiah di balik beton — sumber air terbesar
+		# akuifer adalah hadiah di balik beton — sumber air terbesar, TAPI
+		# menyedotnya menurunkan permukaan (G4): akar harus mengejar air
+		# yang surut, dan kolam yang diperas ramai-ramai cepat habis
 		var near_akuifer = false
 		for dy in range(-4, 5):
 			for dx in range(-4, 5):
@@ -187,9 +189,12 @@ func _water(world):
 		if near_akuifer:
 			w += 4.0
 			dekat_akuifer = true
+			world.sedot_di(s.tip, Config.AKUIFER_SEDOT * delta)
 		elif world.at(int(round(s.tip.x)),
 				int(round(s.tip.y))) == Config.T_SOIL_WET:
-			w += 2.0
+			# musim kering (G4): tanah lembap tidak memberi apa-apa —
+			# hanya akuifer yang bertahan
+			w += 0.25 if kering else 2.0
 		else:
 			w += 0.25
 	return w

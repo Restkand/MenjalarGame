@@ -147,6 +147,24 @@ var COST_KOKOH = 60.0
 # X pemain tetap instan — pemangkasan sukarela memang harus langsung bersih.
 var BANGKAI_UMUR = 50.0
 
+# ---------------------------------------------------------------------------
+# Air yang tidak pernah selesai (G4) — jawaban untuk "ekonomi mati setelah
+# babak I": begitu akar duduk di akuifer, air dulunya beres selamanya dan
+# min(Air, Cahaya) berhenti jadi keputusan.
+#
+# AKUIFER MENYUSUT: tiap akar yang menyedot menurunkan permukaan air
+# (baris teratas kolam berubah jadi tanah lembap — kelihatan di peta).
+# Banyak akar = cepat kering; akar harus mengejar permukaan yang turun,
+# dan dua kolam = dua babak kehidupan air.
+# 0.09 baris/detik: satu akar menguras kolam 22 baris dalam ~4 siklus hari.
+var AKUIFER_SEDOT = 0.09
+
+# MUSIM KERING: event kalender yang DIUMUMKAN dua hari sebelumnya — selama
+# berlangsung, tanah lembap dihitung kering dan hanya akuifer yang memberi
+# air. Datang tiap KERING_SIKLUS hari, berlangsung KERING_LAMA hari.
+var KERING_SIKLUS = 6
+var KERING_LAMA   = 2
+
 const FACADE_X0 = 96
 const FACADE_X1 = 384
 const FACADE_Y0 = 24

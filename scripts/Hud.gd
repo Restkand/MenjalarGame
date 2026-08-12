@@ -471,6 +471,10 @@ func refresh(sim, w, world, crew, climbers, babak):
 		_lbl_kalender.modulate = Config.C_WARN
 	else:
 		_lbl_kalender.modulate = Color(1, 1, 1)
+	if w.musim_kering():
+		baris2 += "   KERING %d HARI LAGI" % (w.kering_akhir - w.hari)
+	elif w.kering_hari >= 0 and w.hari < w.kering_hari:
+		baris2 += "   KERING dalam %d hari" % (w.kering_hari - w.hari)
 	_lbl_kalender.text = baris1 + "\n" + baris2
 
 	# --- pita bawah: babak + zona -------------------------------------------

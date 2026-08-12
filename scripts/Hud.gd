@@ -57,14 +57,86 @@ var _zona_style = []
 var _c_fill        # bar kemajuan babak (babak I & III)
 var _c_bar_bg
 
+# HUD avatar (P3.5, docs/13): mengganti pita lama saat moda avatar aktif
+var _avatar = null
+var _hb_atas          # pita atas lama — disembunyikan saat avatar aktif
+var _hb_bawah         # pita bawah lama — idem
+var _hb_av            # pita atas avatar
+var _av_e_fill
+var _lbl_moda
+var _av_ikon_air
+var _av_ikon_cahaya
+var _lbl_kal_av
+var _lbl_waktu_av
+var _lbl_hint         # petunjuk kontekstual di pita bawah
+
 
 func _ready():
 	layer = 20
 	_pita_atas()
+	_pita_avatar()
 	_band_pesan()
 	_pita_bawah()
 	_build_overlay()
 	_build_kartu()
+
+
+# ---------------------------------------------------------------------------
+# Pita avatar (P3.5) — SATU bahasa: energi avatar, moda, sumber yang sedang
+# mengisi, hari & waktu. Menggantikan pita ekonomi min() game lama.
+# ---------------------------------------------------------------------------
+
+func _pita_avatar():
+	_hb_av = HBoxContainer.new()
+	_hb_av.position = Vector2(12, 0)
+	_hb_av.size = Vector2(1896, Config.HUD_ATAS)
+	_hb_av.add_theme_constant_override("separation", 18)
+	_hb_av.visible = false
+	add_child(_hb_av)
+
+	_ikon(_hb_av, "ikon_energi")
+	_av_e_fill = _bar(_hb_av, Config.C_TIP, 320.0)
+
+	_lbl_moda = Label.new()
+	_lbl_moda.add_theme_font_size_override("font_size", 15)
+	_lbl_moda.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_lbl_moda.custom_minimum_size = Vector2(130, 0)
+	_hb_av.add_child(_lbl_moda)
+
+	# ikon sumber yang SEDANG mengisi — muncul hanya saat minum/berjemur
+	_av_ikon_air = _ikon(_hb_av, "ikon_air")
+	_av_ikon_air.visible = false
+	_av_ikon_cahaya = _ikon(_hb_av, "ikon_cahaya")
+	_av_ikon_cahaya.visible = false
+
+	var isi = Control.new()
+	isi.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hb_av.add_child(isi)
+
+	_lbl_waktu_av = Label.new()
+	_lbl_waktu_av.add_theme_font_size_override("font_size", 15)
+	_lbl_waktu_av.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_hb_av.add_child(_lbl_waktu_av)
+
+	_ikon(_hb_av, "ikon_kalender")
+	_lbl_kal_av = Label.new()
+	_lbl_kal_av.add_theme_font_size_override("font_size", 14)
+	_lbl_kal_av.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_hb_av.add_child(_lbl_kal_av)
+
+
+# Mengaktifkan HUD avatar — pita lama disembunyikan, bukan dihapus
+# (aturan emas docs/13 §9).
+func set_avatar(a):
+	_avatar = a
+	_hb_atas.visible = false
+	_hb_bawah.visible = false
+	_hb_av.visible = true
+	_lbl_hint.visible = true
+
+
+func set_hint(t):
+	_lbl_hint.text = t
 
 
 # ---------------------------------------------------------------------------
@@ -84,6 +156,7 @@ func _pita_atas():
 	hb.size = Vector2(1896, Config.HUD_ATAS)
 	hb.add_theme_constant_override("separation", 18)
 	add_child(hb)
+	_hb_atas = hb
 
 	var air = _kotak_sumber("ikon_air")
 	_air_lbl = air.lbl
@@ -240,6 +313,18 @@ func _pita_bawah():
 	hb.size = Vector2(1896, Config.HUD_BAWAH)
 	hb.add_theme_constant_override("separation", 14)
 	add_child(hb)
+	_hb_bawah = hb
+
+	# petunjuk kontekstual moda avatar (P3.5) — menggantikan baris babak/zona
+	_lbl_hint = Label.new()
+	_lbl_hint.position = Vector2(0, y)
+	_lbl_hint.size = Vector2(1920, Config.HUD_BAWAH)
+	_lbl_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_lbl_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_lbl_hint.add_theme_font_size_override("font_size", 15)
+	_lbl_hint.add_theme_color_override("font_color", REDUP)
+	_lbl_hint.visible = false
+	add_child(_lbl_hint)
 
 	_lbl_babak = Label.new()
 	_lbl_babak.add_theme_font_size_override("font_size", 14)
@@ -428,14 +513,18 @@ func flash_msg(text):
 
 func set_waktu(jeda, laju):
 	_lbl_jeda.visible = jeda
+	var teks = ""
+	var warna = Config.C_TIP
 	if jeda:
-		_lbl_waktu.text = "❚❚ JEDA"
-		_lbl_waktu.add_theme_color_override("font_color", Config.C_WARN)
+		teks = "❚❚ JEDA"
+		warna = Config.C_WARN
 	elif laju > 1.0:
-		_lbl_waktu.text = "▶▶ %d×" % int(laju)
-		_lbl_waktu.add_theme_color_override("font_color", Config.C_TIP)
-	else:
-		_lbl_waktu.text = ""
+		teks = "▶▶ %d×" % int(laju)
+	_lbl_waktu.text = teks
+	_lbl_waktu.add_theme_color_override("font_color", warna)
+	if _lbl_waktu_av != null:
+		_lbl_waktu_av.text = teks
+		_lbl_waktu_av.add_theme_color_override("font_color", warna)
 
 
 # ---------------------------------------------------------------------------
@@ -443,6 +532,24 @@ func set_waktu(jeda, laju):
 # ---------------------------------------------------------------------------
 
 func refresh(sim, w, world, crew, climbers, babak):
+	# --- moda avatar (P3.5): satu bahasa, lalu selesai ----------------------
+	if _avatar != null:
+		var isi = clamp(_avatar.energi / Config.AVATAR_ENERGI_MAX, 0.0, 1.0)
+		_av_e_fill.size = Vector2(320.0 * isi, 12)
+		_av_e_fill.color = Config.C_TIP if isi > 0.3 else Config.C_ALERT
+		if _avatar.moda == _avatar.MERAMBAT:
+			_lbl_moda.text = "MERAMBAT"
+			_lbl_moda.add_theme_color_override("font_color", Config.C_LEAF)
+		else:
+			_lbl_moda.text = "LEPAS"
+			_lbl_moda.add_theme_color_override("font_color", Config.C_WINDOW)
+		_av_ikon_air.visible = _avatar.mengisi and _avatar.sumber == "air"
+		_av_ikon_cahaya.visible = _avatar.mengisi \
+				and _avatar.sumber == "cahaya"
+		var fase = "SIANG" if w.phase == Config.PHASE_DAY else "MALAM"
+		_lbl_kal_av.text = "HARI %d  %s" % [w.hari, fase]
+		return
+
 	# --- pita atas: sumber daya + leher botol -------------------------------
 	_air_lbl.text = str(int(sim.water))
 	_cahaya_lbl.text = str(int(sim.light))

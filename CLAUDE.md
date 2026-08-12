@@ -286,6 +286,24 @@ docs/12 (kitab gaya) tetap hukum.
 - Harness: tumbuh 100 satuan membakar 90→5 energi + 27 titik jejak;
   keran menaikkan energi meski LEPAS menguras; matahari mengisi.
 
+**P3.5 SELESAI** — HUD & mekanik diselaraskan ke avatar (permintaan pemilik
+proyek: "rubah mekanik & HUD dulu supaya tidak bingung"):
+
+- **HUD satu bahasa**: `Hud.set_avatar()` menyembunyikan pita ekonomi lama
+  (min air/cahaya, perhatian, kalender rawat, bar zona/babak) dan
+  menampilkan `_pita_avatar`: bar energi avatar 320px (merah saat <30%),
+  label moda MERAMBAT/LEPAS, ikon air/cahaya yang muncul HANYA saat
+  mengisi (`avatar.sumber`), HARI+fase, indikator waktu. Pita bawah =
+  `set_hint()` petunjuk kontekstual satu baris (kritis > gerbang E >
+  moda) yang dihitung main.
+- **Kebisingan lama dibungkam, kode utuh** (aturan emas docs/13 §9):
+  crew/climbers/babak update tidak dipanggil (P4/P8 menghidupkan lagi),
+  kartu fase menyusut jadi penanda hari satu baris, steering mouse +
+  T/F/X lama digerbang `not playing`, UjungView & RisikoView hidden.
+  Sim tanaman TETAP tumbuh liar — dialah sumber jaringan dunia.
+- refresh() bercabang dini saat _avatar != null; set_waktu menulis dua
+  label (lama & avatar).
+
 Berikutnya: **P4 — penjaga & alarm** (docs/13 §9).
 
 Segala sesuatu di bawah baris ini adalah RIWAYAT arah sebelumnya —

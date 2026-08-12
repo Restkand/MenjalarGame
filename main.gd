@@ -150,6 +150,9 @@ func _ready():
 	ujung_atas = UjungViewCls.new(sim)
 	ujung_atas.z_index = 4
 	pane_atas.tempel(ujung_atas)
+	# P3.5: denyut ujung & kotak pilihan milik steering lama — disembunyikan
+	# selama moda avatar supaya layar tidak bicara dua bahasa
+	ujung_atas.visible = false
 
 	ujung_bawah = UjungViewCls.new(sim)
 	ujung_bawah.z_index = 4
@@ -184,6 +187,9 @@ func _ready():
 	hud = HudCls.new()
 	add_child(hud)
 	hud.play_pressed.connect(_on_play)
+	# P3.5: HUD bicara bahasa avatar — pita ekonomi lama disembunyikan.
+	# _ready anak sudah berjalan di dalam add_child, jadi panggil langsung.
+	hud.set_avatar(avatar)
 
 	suara = SuaraCls.new()
 	add_child(suara)
@@ -296,61 +302,17 @@ func _kamera(delta):
 # dijelaskan tepat pada momen ia bekerja (inspeksi, kedatangan regu), bukan
 # lewat tembok teks tutorial.
 func _kartu_fase():
+	# P3.5: kartu MENYUSUT — narasi inspeksi/perawatan/ekonomi-min() milik
+	# game lama dibungkam sampai sistemnya kembali relevan (P4+). Kartu
+	# sekarang hanya penanda ritme hari, satu baris yang berguna bagi avatar.
 	_kartu_t = Config.KARTU_DETIK
 	suara.mainkan("sting")
-	# momen penting tidak boleh terlewat dipercepat: hari perawatan selalu
-	# menarik waktu kembali ke kecepatan normal
-	if cycle.rawat_hari_ini():
-		_laju_waktu = 1.0
 	if cycle.phase == Config.PHASE_NIGHT:
 		hud.tampil_kartu("MALAM",
-				"sulur merambat — bayangan aman, tempat terang menaikkan perhatian")
+				"matahari tidur — energi hanya dari air (keran & akuifer)")
 		return
-
-	# fajar — hari baru
-	var judul = "HARI %d" % cycle.hari
-	var isi = ""
-	if cycle.musim_kering() and cycle.hari == cycle.kering_hari \
-			and not cycle.rawat_hari_ini():
-		judul = "MUSIM KERING"
-		isi = "tanah lembap tak memberi air %d hari — hanya akuifer yang bertahan" \
-				% (cycle.kering_akhir - cycle.hari)
-		hud.tampil_kartu(judul, isi)
-		return
-	if cycle.rawat_hari_ini():
-		judul = "REGU PERAWATAN DATANG"
-		isi = "zona %s dibersihkan hari ini — lindungi, timbun, atau relakan" \
-				% cycle.rawat_zona
-	elif cycle.inspeksi_dalam() == 0:
-		judul = "HARI %d — INSPEKSI" % cycle.hari
-		if cycle.rawat_hari >= 0:
-			isi = "perhatian %d%% melewati ambang %d%%\nPERAWATAN dijadwalkan hari %d — zona %s" \
-					% [int(round(cycle.perhatian * 100)),
-					int(round(cycle.ambang_efektif() * 100)),
-					cycle.rawat_hari, cycle.rawat_zona]
-		else:
-			isi = "perhatian %d%% — masih di bawah ambang %d%%, gedung dianggap wajar" \
-					% [int(round(cycle.perhatian * 100)),
-					int(round(cycle.ambang_efektif() * 100))]
-	else:
-		# pengajaran ekonomi dengan angka hari ini: energi mengalir dari
-		# sisi yang LEBIH KECIL, dan hanya saat siang
-		isi = "energi siang ini: min(AIR %d, CAHAYA %d) — kejar yang kecil" \
-				% [int(sim.water), int(sim.light)]
-		isi += "\ninspeksi dalam %d hari" % cycle.inspeksi_dalam()
-		if cycle.rawat_hari >= 0:
-			isi += " — PERAWATAN hari %d, zona %s" \
-					% [cycle.rawat_hari, cycle.rawat_zona]
-	# musim kering yang mendekat menumpang di kartu apa pun
-	if cycle.kering_hari >= 0 and cycle.hari < cycle.kering_hari:
-		isi += "\nMUSIM KERING dalam %d hari — pastikan akar mencapai akuifer" \
-				% (cycle.kering_hari - cycle.hari)
-	# eskalasi diumumkan di kartu hari kenaikannya (G6)
-	if cycle.eskalasi_baru:
-		cycle.eskalasi_baru = false
-		isi += "\nKOTA MAKIN WASPADA — ambang inspeksi %d%%, regu bekerja lebih cepat" \
-				% int(round(cycle.ambang_efektif() * 100))
-	hud.tampil_kartu(judul, isi)
+	hud.tampil_kartu("HARI %d" % cycle.hari,
+			"cahaya kembali — area terang mengisi energi")
 
 
 # Klik kanan bertingkat tiga (G2): pohon > ujung terdekat > bekas rambatan.
@@ -412,16 +374,10 @@ func _process(delta):
 			_fase_terakhir = cycle.phase
 			_kartu_fase()
 
-		crew.update(dt, sim, world, erosi, cycle)
-		climbers.update(dt, sim, world, cycle)
-		if crew.dipotong > 0 or climbers.dipotong > 0:
-			sim.ensure_selection(cycle.phase)
-			# hukuman harus TERLIHAT: sekali per beberapa detik, umumkan
-			if _flash_potong <= 0.0:
-				_flash_potong = 4.0
-				suara.mainkan("potong")
-				hud.flash_msg("Sulur digergaji! Bangkainya mengering — sambung dengan klik kanan sebelum habis")
-		_flash_potong = max(0.0, _flash_potong - delta)
+		# P3.5: regu & pemanjat DIBUNGKAM sampai penggantinya berdiri (P4
+		# penjaga) — kodenya utuh, update-nya saja yang tidak dipanggil.
+		#crew.update(dt, sim, world, erosi, cycle)
+		#climbers.update(dt, sim, world, cycle)
 
 		# --- avatar (P1, docs/13): WASD/panah gerak, Spasi lompat/lepas ----
 		var arah = Vector2()
@@ -442,9 +398,11 @@ func _process(delta):
 		var apx = int(round(avatar.pos.x))
 		var apy = int(round(avatar.pos.y - 2.0))
 		avatar.mengisi = false
+		avatar.sumber = ""
 		if world.dekat_air(apx, apy, avatar.di_dalam):
 			avatar.isi(Config.AIR_ISI * dt)
 			avatar.mengisi = true
+			avatar.sumber = "air"
 			if not _sumber_air_dikenal:
 				_sumber_air_dikenal = true
 				hud.flash_msg("SUMBER AIR — energi terisi selama di dekatnya")
@@ -452,15 +410,18 @@ func _process(delta):
 			if not avatar.di_dalam and world.light_at(apx, apy) > 0.5:
 				avatar.isi(Config.CAHAYA_ISI * dt)
 				avatar.mengisi = true
+				avatar.sumber = "cahaya"
 				if not _sumber_cahaya_dikenal:
 					_sumber_cahaya_dikenal = true
 					hud.flash_msg("MATAHARI — energi terisi di area terang saat siang")
 			elif avatar.di_dalam and world.di_gerbang_interior(apx, apy):
 				avatar.isi(Config.CAHAYA_JENDELA * dt)
 				avatar.mengisi = true
+				avatar.sumber = "cahaya"
 
-		babak.update(dt, sim, world)
-		if babak.babak != _babak_terakhir:
+		# P3.5: babak lama dibungkam (pengganti: P8)
+		#babak.update(dt, sim, world)
+		if false and babak.babak != _babak_terakhir:
 			_babak_terakhir = babak.babak
 			if babak.babak == 2:
 				hud.flash_msg("BABAK II — hijaukan TIAP zona sampai %d%%"
@@ -482,28 +443,9 @@ func _process(delta):
 	_lompat_tekan = false
 	_masuk_tekan = false
 
-	# view menggambar dirinya sendiri; main hanya menyuapi data yang tidak
-	# bisa mereka hitung: pratinjau jalur (butuh mouse) dan sakelar risiko
-	risiko.visible = show_risk
-	var pratinjau = []
-	if playing and is_steering and sim.selected != null and sim.selected.alive:
-		pratinjau = sim.selected.preview(m, 80, world)
-	ujung_atas.pratinjau = pratinjau
-	ujung_bawah.pratinjau = pratinjau
-
-	# Permainan usai saat babak III tuntas (menang) atau seluruh tanaman
-	# mati (kalah). `won` menahan input & simulasi untuk keduanya; kartu
-	# besar mengumumkannya sekali, band pita atas memegang teksnya seterusnya.
-	if playing and not won and (babak.menang or babak.kalah):
-		won = true
-		_kartu_t = Config.KARTU_DETIK * 2.0
-		suara.mainkan("pohon" if babak.menang else "sting")
-		if babak.menang:
-			hud.tampil_kartu("KOTA MENGHIJAU",
-					"gedungnya tetap berdiri — pohon-pohonnya yang tinggal\ntekan R untuk memulai kota baru")
-		else:
-			hud.tampil_kartu("SELURUH TANAMAN MATI",
-					"tidak ada untai hidup dan tidak ada pohon\ntekan R untuk mencoba lagi")
+	# P3.5: pratinjau steering & menang-kalah babak lama dibungkam bersama
+	# sistemnya; peta risiko ikut (maknanya kembali di P4)
+	risiko.visible = false
 
 	suasana.set_night(cycle.night_amount())
 
@@ -531,6 +473,21 @@ func _process(delta):
 
 	hud.set_waktu(_jeda, _laju_waktu)
 	hud.refresh(sim, cycle, world, crew, climbers, babak)
+
+	# petunjuk kontekstual (P3.5) — satu baris, satu hal, sesuai keadaan
+	if playing:
+		var hint = ""
+		if avatar.energi < 25.0:
+			hint = "ENERGI KRITIS — cari keran bocor, akuifer, atau area terang bermatahari"
+		elif world.di_gerbang_interior(int(round(avatar.pos.x)),
+				int(round(avatar.pos.y - 2.0))):
+			hint = "E  %s gedung" % ("keluar" if avatar.di_dalam else "masuk")
+		elif avatar.moda == avatar.MERAMBAT:
+			hint = "WASD merambat — terus tekan di tepi jaringan = TUMBUH        Spasi lepas        F jangkar (%d)" \
+					% int(Config.JANGKAR_BIAYA)
+		else:
+			hint = "WASD gerak        Spasi lompat        sentuh tanaman untuk menempel"
+		hud.set_hint(hint)
 
 
 func _input(event):
@@ -607,7 +564,9 @@ func _unhandled_input(event):
 			_jeda = false
 			return
 
-	if event is InputEventMouseButton and event.pressed:
+	# P3.5: steering mouse milik game lama dibungkam — avatar dikendalikan
+	# keyboard. Klik kiri/kanan tidak melakukan apa-apa saat bermain.
+	if event is InputEventMouseButton and event.pressed and not playing:
 		var m = _mouse_dunia()
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if sim.select_near(m, cycle.phase):
@@ -642,6 +601,8 @@ func _unhandled_input(event):
 				hud.flash_msg("Energi kurang — jangkar butuh %d"
 						% int(Config.JANGKAR_BIAYA))
 			return
+		if playing:
+			return   # P3.5: kata kerja lama (T/F/X) tidur selama moda avatar
 		if _kunci(event, KEY_T):
 			# tanam pohon dengan sengaja (G5) — korbankan sulur di puing
 			var hasil = sim.tanam_sengaja()

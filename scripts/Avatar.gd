@@ -26,6 +26,7 @@ var di_tanah = false
 var di_dalam = false       # P2: sedang di interior gedung
 var layu_baru = false      # sekali-baca oleh main untuk pesan HUD
 var mengisi = false        # P3: sedang di sumber (untuk denyut view)
+var sumber = ""            # "air" / "cahaya" saat mengisi — untuk ikon HUD
 var jejak = []             # P3: jalur sulur yang DITUMBUHKAN avatar —
                            # [{pos, dalam}] digambar JejakView
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas

@@ -10,6 +10,7 @@ var generation = 0
 var id         = 0
 var _acc       = 0.0
 var _leaf_acc  = 0.0
+var _daun_kiri = false # sisi daun berikutnya — berselang-seling kiri-kanan
 var berakar    = 0.0   # kemajuan menjadi pohon saat berdiri di atas puing
 var tembus     = -1.0  # menembus beton: -1 = tidak; 0..1 = kemajuan bor
 
@@ -107,17 +108,23 @@ func grow(delta, steer, t, world, laju = 1.0):
 	return gained
 
 
+# Daun MENEMPEL di sumbu sulur dan menunjuk keluar darinya, berselang-seling
+# kiri-kanan — seperti tanaman sungguhan (gambar acuan mekanik merambat,
+# panel 2). Versi lama menaburkannya dengan offset acak tanpa rotasi, dan
+# hasilnya konfeti melayang di samping batang (playtest 12 Agustus).
 func _spawn_leaf(world):
-	if leaves.size() > 60 or not world.on_facade(tip.x, tip.y):
+	if leaves.size() > 90 or not world.on_facade(tip.x, tip.y):
 		return
-	var side = 1.0 if randf() < 0.5 else -1.0
-	var off = Vector2(-sin(angle), cos(angle)) * randf_range(1.0, 3.0) * side
-	var p = tip + off
-	if not world.on_facade(p.x, p.y):
-		p = tip
-	# varian dipakai DaunView untuk memilih sprite dari atlas — disimpan di
-	# sini supaya tiap daun tidak berganti bentuk antar frame
-	leaves.append({"pos": p, "age": 0.0, "varian": randi() % 4})
+	var side = -1.0 if _daun_kiri else 1.0
+	_daun_kiri = not _daun_kiri
+	leaves.append({
+		"pos": Vector2(tip.x, tip.y),
+		# tegak lurus arah sulur, dengan sedikit goyangan alami
+		"sudut": angle + side * PI / 2.0 + randf_range(-0.45, 0.45),
+		"age": 0.0,
+		"varian": randi() % 4,
+		"skala": randf_range(0.9, 1.3),
+	})
 
 
 func age_leaves(delta):

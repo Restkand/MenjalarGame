@@ -103,7 +103,9 @@ const GROUND_Y = 192
 
 const MAX_STRANDS = 24
 const SEED_X = 240
-const LEAF_SPACING = 14.0
+# Diturunkan 14 -> 8 (playtest 12 Agustus): daun yang jarang membaca sebagai
+# taburan, bukan tanaman. Kerimbunan acuan menuntut daun rapat.
+const LEAF_SPACING = 8.0
 
 # Berapa titik yang disimpan tiap untai, dan berapa titik terakhir yang
 # digambar ulang tiap frame ke lapisan pohon yang akumulatif.

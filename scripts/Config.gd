@@ -139,6 +139,14 @@ var COST_TUNAS = 25.0
 # durasi. Mahal — pertahanan proaktif untuk sulur yang zonanya dijadwalkan.
 var COST_KOKOH = 60.0
 
+# BANGKAI LAYU (G3): gergaji regu tidak melenyapkan bagian atas seketika —
+# ia jadi bangkai kering yang menyusut dari ujung selama BANGKAI_UMUR detik
+# (~satu hari penuh), dan tutupannya terkikis MENGIKUTI penyusutan itu.
+# Kerugian totalnya sama, tapi pemain melihat prosesnya dan punya jendela
+# menyambung lewat tunas ulang selama bekas rambatannya belum terkikis.
+# X pemain tetap instan — pemangkasan sukarela memang harus langsung bersih.
+var BANGKAI_UMUR = 50.0
+
 const FACADE_X0 = 96
 const FACADE_X1 = 384
 const FACADE_Y0 = 24
@@ -421,6 +429,7 @@ const C_TIP       = Color("B8E986")
 const C_WARDEN    = Color("3A3F49")
 const C_ALERT     = Color("C25A4A")
 
+const C_BANGKAI   = Color("6E6154")   # sulur mati mengering
 const C_PUING     = Color("6B6B64")
 const C_PUING_HL  = Color("7D7D75")   # sisi bongkah yang kena cahaya
 const C_PUING_DK  = Color("55554F")   # celah antar bongkah

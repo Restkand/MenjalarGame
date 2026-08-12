@@ -338,7 +338,7 @@ func _process(delta):
 			# hukuman harus TERLIHAT: sekali per beberapa detik, umumkan
 			if _flash_potong <= 0.0:
 				_flash_potong = 4.0
-				hud.flash_msg("Sulur dipotong di pangkalnya — tutupan zona anjlok!")
+				hud.flash_msg("Sulur digergaji! Bangkainya mengering — sambung dengan klik kanan sebelum habis")
 		_flash_potong = max(0.0, _flash_potong - delta)
 
 		babak.update(dt, sim, world)

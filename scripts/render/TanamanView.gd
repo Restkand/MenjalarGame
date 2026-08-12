@@ -12,9 +12,10 @@ extends RefCounted
 # untai yang hilang dari sim (reset) kehilangan view-nya. Untai yang mati
 # tapi masih di daftar TETAP digambar — bangkainya memang bagian dunia.
 
-const SulurViewCls = preload("res://scripts/render/SulurView.gd")
-const DaunViewCls  = preload("res://scripts/render/DaunView.gd")
-const PohonViewCls = preload("res://scripts/render/PohonView.gd")
+const SulurViewCls   = preload("res://scripts/render/SulurView.gd")
+const DaunViewCls    = preload("res://scripts/render/DaunView.gd")
+const PohonViewCls   = preload("res://scripts/render/PohonView.gd")
+const BangkaiViewCls = preload("res://scripts/render/BangkaiView.gd")
 
 var _sim
 var _root_atas
@@ -28,6 +29,11 @@ func setup(pane_atas, pane_bawah, sim):
 	_sim = sim
 	_root_atas = _buat_root(pane_atas)
 	_root_bawah = _buat_root(pane_bawah)
+
+	# bangkai di lapis paling bawah tanaman — batang hidup digambar di atasnya
+	var bangkai = BangkaiViewCls.new(sim)
+	bangkai.z_index = 0
+	_root_atas.add_child(bangkai)
 
 	# pohon dulu, daun sesudahnya: sama-sama z 1, jadi urutan tempel yang
 	# menaruh daun di atas tajuk pohon

@@ -4,6 +4,7 @@ const Strand = preload("res://scripts/Strand.gd")
 
 var strands  = []
 var trees    = []     # {x, y, tinggi} — permanen, tidak bisa dicabut regu
+var bangkai  = []     # potongan gergaji regu yang sedang mengering (G3)
 var selected = null
 var time     = 0.0
 var energy   = 0.0
@@ -18,6 +19,7 @@ var _world   = null
 func reset():
 	strands = []
 	trees = []
+	bangkai = []
 	_next_id = 0
 	time = 0.0
 	energy = Config.ENERGY_START
@@ -43,6 +45,7 @@ func update(delta, steering, mouse, world, phase):
 	# tanda tangan mereka di Cycle dan main.
 	_world = world
 	time += delta
+	_bangkai_step(delta, world)
 	water = _water(world)
 	light = _light(world)
 
@@ -291,6 +294,55 @@ func tunas_di(p, world):
 	strands.append(ns)
 	selected = ns
 	return true
+
+
+# GERGAJI REGU (G3): seperti pangkas(), tapi bagian atas TIDAK lenyap —
+# ia jadi bangkai kering yang menyusut dari ujung selama BANGKAI_UMUR,
+# dan jejak rambatannya terkikis mengikuti penyusutan itu. Selama bekasnya
+# masih ada, tunas ulang (G2) bisa menyambungnya.
+func gergaji(s, i):
+	i = max(i, 2)
+	if i >= s.points.size() - 1:
+		return false
+
+	var pts = []
+	for j in range(i + 1, s.points.size()):
+		pts.append(s.points[j])
+	bangkai.append({
+		"pts": pts,
+		"laju": float(pts.size()) / max(1.0, Config.BANGKAI_UMUR),
+		"acc": 0.0,
+	})
+
+	s.points.resize(i + 1)
+	s.tip = Vector2(s.points[i].x, s.points[i].y)
+	s.angle = s.angle + PI
+	# daunnya rontok seketika — yang tinggal batang kering
+	var keep = []
+	for l in s.leaves:
+		if l.pos.distance_to(s.tip) < 80.0:
+			keep.append(l)
+	s.leaves = keep
+	return true
+
+
+# Bangkai menyusut dari ujung; tiap titik yang lenyap membawa jejak
+# rambatannya. Bar HIJAU/zona mundur BERTAHAP — pemain melihat prosesnya.
+func _bangkai_step(delta, world):
+	if bangkai.is_empty():
+		return
+	var sisa = []
+	for b in bangkai:
+		b.acc += b.laju * delta
+		var k = int(b.acc)
+		b.acc -= k
+		while k > 0 and not b.pts.is_empty():
+			var p = b.pts.pop_back()
+			world.hapus_rambatan(int(round(p.x)), int(round(p.y)))
+			k -= 1
+		if not b.pts.is_empty():
+			sisa.append(b)
+	bangkai = sisa
 
 
 # PERKUAT PANGKAL (G2): sulur terpilih menebal, gergaji regu butuh dua kali

@@ -148,7 +148,8 @@ func _update_unit(u, delta, sim, world, x0, x1):
 	if u.kerja < durasi:
 		return
 	u.kerja = 0.0
-	if sim.pangkas(u.s, u.i, world):
+	# gergaji meninggalkan BANGKAI yang mengering (G3), bukan lenyap sekejap
+	if sim.gergaji(u.s, u.i):
 		dipotong += 1
 	u.s = null
 

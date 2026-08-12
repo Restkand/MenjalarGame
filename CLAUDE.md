@@ -260,7 +260,16 @@ potongan-pangkal regu) dan **perkuat pangkal** (`TreeSim.perkuat`, tombol F,
 COST_KOKOH 60 — `Strand.kokoh` membuat gergaji regu butuh 2× durasi;
 visual: batang 1.3× lebih tebal + modulasi hangat di SulurView). Klik kanan
 kini bertingkat tiga: pohon > ujung terdekat > bekas rambatan.
-**Berikutnya: G3** (bangkai layu — hukuman regu diperhalus).
+
+**G3 SELESAI** — bangkai layu: `TreeSim.gergaji(s,i)` (dipakai regu)
+memindahkan potongan ke `sim.bangkai` alih-alih melenyapkannya; bangkai
+menyusut dari ujung selama `BANGKAI_UMUR` (50 dtk ≈ satu hari) dan
+`hapus_rambatan` dipanggil PER TITIK yang lenyap — bar HIJAU/zona mundur
+bertahap, dan tunas ulang bisa menyambung selama bekasnya belum terkikis.
+`render/BangkaiView.gd` menggambar polyline kering (C_BANGKAI) yang
+menyusut. X pemain tetap `pangkas()` instan — pemangkasan sukarela memang
+harus langsung bersih. **Berikutnya: G4** (akuifer menyusut + musim
+kering).
 
 HUD dua-pita (docs/08 §3, dibangun setelah R6):
 

@@ -477,3 +477,22 @@ const C_PUING_HL  = Color("7D7D75")   # sisi bongkah yang kena cahaya
 const C_PUING_DK  = Color("55554F")   # celah antar bongkah
 const C_DEBU      = Color("9A9A92")
 const C_RETAK     = Color("3A3A36")
+
+# ---------------------------------------------------------------------------
+# PIVOT IV (docs/13) — P1: avatar dua moda
+# ---------------------------------------------------------------------------
+# Semua kecepatan/percepatan dalam SATUAN simulasi per detik.
+var AVATAR_RAMBAT      = 34.0   # laju gerak di jaringan (moda MERAMBAT)
+var AVATAR_JALAN       = 24.0   # laju horizontal maksimum saat LEPAS
+var AVATAR_ACCEL       = 160.0  # percepatan horizontal LEPAS
+var AVATAR_GRAV        = 210.0  # gravitasi LEPAS
+var AVATAR_LOMPAT      = 62.0   # impuls lompat (ke atas)
+var AVATAR_LOMPAT_BIAYA = 3.0   # energi per lompatan
+var AVATAR_ENERGI_MAX  = 100.0
+var AVATAR_REGEN       = 7.0    # pemulihan energi per detik di jaringan
+var AVATAR_KURAS       = 2.5    # kikisan energi per detik saat LEPAS
+var AVATAR_LAYU_ENERGI = 40.0   # energi saat bangun setelah layu
+const AVATAR_TEMPEL_JEDA = 0.3  # detik sebelum boleh menempel lagi usai lepas
+const AVATAR_SETENGAH_LEBAR = 1.5   # kotak badan: pos = kaki
+const AVATAR_TINGGI    = 5.0
+const ZOOM_AVATAR      = 2.0    # zoom awal kamera-ikut P1

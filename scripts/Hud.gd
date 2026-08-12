@@ -131,7 +131,7 @@ func _pita_atas():
 
 	# banner jeda: besar, di tengah, tidak mungkin terlewat
 	_lbl_jeda = Label.new()
-	_lbl_jeda.text = "❚❚  JEDA — tekan Spasi untuk lanjut"
+	_lbl_jeda.text = "❚❚  JEDA — tekan P untuk lanjut"
 	_lbl_jeda.add_theme_font_size_override("font_size", 30)
 	_lbl_jeda.add_theme_color_override("font_color", Config.C_WARN)
 	_lbl_jeda.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -406,7 +406,7 @@ func _build_overlay():
 	vb.add_child(jarak2)
 
 	var kontrol = Label.new()
-	kontrol.text = "klik kiri  arahkan (akar di beton: menembus)        klik kanan  cabang / tunas ulang        X  putus        F  perkuat        T  tanam pohon\nSpasi  jeda        1 / 2  kecepatan        WASD  geser        roda  zoom        Tab  panel"
+	kontrol.text = "WASD / panah  bergerak (di jaringan: segala arah)        Spasi  lompat / lepas dari jaringan        sentuh jaringan  menempel lagi\nP  jeda        1 / 2  kecepatan        roda  zoom        klik kiri  arahkan ujung        klik kanan  cabang / tunas        X putus   F perkuat   T tanam"
 	kontrol.add_theme_color_override("font_color", Color(0.48, 0.51, 0.54))
 	kontrol.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(kontrol)

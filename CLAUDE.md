@@ -207,10 +207,40 @@ Keputusan pemilik proyek setelah playtest orang-dekat (teman + pasangan)
 menyatakan gameplay stealth sistemik membingungkan dan tidak asyik.**
 
 Konsekuensi status: **G9–G10 BATAL**; peta jalan yang berlaku adalah
-**P1–P8 di docs/13 §9** (berikutnya: P1 — avatar dua moda). docs/06 dan
-docs/11 turun status jadi riwayat. Sistem lama JANGAN dihapus sebelum
-tahap penggantinya berdiri (docs/13 §9); peta reuse ada di docs/13 §8.
-Identitas visual TIDAK ikut pivot — docs/12 (kitab gaya) tetap hukum.
+**P1–P8 di docs/13 §9**. docs/06 dan docs/11 turun status jadi riwayat.
+Sistem lama JANGAN dihapus sebelum tahap penggantinya berdiri (docs/13
+§9); peta reuse ada di docs/13 §8. Identitas visual TIDAK ikut pivot —
+docs/12 (kitab gaya) tetap hukum.
+
+**P1 SELESAI** (branch pivot-metroid) — avatar dua moda:
+
+- `scripts/Avatar.gd` (RefCounted, input dari main lewat parameter):
+  MERAMBAT = gerak bebas di `WorldMap.jaringan` (peta 0/1 baru yang
+  ditandai `Strand.grow` untuk SEMUA untai — akar juga, beda dari `tutup`
+  yang khusus fasad), energi pulih, `simpul` respawn diperbarui terus;
+  LEPAS = platformer grid sendiri (gravitasi, lompat, tabrakan kotak per
+  sumbu via `WorldMap.padat()` — dinding fasad SENGAJA bukan padat, ledge
+  padat = pijakan). Energi habis saat LEPAS = LAYU → bangun di simpul.
+  Kaki dirapatkan flush x.99 ke sel padat; `di_tanah` dari probe sel
+  bawah, BUKAN efek samping tabrakan (kalau tidak ia berkedip dan lompat
+  tertelan).
+- **Pane tunggal**: `pane_atas` layar penuh zona 0..H, dan
+  `pane_bawah = pane_atas` (alias!) supaya seluruh wiring split-screen
+  lama tetap hidup tanpa dibongkar. Suasana hanya diberi [pane_atas]
+  (dua CanvasModulate di viewport sama = gelap dobel); ujung_bawah
+  disembunyikan (gambar dobel). Kamera mengikuti avatar via
+  `pane.geser()` (lerp), zoom awal ZOOM_AVATAR 2.0.
+- Input: WASD/panah = avatar (pan kamera manual hanya sebelum MULAI),
+  **Spasi = lompat/lepas** (saat kartu tampil = lewati kartu), **jeda
+  pindah ke P**. Steering mouse/X/F/T lama masih hidup berdampingan.
+- `render/AvatarView.gd`: bola daun berdenyut C_TIP prosedural, cincin
+  saat menempel, ekor saat melesat, bar energi mengambang.
+- Terverifikasi harness 4 asersi: jalan (di_tanah stabil), layu→simpul
+  +energi 40, sentuh untai→MERAMBAT, merambat turun menyusuri akar.
+  Catatan harness: headless tak dibatasi 60fps — delta kecil, ukur
+  gerakan per WAKTU sim, bukan per jumlah frame.
+
+Berikutnya: **P2 — interior gedung** (docs/13 §9).
 
 Segala sesuatu di bawah baris ini adalah RIWAYAT arah sebelumnya —
 konteks berharga untuk reuse, bukan arah kerja:

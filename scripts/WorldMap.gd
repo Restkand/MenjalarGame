@@ -6,6 +6,7 @@ extends RefCounted
 # lewat tile_kotor, lalu view yang menggambar ulang petak itu.
 
 var grid
+var jaringan           # 0/1 per satuan — jejak untai untuk avatar (P1)
 var light
 var vis
 var windows = []       # titik tengah tiap jendela — dipakai lampu & FasadView
@@ -53,6 +54,10 @@ var _pw = 0            # lebar grid petak (Config.W / PETAK), diisi build()
 func build():
 	grid = PackedByteArray(); grid.resize(Config.W * Config.H)
 	tutup = PackedByteArray(); tutup.resize(Config.W * Config.H)
+	# jaringan (P1, docs/13): jejak SEMUA untai — sulur DAN akar, di terrain
+	# apa pun. Inilah "jalan raya" avatar; beda dari `tutup` yang hanya
+	# menandai fasad demi ekonomi tutupan.
+	jaringan = PackedByteArray(); jaringan.resize(Config.W * Config.H)
 	rambatan_baru = []
 	tutup_luas = 0
 	# light & vis per PETAK 8x8, bukan per satuan (R4) — 2.400 sel.
@@ -470,6 +475,50 @@ func sedot_di(p, jumlah):
 
 
 # Apakah ada bekas rambatan di sekitar titik ini — syarat tunas ulang (G2).
+# --- jaringan avatar (P1, docs/13) ----------------------------------------
+
+# Ditandai Strand.grow untuk TIAP titik untai (sulur & akar), 3x3.
+func tandai_jaringan(px, py):
+	for dy in range(-1, 2):
+		var y = py + dy
+		if y < 0 or y >= Config.H:
+			continue
+		for dx in range(-1, 2):
+			var x = px + dx
+			if x < 0 or x >= Config.W:
+				continue
+			jaringan[y * Config.W + x] = 1
+
+
+# Ada jaringan dalam radius 1 dari titik satuan (px, py)?
+func jaringan_di(px, py):
+	for dy in range(-1, 2):
+		var y = py + dy
+		if y < 0 or y >= Config.H:
+			continue
+		for dx in range(-1, 2):
+			var x = px + dx
+			if x < 0 or x >= Config.W:
+				continue
+			if jaringan[y * Config.W + x] == 1:
+				return true
+	return false
+
+
+# Sel PADAT untuk fisika platformer avatar (moda LEPAS). Dinding fasad
+# SENGAJA bukan padat: dalam tampak samping avatar bergerak DI DEPAN bidang
+# fasad; memanjatnya hanya lewat jaringan. Ledge padat = pijakan gratis.
+func padat(px, py):
+	if px < 0 or px >= Config.W or py < 0 or py >= Config.H:
+		return true
+	match grid[py * Config.W + px]:
+		Config.T_SOIL_DRY, Config.T_SOIL_WET, Config.T_HUMUS, \
+		Config.T_BATU, Config.T_CONCRETE, Config.T_NEIGHBOR, \
+		Config.T_PUING, Config.T_LEDGE, Config.T_AKUIFER:
+			return true
+	return false
+
+
 func ada_rambatan(p):
 	var px = int(round(p.x))
 	var py = int(round(p.y))

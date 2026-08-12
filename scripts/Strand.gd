@@ -94,6 +94,9 @@ func grow(delta, steer, t, world, laju = 1.0):
 	if _acc >= 1.0:
 		_acc -= 1.0
 		points.append(Vector2(tip.x, tip.y))
+		# jaringan avatar (P1, docs/13): SEMUA untai menandainya — akar di
+		# bawah tanah pun jalan raya bagi avatar
+		world.tandai_jaringan(int(round(tip.x)), int(round(tip.y)))
 		if not is_root:
 			gained = world.vis_at(int(round(tip.x)), int(round(tip.y)))
 			# jejak rambatan: pijakan kekal + bahan bakar erosi + tutupan

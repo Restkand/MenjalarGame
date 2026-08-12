@@ -19,6 +19,8 @@ const RisikoViewCls  = preload("res://scripts/render/RisikoView.gd")
 const LatarViewCls   = preload("res://scripts/render/LatarView.gd")
 const TuningPanelCls = preload("res://scripts/TuningPanel.gd")
 const HudCls         = preload("res://scripts/Hud.gd")
+const AvatarCls      = preload("res://scripts/Avatar.gd")
+const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
 
 var world
 var sim
@@ -39,6 +41,12 @@ var hud
 var ujung_atas
 var ujung_bawah
 var risiko
+
+# PIVOT IV P1 (docs/13): avatar dua moda + kamera tunggal mengikuti
+var avatar
+var avatar_view
+var _lompat_tekan = false   # edge tombol Spasi, dikosongkan tiap frame
+
 
 var _babak_terakhir = 1
 var _fase_terakhir = Config.PHASE_DAY
@@ -69,21 +77,19 @@ func _ready():
 	world = WorldMapCls.new()
 	world.build()
 
-	# Pane dibuat lebih dulu: semua view menempelkan node-nya ke dalam
-	# viewport masing-masing pane, jadi pane harus sudah ada.
-	# pane diapit dua pita HUD (docs/08 §3) — kanvas tidak pernah tertutup
-	# elemen HUD, dan sebaliknya
+	# PIVOT IV P1 (docs/13): SATU pane layar penuh, kamera bebas menjelajah
+	# seluruh dunia 0..H. `pane_bawah` di-alias ke pane yang sama supaya
+	# seluruh wiring era split-screen (terrain dua layer, view akar, ujung)
+	# tetap hidup tanpa dibongkar — aturan emas docs/13 §9: jangan menghapus
+	# sistem lama sebelum penggantinya berdiri.
 	pane_atas = PaneCls.new()
 	add_child(pane_atas)
 	pane_atas.siapkan(Vector2(0, Config.HUD_ATAS),
-			Vector2(Config.PANE_LEBAR, Config.PANE_ATAS_TINGGI),
-			0, Config.GROUND_Y)
-
-	pane_bawah = PaneCls.new()
-	add_child(pane_bawah)
-	pane_bawah.siapkan(Vector2(0, Config.HUD_ATAS + Config.PANE_ATAS_TINGGI),
-			Vector2(Config.PANE_LEBAR, Config.PANE_BAWAH_TINGGI),
-			Config.GROUND_Y, Config.H)
+			Vector2(Config.PANE_LEBAR,
+					Config.PANE_ATAS_TINGGI + Config.PANE_BAWAH_TINGGI),
+			0, Config.H)
+	pane_atas.set_zoom(Config.ZOOM_AVATAR)
+	pane_bawah = pane_atas
 
 	_pane_aktif = pane_atas
 
@@ -99,7 +105,8 @@ func _ready():
 
 	suasana = SuasanaCls.new()
 	add_child(suasana)
-	suasana.setup([pane_atas, pane_bawah])
+	# satu pane = satu CanvasModulate; dua akan saling menumpuk gelap
+	suasana.setup([pane_atas])
 	suasana.setup_lights(world, pane_atas)
 
 	erosi = ErosiCls.new()
@@ -142,10 +149,19 @@ func _ready():
 	ujung_bawah = UjungViewCls.new(sim)
 	ujung_bawah.z_index = 4
 	pane_bawah.tempel(ujung_bawah)
+	# pane tunggal (P1): ujung_atas sudah menggambar semuanya di viewport
+	# yang sama — kembarannya disembunyikan supaya tidak menggambar dobel
+	ujung_bawah.visible = false
 
 	risiko = RisikoViewCls.new(world)
 	risiko.z_index = 4
 	pane_atas.tempel(risiko)
+
+	# avatar (P1, docs/13) — lahir saat MULAI, view-nya siap dari sekarang
+	avatar = AvatarCls.new()
+	avatar_view = AvatarViewCls.new(avatar)
+	avatar_view.z_index = 5
+	pane_atas.tempel(avatar_view)
 
 	panel = TuningPanelCls.new()
 	add_child(panel)
@@ -161,6 +177,10 @@ func _ready():
 
 func _on_play():
 	playing = true
+	# avatar lahir di trotoar dekat bibit — berjalanlah ke tanaman, sentuh,
+	# dan Anda menempel: momen pengajaran pertama tanpa satu kalimat pun
+	avatar.mulai(Vector2(Config.SEED_X + 14.0, float(Config.GROUND_Y)))
+	avatar_view.visible = true
 
 
 func _restart():
@@ -185,6 +205,8 @@ func _restart():
 	_laju_waktu = 1.0
 	_settled_prev = 0
 	_puing_cooldown = 0.0
+	if playing:
+		avatar.mulai(Vector2(Config.SEED_X + 14.0, float(Config.GROUND_Y)))
 	hud.sembunyikan_kartu()
 	is_steering = false
 	playing = false
@@ -233,6 +255,10 @@ func _mouse_dunia():
 
 
 func _kamera(delta):
+	# sejak P1 WASD milik avatar dan kamera mengikutinya — pan manual hanya
+	# hidup di layar judul (meninjau dunia sebelum MULAI)
+	if playing:
+		return
 	var v = Vector2()
 	if _tekan(KEY_A) or _tekan(KEY_LEFT):
 		v.x -= 1.0
@@ -381,6 +407,21 @@ func _process(delta):
 				hud.flash_msg("Sulur digergaji! Bangkainya mengering — sambung dengan klik kanan sebelum habis")
 		_flash_potong = max(0.0, _flash_potong - delta)
 
+		# --- avatar (P1, docs/13): WASD/panah gerak, Spasi lompat/lepas ----
+		var arah = Vector2()
+		if _tekan(KEY_A) or _tekan(KEY_LEFT):
+			arah.x -= 1.0
+		if _tekan(KEY_D) or _tekan(KEY_RIGHT):
+			arah.x += 1.0
+		if _tekan(KEY_W) or _tekan(KEY_UP):
+			arah.y -= 1.0
+		if _tekan(KEY_S) or _tekan(KEY_DOWN):
+			arah.y += 1.0
+		avatar.update(dt, arah, _lompat_tekan, world)
+		if avatar.layu_baru:
+			avatar.layu_baru = false
+			hud.flash_msg("LAYU — kembali ke simpul jaringan terakhir")
+
 		babak.update(dt, sim, world)
 		if babak.babak != _babak_terakhir:
 			_babak_terakhir = babak.babak
@@ -394,6 +435,14 @@ func _process(delta):
 	tanaman.sinkron()
 	tanaman.set_kering(cycle.musim_kering())
 	terrain.sinkron()
+
+	# kamera tunggal mengikuti avatar (P1) — halus, sedikit di atas kepala;
+	# geser() yang menjepit ke tepi dunia dan membulatkan ke piksel
+	if playing:
+		var target = avatar.pos * float(Config.PPU) + Vector2(0.0, -40.0)
+		pane_atas.geser((target - pane_atas.cam.position)
+				* clamp(delta * 6.0, 0.0, 1.0))
+	_lompat_tekan = false
 
 	# view menggambar dirinya sendiri; main hanya menyuapi data yang tidak
 	# bisa mereka hitung: pratinjau jalur (butuh mouse) dan sakelar risiko
@@ -500,14 +549,16 @@ func _unhandled_input(event):
 	# bercabang cukup di klik kanan
 	if event is InputEventKey and event.pressed and not event.echo:
 		if _kunci(event, KEY_SPACE):
-			# Jebakan playtest 12 Agu: saat kartu fase tampil, Spasi adalah
-			# refleks "lewati" — dulu ia malah men-toggle jeda diam-diam dan
-			# pemain mengira game macet. Kartu tampil = Spasi melewati kartu.
+			# Kartu tampil = Spasi melewati kartu (jebakan playtest 12 Agu).
+			# Sejak P1 Spasi = LOMPAT/lepas; jeda pindah ke P.
 			if _kartu_t > 0.0:
 				_kartu_t = 0.0
 				hud.sembunyikan_kartu()
-			else:
-				_jeda = not _jeda
+			elif playing:
+				_lompat_tekan = true
+			return
+		elif _kunci(event, KEY_P):
+			_jeda = not _jeda
 			return
 		elif _kunci(event, KEY_1):
 			_laju_waktu = 1.0

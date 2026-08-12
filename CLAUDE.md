@@ -3,13 +3,40 @@
 **GROW. HIDE. SURVIVE.** Metroidvania 2D pixel art: ujung tumbuh tanaman
 merambat menjadikan sebuah gedung sebagai tubuhnya.
 
-## SATU-SATUNYA sumber kebenaran desain
+## Sumber kebenaran desain (KEDUANYA ditulis pemilik proyek)
 
-**`docs/GDD-TENDRIL.md`** — ditulis pemilik proyek, 13 Agustus 2026.
-Baca SEBELUM menyentuh mekanik apa pun. Tidak ada dokumen desain lain;
-13 dokumen era sebelumnya (Menjalar) sengaja dihapus karena membuat
-produksi bercabang. Kalau sebuah keputusan tidak ada di GDD, tanyakan ke
-pemilik proyek — jangan mengarang arah.
+1. **`docs/GDD-TENDRIL.md`** — desain game menyeluruh (45 bagian).
+2. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
+   papan acuan visualnya. Kanon untuk SEGALA hal tentang sang Ujung
+   Tumbuh: anatomi (ujung bercahaya sensitif cahaya, daun muda kamuflase,
+   sulur fleksibel, node pertumbuhan), palet hijau kanon (#102016,
+   #19351E, #285B2B, #4F8F32, #79B83F, #A8D94A), warna status
+   (kuning=terdeteksi/energi rendah, merah=diburu, ungu=racun,
+   biru-putih=listrik), LIMA tahap (Tunas Baru, Muda, Dewasa, Tua/Kayu,
+   Terinfeksi-opsional), proporsi (karakter 16–32 px < manusia 32–48 px),
+   8 Design Rules (§42), dan north star: "Kecil sebagai individu. Besar
+   sebagai jaringan."
+
+Baca KEDUANYA sebelum menyentuh mekanik/visual apa pun. 13 dokumen era
+Menjalar sengaja dihapus karena membuat produksi bercabang. Kalau sebuah
+keputusan tidak ada di GDD/CDD, tanyakan ke pemilik proyek — jangan
+mengarang arah.
+
+**Penyelarasan kode→CDD yang MASIH TERUTANG** (dicatat 13 Agu, belum
+dikerjakan — menunggu urutan dari pemilik proyek):
+
+- Palet avatar & jejak masih memakai warna era Menjalar (5EC24A dkk.) —
+  harus pindah ke palet CDD §7.
+- Tahap avatar di kode = 6 (BIJI..LEBAT); CDD §9 = 5 (Tunas Baru, Muda,
+  Dewasa, Tua/Kayu, Terinfeksi-ops). Perlu pemetaan ulang nama, wujud
+  (tahap 4 = kecokelatan kayu), dan strip tumbuh.
+- Energi 0 saat LEPAS: CDD/papan = "bagian tersebut TERPUTUS" — jejak
+  yang ditumbuhkan sesi lepas itu harusnya mengering, bukan awet.
+- MERAMBAT baru bisa di jaringan; papan juga menuntut "menempel di
+  permukaan" tertentu & "masuk celah kecil" (GDD §6.1, §12 material).
+- Wujud saat MERAMBAT vs LEPAS harus berbeda (CDD §11 vs §14) — sekarang
+  satu sprite untuk dua moda.
+- State machine formal CDD §37 belum ada.
 
 Aturan produksi dari GDD yang mengikat cara kerja:
 

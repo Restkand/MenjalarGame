@@ -21,6 +21,7 @@ var _transisi = ""
 var _moda_lalu = -1
 var _pos_lalu = Vector2()
 var _jarak = 0.0          # jarak tempuh — penggerak frame lokomotasi
+var _miring = 0.0         # condongan ujung ke arah gerak (CDD §5.1/SPP §56)
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
 
@@ -64,6 +65,14 @@ func _process(delta):
 	if bergerak:
 		_jarak += pindah
 	_pos_lalu = avatar.pos
+
+	# ujung memimpin (permintaan playtest, sesuai ADR §11): saat berjalan
+	# LEPAS, tubuh condong halus ke arah gerak sehingga ujung/daun tampak
+	# melangkah lebih dulu. Kecil (~9°) supaya tidak terbaca mau jatuh;
+	# cermin hadap membuat condongannya otomatis mengikuti arah.
+	var target_miring = 0.16 if (bergerak and avatar.moda == avatar.LEPAS) \
+			else 0.0
+	_miring = lerpf(_miring, target_miring, clamp(delta * 8.0, 0.0, 1.0))
 	if _transisi_t > 0.0 and _anim.has(_transisi):
 		_state = _transisi
 	elif avatar.moda == avatar.MERAMBAT:
@@ -107,8 +116,10 @@ func _draw():
 			# jalan 24 u/s ≈ 10 fps, rambat 34 u/s ≈ 13 fps, dan saat
 			# berhenti liukannya ikut berhenti (tidak ada moonwalk)
 			fr = int(_jarak / 2.5) % a.n
-		# hadap kiri = cermin
-		draw_set_transform(p, 0.0, Vector2(avatar.hadap, 1.0))
+		# hadap kiri = cermin. Matriks T·R·S menerapkan cermin SEBELUM
+		# rotasi, jadi condongan dikalikan hadap supaya selalu ke depan.
+		draw_set_transform(p, _miring * avatar.hadap,
+				Vector2(avatar.hadap, 1.0))
 		draw_texture_rect_region(a.tex,
 				Rect2(Vector2(-24.0, -26.0), Vector2(48.0, 48.0)),
 				Rect2(fr * 48.0, 0.0, 48.0, 48.0))

@@ -137,10 +137,19 @@ const PHASE_NIGHT = 1
 #
 # Jendela 1920x1080; dunia 480x320 satuan x PPU 4 = 1920x1280 piksel. Aset
 # tampil 1:1, jadi larangan zoom bulat TIDAK berlaku lagi — Camera2D.zoom
-# bebas dan mulus. Pada zoom 1 pane atas melihat hampir seluruh zona udara.
+# bebas dan mulus.
+#
+# Anatomi layar (docs/08 §3): DUA PITA HUD mengapit kanvas — pita atas
+# (sumber daya + kalender) dan pita bawah (babak + bar zona). Pane menyusut
+# memberi ruang, jadi TIDAK ADA elemen HUD di dalam wilayah kanvas; satu-
+# satunya yang boleh menimpa tepi kanvas adalah band pesan sementara di
+# bawah pita atas (pola "pita inspeksi" ui_kit).
+const HUD_ATAS  = 40
+const HUD_BAWAH = 40
+
 const PANE_LEBAR        = 1920
-const PANE_ATAS_TINGGI  = 720
-const PANE_BAWAH_TINGGI = 360
+const PANE_ATAS_TINGGI  = 700
+const PANE_BAWAH_TINGGI = 300
 
 const ZOOM_MIN    = 0.75
 const ZOOM_MAX    = 3.0
@@ -293,7 +302,7 @@ const LAMPU_JUMLAH  = 9     # berapa jendela yang menyala (dari 54 yang ada)
 
 # Tinggi panel tuning yang bisa digulir. Jendela 1080, panel mulai di y=12,
 # dan teks bantuan duduk di y=1034.
-const PANEL_TINGGI = 980
+const PANEL_TINGGI = 930
 
 const SUN_RAY = Vector2(-0.34, -0.94)
 

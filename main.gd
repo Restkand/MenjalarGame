@@ -62,15 +62,17 @@ func _ready():
 
 	# Pane dibuat lebih dulu: semua view menempelkan node-nya ke dalam
 	# viewport masing-masing pane, jadi pane harus sudah ada.
+	# pane diapit dua pita HUD (docs/08 §3) — kanvas tidak pernah tertutup
+	# elemen HUD, dan sebaliknya
 	pane_atas = PaneCls.new()
 	add_child(pane_atas)
-	pane_atas.siapkan(Vector2(0, 0),
+	pane_atas.siapkan(Vector2(0, Config.HUD_ATAS),
 			Vector2(Config.PANE_LEBAR, Config.PANE_ATAS_TINGGI),
 			0, Config.GROUND_Y)
 
 	pane_bawah = PaneCls.new()
 	add_child(pane_bawah)
-	pane_bawah.siapkan(Vector2(0, Config.PANE_ATAS_TINGGI),
+	pane_bawah.siapkan(Vector2(0, Config.HUD_ATAS + Config.PANE_ATAS_TINGGI),
 			Vector2(Config.PANE_LEBAR, Config.PANE_BAWAH_TINGGI),
 			Config.GROUND_Y, Config.H)
 
@@ -334,10 +336,17 @@ func _process(delta):
 	ujung_bawah.pratinjau = pratinjau
 
 	# Permainan usai saat babak III tuntas (menang) atau seluruh tanaman
-	# mati (kalah). `won` menahan input & simulasi untuk keduanya; HUD yang
-	# membedakan lewat objek babak.
+	# mati (kalah). `won` menahan input & simulasi untuk keduanya; kartu
+	# besar mengumumkannya sekali, band pita atas memegang teksnya seterusnya.
 	if playing and not won and (babak.menang or babak.kalah):
 		won = true
+		_kartu_t = Config.KARTU_DETIK * 2.0
+		if babak.menang:
+			hud.tampil_kartu("KOTA MENGHIJAU",
+					"gedungnya tetap berdiri — pohon-pohonnya yang tinggal\ntekan R untuk memulai kota baru")
+		else:
+			hud.tampil_kartu("SELURUH TANAMAN MATI",
+					"tidak ada untai hidup dan tidak ada pohon\ntekan R untuk mencoba lagi")
 
 	suasana.set_night(cycle.night_amount())
 	hud.refresh(sim, cycle, world, crew, climbers, babak)

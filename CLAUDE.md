@@ -238,9 +238,25 @@ Urutan kerja bertahap ada di **`docs/06-desain-stealth-splitscreen.md`** §7
 sebagai riwayat — TAHAP 7 dan 8 di sana sudah tidak berlaku. Kerjakan **satu
 tahap per sesi**, commit tiap tahap yang sudah terverifikasi jalan.
 
-Status: **TAHAP A–F dan R1–R6 selesai — SELURUH peta jalan render tuntas.**
-Sisa: TAHAP G (poles: parallax, audio, transisi, layar judul final, dan
-anatomi HUD dua-pita docs/08 §3 yang ditunda dari R6).
+Status: **TAHAP A–F dan R1–R6 selesai — SELURUH peta jalan render tuntas,
+termasuk anatomi HUD dua-pita.** Sisa: TAHAP G (parallax, audio, transisi,
+layar judul final).
+
+HUD dua-pita (docs/08 §3, dibangun setelah R6):
+
+- Pane diapit dua pita 40 px (`HUD_ATAS`/`HUD_BAWAH`; pane menyusut ke
+  700/300) — NOL elemen HUD di wilayah kanvas. Pengecualian tunggal: band
+  pesan sementara di bawah pita atas (pola "pita inspeksi" ui_kit) untuk
+  flash & teks akhir permainan; `_lbl_win` mengambang dihapus.
+- Pita atas: ikon air/cahaya/energi/perhatian/kalender (5 generasi PixelLab
+  terakhir — kuota 40/40 HABIS). **Penanda leher botol**: sisi min(Air,
+  Cahaya) yang lebih kecil diberi bingkai + angka C_TIP lewat StyleBoxFlat
+  yang di-toggle — satu-satunya pengajaran aturan min() (docs/08 §3.1).
+- Pita bawah: baris babak + 4 bar zona (BA/TA/BB/TB) bergaris target
+  `ZONA_TARGET`; zona yang dijadwalkan dirawat dibingkai `C_WARN`.
+- Menang/kalah kini lewat kartu besar sekali (di `main`, transisi `won`)
+  lalu band memegang teksnya; sorotan `C_TIP` tetap satu-hal-satu-waktu.
+- Panel tuning turun ke y=52 (di bawah pita), help ke (440, 986).
 
 R6 yang sudah berdiri — `PixelCanvas` MATI, semua visual adalah view:
 

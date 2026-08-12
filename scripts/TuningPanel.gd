@@ -37,7 +37,7 @@ func _ready():
 	layer = 10
 
 	_panel = PanelContainer.new()
-	_panel.position = Vector2(12, 12)
+	_panel.position = Vector2(12, 52)
 	add_child(_panel)
 
 	# Font bawaan Godot 4 lebih besar daripada Godot 3, jadi daftar slider yang
@@ -99,7 +99,7 @@ func _ready():
 	# Dua baris pendek dengan latar, bukan satu baris panjang. Versi lama
 	# terpotong di tepi kanan layar 960 px.
 	var help_box = PanelContainer.new()
-	help_box.position = Vector2(8, 1034)
+	help_box.position = Vector2(440, 986)
 	add_child(help_box)
 
 	_help = Label.new()

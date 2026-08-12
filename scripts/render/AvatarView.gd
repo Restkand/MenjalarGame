@@ -10,7 +10,11 @@ extends Node2D
 # organisme harus terlihat hidup justru ketika pemain tidak berbuat apa-apa
 # (CDD Rule 8). Kecepatan main 8-12 fps sesuai catatan papan pemilik proyek.
 
-const ANIM = ["idle", "merambat", "lepas", "detach", "attach"]
+# Set prototype spec gerak §26: idle, gerak kanan & kiri (digenerate
+# TERPISAH — bukan cermin, §8), belok dua arah (§21), merambat, transisi.
+# "lepas" lama tinggal sebagai cadangan.
+const ANIM = ["idle", "merambat", "kanan", "kiri", "putar_kiri",
+		"putar_kanan", "lepas", "detach", "attach"]
 
 var avatar
 var _t = 0.0
@@ -22,6 +26,9 @@ var _moda_lalu = -1
 var _pos_lalu = Vector2()
 var _jarak = 0.0          # jarak tempuh — penggerak frame lokomotasi
 var _miring = 0.0         # condongan ujung ke arah gerak (CDD §5.1/SPP §56)
+var _hadap_lalu = 1.0     # deteksi balik arah → animasi BELOK (spec §9)
+var _putar_t = 0.0        # sisa waktu animasi belok
+var _putar = ""           # "putar_kiri" (kanan→kiri) / "putar_kanan"
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
 
@@ -56,6 +63,16 @@ func _process(delta):
 		_meta_t = 0.6
 	_meta_t = max(0.0, _meta_t - delta)
 
+	# balik arah saat LEPAS = animasi BELOK sungguhan (spec §9: "TENDRIL
+	# tidak berpindah arah — ia mengubah arah pertumbuhannya"), bukan flip
+	if avatar.hadap != _hadap_lalu:
+		if avatar.moda == avatar.LEPAS:
+			_putar = "putar_kiri" if avatar.hadap < 0.0 else "putar_kanan"
+			if _anim.has(_putar):
+				_putar_t = 0.32   # ± 5-6 frame, anticipation singkat (§17)
+		_hadap_lalu = avatar.hadap
+	_putar_t = max(0.0, _putar_t - delta)
+
 	# pilih state: transisi > gerak per moda > idle. Frame lokomotasi
 	# dimajukan oleh JARAK TEMPUH, bukan waktu — tanpa ini tubuh meliuk
 	# lepas sinkron dari perpindahan dan jalannya terbaca "meluncur"
@@ -75,10 +92,16 @@ func _process(delta):
 	_miring = lerpf(_miring, target_miring, clamp(delta * 8.0, 0.0, 1.0))
 	if _transisi_t > 0.0 and _anim.has(_transisi):
 		_state = _transisi
+	elif _putar_t > 0.0:
+		_state = _putar
 	elif avatar.moda == avatar.MERAMBAT:
 		_state = "merambat" if bergerak else "idle"
+	elif bergerak or not avatar.di_tanah:
+		# strip berarah (spec §22-23) kalau ada; "lepas" lama = cadangan
+		var arah_anim = "kanan" if avatar.hadap > 0.0 else "kiri"
+		_state = arah_anim if _anim.has(arah_anim) else "lepas"
 	else:
-		_state = "lepas" if bergerak or not avatar.di_tanah else "idle"
+		_state = "idle"
 
 	queue_redraw()
 
@@ -108,18 +131,26 @@ func _draw():
 			var total = 0.28 if _state == "detach" else 0.20
 			var maju = 1.0 - _transisi_t / total
 			fr = int(clamp(maju * a.n, 0.0, a.n - 1.0))
+		elif _state == "putar_kiri" or _state == "putar_kanan":
+			# belok diputar SEKALI (spec §16), maju sesuai sisa waktunya
+			fr = int(clamp((1.0 - _putar_t / 0.32) * a.n, 0.0, a.n - 1.0))
 		elif _state == "idle":
 			# idle berbasis waktu, 8 fps — napas pelan (papan: 8-12 fps)
 			fr = int(_t * 8.0) % a.n
 		else:
-			# lokomotasi berbasis jarak: satu frame tiap ~2.5 satuan —
-			# jalan 24 u/s ≈ 10 fps, rambat 34 u/s ≈ 13 fps, dan saat
-			# berhenti liukannya ikut berhenti (tidak ada moonwalk)
-			fr = int(_jarak / 2.5) % a.n
-		# hadap kiri = cermin. Matriks T·R·S menerapkan cermin SEBELUM
-		# rotasi, jadi condongan dikalikan hadap supaya selalu ke depan.
+			# lokomotasi berbasis jarak: satu frame tiap ~3 satuan (tempo
+			# diturunkan — playtest: siklus terasa terburu-buru); berhenti
+			# = liukan berhenti (tidak ada moonwalk)
+			fr = int(_jarak / 3.0) % a.n
+		# strip BERARAH (kanan/kiri/putar) digambar apa adanya — arah sudah
+		# di dalam gambarnya (spec §8). Selain itu: cermin fallback §25.
+		# Matriks T·R·S menerapkan cermin sebelum rotasi, jadi condongan
+		# dikalikan hadap supaya selalu ke depan.
+		var berarah = _state in ["kanan", "kiri", "putar_kiri",
+				"putar_kanan"]
+		var cermin = 1.0 if berarah else avatar.hadap
 		draw_set_transform(p, _miring * avatar.hadap,
-				Vector2(avatar.hadap, 1.0))
+				Vector2(cermin, 1.0))
 		draw_texture_rect_region(a.tex,
 				Rect2(Vector2(-24.0, -26.0), Vector2(48.0, 48.0)),
 				Rect2(fr * 48.0, 0.0, 48.0, 48.0))

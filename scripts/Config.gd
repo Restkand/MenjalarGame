@@ -11,21 +11,19 @@ extends Node
 # ambang 0..1, eksponen biaya) dan ekonomi energi. Angka 9.0 di TreeSim dan
 # Structure sengaja dibiarkan — ia sudah dilepas dari GROWTH_SPEED sejak lama,
 # jadi ia konstanta biaya, bukan kecepatan.
-# Playtest 11 Agustus 2026: akar terasa terlalu cepat, sulur terlalu lambat.
-# Keduanya didekatkan — akar turun 18 -> 12, sulur naik 6.4 -> 9.6. Sulur
-# yang "sengaja lambat untuk rasa stealth" tidak berlaku lagi: rasa stealth
-# datang dari kalender inspeksi (TAHAP D), bukan dari kursor yang lamban.
-var GROWTH_SPEED   = 12.0
-var VINE_SPEED     = 9.6
+# Tempo (diluruskan playtest 12 Agustus): yang harus LAMBAT adalah
+# MENJALARNYA — rasa "sabar, organik" datang dari batang yang merayap pelan,
+# bukan dari jam dunia yang diulur. Hari justru dikembalikan lebih pendek
+# supaya ritme kalender inspeksi tetap terasa hidup.
+var GROWTH_SPEED   = 7.0    # akar
+var VINE_SPEED     = 5.5    # sulur
 var MAX_TURN       = 1.1
 var NOISE_AMOUNT   = 0.35
 var ENERGY_RATE    = 7.0
 var COST_PER_PIXEL = 0.30
 var COST_TIP_EXP   = 0.62
-# Tempo diperlambat dua kali (playtest 11 Agustus, dua putaran): siang-malam
-# panjang membuat permainan bernafas — patokannya Terra Nil, bukan arcade.
-var DAY_LEN        = 42.0
-var NIGHT_LEN      = 46.0
+var DAY_LEN        = 28.0
+var NIGHT_LEN      = 30.0
 
 # Kartu pergantian fase: permainan berhenti sejenak, kartu besar mengumumkan
 # hari/inspeksi/kedatangan regu. Ini kendaraan pengajaran utama — sistem
@@ -103,9 +101,10 @@ const GROUND_Y = 192
 
 const MAX_STRANDS = 24
 const SEED_X = 240
-# Diturunkan 14 -> 8 (playtest 12 Agustus): daun yang jarang membaca sebagai
-# taburan, bukan tanaman. Kerimbunan acuan menuntut daun rapat.
-const LEAF_SPACING = 8.0
+# Diturunkan dua kali (14 -> 8 -> 5, playtest 12 Agustus): kerimbunan acuan
+# menuntut daun RAPAT — tiap titik tumbuh kini menabur rumpun 2-3 daun,
+# jadi rata-rata satu daun tiap ~2 satuan batang.
+const LEAF_SPACING = 5.0
 
 # Berapa titik yang disimpan tiap untai, dan berapa titik terakhir yang
 # digambar ulang tiap frame ke lapisan pohon yang akumulatif.

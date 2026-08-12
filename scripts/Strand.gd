@@ -110,21 +110,26 @@ func grow(delta, steer, t, world, laju = 1.0):
 
 # Daun MENEMPEL di sumbu sulur dan menunjuk keluar darinya, berselang-seling
 # kiri-kanan — seperti tanaman sungguhan (gambar acuan mekanik merambat,
-# panel 2). Versi lama menaburkannya dengan offset acak tanpa rotasi, dan
-# hasilnya konfeti melayang di samping batang (playtest 12 Agustus).
+# panel 2). Tiap titik tumbuh menabur RUMPUN 2-3 daun yang tersebar sedikit
+# di sepanjang batang, bukan sehelai — sehelai per titik terbaca jarang dan
+# berjarak (playtest 12 Agustus), sedangkan acuan menuntut sulur yang
+# benar-benar rimbun.
 func _spawn_leaf(world):
-	if leaves.size() > 90 or not world.on_facade(tip.x, tip.y):
+	if leaves.size() > 200 or not world.on_facade(tip.x, tip.y):
 		return
-	var side = -1.0 if _daun_kiri else 1.0
-	_daun_kiri = not _daun_kiri
-	leaves.append({
-		"pos": Vector2(tip.x, tip.y),
-		# tegak lurus arah sulur, dengan sedikit goyangan alami
-		"sudut": angle + side * PI / 2.0 + randf_range(-0.45, 0.45),
-		"age": 0.0,
-		"varian": randi() % 4,
-		"skala": randf_range(0.9, 1.3),
-	})
+	var arah = Vector2(cos(angle), sin(angle))
+	var n = 2 if randf() < 0.6 else 3
+	for _i in range(n):
+		var side = -1.0 if _daun_kiri else 1.0
+		_daun_kiri = not _daun_kiri
+		leaves.append({
+			"pos": Vector2(tip.x, tip.y) - arah * randf_range(0.0, 3.5),
+			# tegak lurus arah sulur, dengan goyangan alami
+			"sudut": angle + side * PI / 2.0 + randf_range(-0.6, 0.6),
+			"age": 0.0,
+			"varian": randi() % 4,
+			"skala": randf_range(0.85, 1.35),
+		})
 
 
 func age_leaves(delta):

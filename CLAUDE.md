@@ -17,7 +17,16 @@ merambat menjadikan sebuah gedung sebagai tubuhnya.
    Sprite kanon di `aset/konsep_tendril/` (master + 5 strip animasi,
    48px/frame, palet kanon; idle/detach/attach masih memakai ujung-daun
    master pra-refine — sengaja, menunggu putusan playtest §21).
-4. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
+4. **`docs/MDS-TENDRIL-GERAK.md`** — spec gerak & arah: ujung memimpin,
+   kiri/kanan bukan flip (fallback flip hanya prototype), belok organik.
+5. **`docs/OLR-TENDRIL-LOKOMOSI.md`** — REVISI lokomotasi yang MENIMPA
+   istilah MDS: bahasa resmi = **CRAWL** (kata "walking" TERLARANG di
+   prompt), Growing Tip Downward Rule, traveling body wave, Spatial
+   Displacement Rule (frame digenerate BERPINDAH lalu di-re-center oleh
+   gen_tendril.gd), turn dibuat ulang SETELAH crawl lolos playtest,
+   jump/fall/land menunggu. DOD: "TENDRIL sedang merayap", bukan
+   "menggulung".
+6. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
    papan acuan visualnya. Kanon untuk SEGALA hal tentang sang Ujung
    Tumbuh: anatomi (ujung bercahaya sensitif cahaya, daun muda kamuflase,
    sulur fleksibel, node pertumbuhan), palet hijau kanon (#102016,
@@ -83,6 +92,12 @@ Langganan Tier 1: 2000 generasi/bulan (terpakai ±55). Kunci di `.mcp.json`
 pernah final tanpa kurasi.
 
 Pengetahuan operasional yang sudah dibayar mahal:
+
+- **UNDUH HASIL SEGERA setelah job selesai** — hasil MCP bisa digusur
+  server jauh sebelum jendela "8 jam" resminya (crawl 13 Agu lenyap
+  dalam hitungan menit; regenerasi untung murah karena seed dicatat).
+  Endpoint download TIDAK mendukung HEAD — cek kesiapan lewat get_image,
+  bukan probe HTTP.
 
 - Kanvas minimal 32×32 total; strip tipis digenerate 2× lalu diperkecil
   nearest. 422 validasi TIDAK memakan kuota.

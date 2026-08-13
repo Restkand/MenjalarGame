@@ -66,6 +66,19 @@ func _draw():
 		draw_texture_rect(_tex.pipa, Rect2(952, 104, 32, 344), true)
 	if _tex.has("katup"):
 		draw_texture_rect(_tex.katup, Rect2(952, 240, 32, 32), false)
+	# bayangan tipis di bawah jalur pipa & rak (ECR §33: shadow menyatukan
+	# lebih baik daripada detail) + cahaya dari atas yang konsisten (§15)
+	var b_pipa = C_BAYANG
+	b_pipa.a = 0.16
+	draw_rect(Rect2(72, 104, 880, 3), b_pipa)
+	draw_rect(Rect2(352, 64, 336, 3), b_pipa)
+	# koneksi struktur (§19: every prop needs a connection): panggung
+	# tinggi tergantung batang ke plafon, birai rumah dipikul balok dinding
+	var logam = Color(0.14, 0.155, 0.17)
+	draw_rect(Rect2(340, 32, 3, 96), logam)
+	draw_rect(Rect2(556, 32, 3, 96), logam)
+	draw_rect(Rect2(32, 344, 64, 4), logam)
+	draw_rect(Rect2(88, 348, 4, 8), logam)
 	# rantai listrik (§12): tray -> conduit -> kotak sambung -> panel ->
 	# kabel makan ke blok mesin
 	draw_rect(Rect2(614, 64, 4, 96), C_KABEL)
@@ -99,21 +112,59 @@ func _draw():
 				nama = "beton_dinding"
 			elif _jeruji(tx, ty):
 				nama = "jeruji"
+			# variasi skala besar per PANEL 4x3 tile (ECR §8/§31): pola
+			# repetisi 32 px pecah di level ruangan, bukan di dalam tile
+			var f = [0.94, 1.0, 1.06][(floori(tx / 4.0)
+					+ floori(ty / 3.0) * 3) % 3]
 			if _tex.has(nama):
-				draw_texture_rect(_tex[nama], r, false)
+				draw_texture_rect(_tex[nama], r, false, Color(f, f, f))
 			else:
 				draw_rect(r, Color(0.33, 0.35, 0.38))
-			# bibir permukaan: sisi menghadap udara diberi aksen supaya
-			# pijakan terbaca dalam gelap
+			# seam sambungan antar panel (§8): garis konstruksi tipis
+			var seam = C_BAYANG
+			seam.a = 0.35
+			if tx % 4 == 0:
+				draw_rect(Rect2(r.position, Vector2(ppu * 0.25, t)), seam)
+			if ty % 3 == 0:
+				draw_rect(Rect2(r.position, Vector2(t, ppu * 0.25)), seam)
+			# bibir permukaan LEMBUT (§3: jangan berteriak) + cahaya dari
+			# atas konsisten (§15): atas sedikit terang, bawah gelap
 			if _terbuka(tx, ty - 1):
 				var sorot = C_SOROT
-				sorot.a = 0.45
+				sorot.a = 0.26
 				draw_rect(Rect2(r.position, Vector2(t, ppu * 0.5)), sorot)
 			if _terbuka(tx, ty + 1):
 				var bayang = C_BAYANG
 				bayang.a = 0.6
 				draw_rect(Rect2(r.position + Vector2(0, t - ppu * 0.5),
 						Vector2(t, ppu * 0.5)), bayang)
+
+	# GROUNDING (§10) + drop shadow (§33): tiap permukaan atas memberi
+	# gradasi occlusion ke udara di atasnya (dinding-bertemu-lantai), dan
+	# tiap massa menggantung melempar bayang ke bawahnya
+	for ty in range(world.PT_H):
+		for tx in range(world.PT_W):
+			if world.padat_t[ty * world.PT_W + tx] == 0:
+				continue
+			var x0 = tx * t
+			if _terbuka(tx, ty - 1):
+				for k in range(3):
+					var oc = C_BAYANG
+					oc.a = [0.16, 0.10, 0.05][k]
+					draw_rect(Rect2(x0, ty * t - (k + 1) * ppu,
+							t, ppu), oc)
+			if _terbuka(tx, ty + 1):
+				for k in range(3):
+					var dr = C_BAYANG
+					dr.a = [0.16, 0.10, 0.05][k]
+					draw_rect(Rect2(x0, (ty + 1) * t + k * ppu,
+							t, ppu), dr)
+
+	# noda lokal (§32: wear di level ruangan, bukan di tile): dasar
+	# dinding dekat drain, tetesan di bawah katup, bawah kabel kiri
+	_noda(Vector2(300, 434), 26.0)
+	_noda(Vector2(938, 330), 18.0)
+	_noda(Vector2(452, 122), 14.0)
 
 	# WEAR/AKSEN (§18, hemat): stripe peringatan di tepi blok mesin dan
 	# tepi panggung tinggi
@@ -171,6 +222,14 @@ func _jeruji(tx, ty):
 	if tx >= 19 and tx <= 20 and ty >= 12 and ty <= 13:
 		return true                          # anak tangga 2
 	return false
+
+
+# noda lembap radial samar (ECR §32) — tiga lingkaran alpha menurun
+func _noda(pos, r):
+	for k in range(3):
+		var c = C_BAYANG
+		c.a = [0.14, 0.09, 0.05][k]
+		draw_circle(pos, r * (0.5 + 0.25 * k), c)
 
 
 # stripe peringatan kuning-hitam kecil (§18: aksen, jangan sekamar)

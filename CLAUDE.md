@@ -42,7 +42,15 @@ merambat menjadikan sebuah gedung sebagai tubuhnya.
    generate ruangan utuh), prompt per aset §26-33 + negative prompt
    wajib §25, TENDRIL menyusup ke infrastruktur (§36), uji 5-detik §39,
    urutan revisi §40, jangan terlalu cepat "abandoned" (§41).
-8. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
+8. **`docs/ECR-TENDRIL-ROOM01-KOHESI.md`** — review kohesi environment
+   (50 bagian): masalah bukan lagi dungeon tapi TILE TERASA TERPISAH.
+   Enam masalah inti §2, VALUE HIERARCHY §4 (bg→wall→floor→metal→prop→
+   TENDRIL, bertahap), tile = material base saja §6, global lighting
+   tunggal §14-15, prop wajib punya koneksi §19, COHESION > DETAIL §50,
+   uji §36-40 (blur/grayscale/5 detik/seam/koneksi), alur §46, larangan
+   §47, prompt header konsistensi §24/§48. Evaluasi selalu pada GAMBAR
+   UTUH (§35), controlled wall section dulu (§41-42).
+9. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
    papan acuan visualnya. Kanon untuk SEGALA hal tentang sang Ujung
    Tumbuh: anatomi (ujung bercahaya sensitif cahaya, daun muda kamuflase,
    sulur fleksibel, node pertumbuhan), palet hijau kanon (#102016,
@@ -268,10 +276,26 @@ scratchpad. Uji 5-detik §39 pass ke-2: Q1-Q4 lolos. Sisa nit yang
 sadar-diri: motif dinding masih repetitif per tile; pipa horizontal
 samar (sengaja, midground §21); blok mesin masih slab polos.
 
-**Berikutnya: PLAYTEST ruang servis oleh pemilik proyek** (RAD §39 +
-SRD §30-31). Lalu sesuai arahan pemilik: kembali ke PENGKARAKTERAN
-karakter — lunasi utang lompat (effort/impact) & jatuh (KURANG
-membungkuk, belum kena impact), lalu OLR §34 GROW → ENERGY → CUT/DEATH
-→ REGROW → ABILITY. Phase 3-4 SRD (interaksi material, stealth)
-menunggu urutan pemilik. Utang lain: merambat belum berbahasa OLR;
-idle/detach/attach masih master pra-refine.
+**Pass KOHESI sudah dieksekusi (13 Agustus, kanon ECR)**: pemilik
+menilai tile terasa terpisah → lahir ECR, dikerjakan sesuai §46 TANPA
+generate tekstur baru (§47): gen_ruang01.gd jadi pipeline VALUE
+HIERARCHY — satu ramp kelabu global 16 langkah (0.043-0.47 dingin),
+pita luminance per kelas (latar .05-.07 < dinding .07-.12 < lantai
+.10-.15 < jeruji .12-.18 < prop ≤.24), flatten noise per aset, aksen
+amber/putih-dingin dipisah via ambang s>.42 / v>.72 (ramp 10 terlalu
+kasar — dinding & lantai sempat jatuh ke anak tangga sama). Ruang01View:
+modulasi panel 4×3 tile (0.94/1.0/1.06) + seam konstruksi, occlusion
+gradasi di tiap permukaan-bertemu-udara, drop shadow massa gantung,
+rod gantung panggung + balok pikul birai (§19), noda lembap lokal
+(§32), bibir sorot diturunkan 0.45→0.26. LULUS uji §41 controlled wall
+section, lalu §36-37 blur/grayscale ruangan penuh: hirarki bertahan,
+TENDRIL tetap paling terang. Pratinjau scratchpad kini juga
+menghasilkan versi grayscale.
+
+**Berikutnya: PLAYTEST kohesi oleh pemilik proyek** (ECR §49 checklist).
+Lalu sesuai arahan pemilik: kembali ke PENGKARAKTERAN karakter — lunasi
+utang lompat (effort/impact) & jatuh (KURANG membungkuk, belum kena
+impact), lalu OLR §34 GROW → ENERGY → CUT/DEATH → REGROW → ABILITY.
+Phase 3-4 SRD (interaksi material, stealth) menunggu urutan pemilik.
+Utang lain: merambat belum berbahasa OLR; idle/detach/attach masih
+master pra-refine.

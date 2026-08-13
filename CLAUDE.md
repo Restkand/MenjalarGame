@@ -115,12 +115,14 @@ Aturan produksi dari GDD yang mengikat cara kerja:
 - Setelah menambah/mengubah PNG: jalankan sekali dengan `--import`.
 - Commit memakai identitas repo-lokal (reiskand07@gmail.com), pesan
   bahasa Indonesia, satu commit per langkah terverifikasi.
-- Peringatan exit "4 ObjectDB AudioStreamWAV leaked" bersifat KAMBUHAN
-  (race driver audio dummy headless) — abaikan, jangan diburu.
+- Peringatan "AudioStreamWAV leaked" lama sudah TIDAK relevan — sumber
+  suaranya ikut terhapus saat bersih-bersih 13 Agu; verifikasi bersih
+  = benar-benar nol keluaran selain baris versi.
 - Tabrakan dihitung sendiri di grid (tanpa physics engine Godot) — sudah
   terbukti cukup dan sejalan GDD §43.
-- Input dibaca terpusat di `main.gd`; `Config.gd` = AutoLoad var/const
-  saja (nol fungsi).
+- Input dibaca terpusat di `Ruang01Main.gd` (main scene); `Config.gd`
+  = AutoLoad var/const saja (nol fungsi); `Avatar.gd` tidak pernah
+  membaca Input.
 - Jangan menamai method `_set` (bentrok `Object._set`, gagal parse).
 
 ## Pipeline PixelLab (GDD §22–23)
@@ -149,65 +151,52 @@ Pengetahuan operasional yang sudah dibayar mahal:
   — pakai `*_url` bila ada.
 - **Interpolasi wujud**: `animate_image` dengan `first_frame_url` +
   `last_frame_url` + aksi pertumbuhan = 16 frame konsisten dalam SATU
-  generasi (resep strip `aset/avatar_tumbuh.png`). Frame tengah janggal
-  disulam frame jangkar.
+  generasi (resep strip tumbuh era lama — stripnya kini hanya di
+  riwayat git). Frame tengah janggal disulam frame jangkar.
 - **Karakter manusia**: pipeline `create_character` v3 (side, size 64,
   lineless, low detail) + `animate_character` v3 per aksi (template
   me-retarget kerangka & bisa melarkan leher — hindari). Karakter kanon
-  "Regu Perawat" id `32cc51a8-78f5-46e2-9520-6f6c82d8279e` — basis sprite
-  Pemangkas/Teknisi (GDD §14).
+  "Regu Perawat" tersimpan di akun PixelLab (cari via `list_characters`;
+  ID tidak dicatat di repo) — basis sprite Pemangkas/Teknisi (GDD §14).
 - Identitas warna dunia: kota/gedung kelabu tak jenuh, organisme
   satu-satunya yang hijau. Palet tanaman: E5F6E6, B8E986, 5EC24A, 3E8F35,
   2F6B2A + cokelat A87B4E/7A5C3A/5C4433.
 
 ## Status kode terhadap GDD §41 (jujur, per 13 Agustus 2026)
 
-Kode sekarang = hasil evolusi proyek lama yang SUDAH SEARAH GDD di inti
-(moda dobel, energi, tumbuh jaringan), plus sisa sistem lama yang
-dibungkam. File inti: `scripts/Avatar.gd` (pemain), `WorldMap.gd` (grid
-dunia + `jaringan` + `dalam` interior), `render/AvatarView.gd` (strip
-tumbuh 17 frame), `render/JejakView.gd`, `render/PetaView.gd` (peta M),
-`render/InteriorView.gd`, `Hud.gd` (HUD avatar), `main.gd` (orkestrator).
+**BERSIH-BERSIH BESAR 13 Agustus (perintah pemilik proyek)**: seluruh
+prototipe kota era Menjalar DIHAPUS dari working tree — main.tscn/
+main.gd, 13 skrip sistem (WorldMap, TreeSim/Strand, Crew, Climber,
+Cycle, Babak, Erosi, Hud, Pane, Suasana, Suara, TuningPanel), 15 view
+kota, semua aset kota + folder suara. Semuanya UTUH di riwayat git
+(commit terakhir sebelum bersih-bersih: `e350f92`) — kalau butuh acuan
+implementasi lama (interior 6 tingkat, peta M berkabut, pintu E, regu/
+pemanjat, kalender, erosi), gali dari sana, jangan tulis ulang buta.
 
-- **Phase 1 Movement — SEBAGIAN BESAR ✓**: LEPAS (gravity/jump/collision
-  + coyote/buffer/lompat-variabel/lesat), MERAMBAT 360° di jaringan +
-  transisi dua arah. BELUM: menempel dinding/plafon PERMUKAAN (sekarang
-  hanya di jaringan — GDD §6.1 minta lantai→dinding→plafon), state
-  machine formal §28.
-- **Phase 2 Energy — ✓**: terkuras saat LEPAS, pulih saat MERAMBAT,
-  layu → tumbuh kembali dari simpul (jangkar).
-- **Phase 3 Network — SEBAGIAN**: growth ✓ (bergerak = tumbuh, biaya per
-  satuan), node/jangkar ✓ (checkpoint+respawn, tombol F). BELUM: node
-  sebagai objek (health/koneksi, GDD §29), network destruction, fast
-  travel.
-- **Phase 4 Exploration — SEBAGIAN**: peta M dengan kabut ✓, pintu E
-  (jendela/pintu gedung) ✓, interior 6 tingkat variatif + terowongan
-  bawah tanah ✓. BELUM: room system formal, shortcut yang dicatat,
-  struktur area GDD §17–18 (sekarang masih gedung kantor generik).
-- **Phase 5 Stealth — BELUM** (tiga state §13 belum ada).
-- **Phase 6 Enemies — BELUM** (aktor lama regu/pemanjat DIBUNGKAM di
-  main; sprite-nya siap jadi basis Pemangkas/Teknisi).
-- **Phase 7 Progression — BENIH**: metamorfosis 6 tahap membuka
-  lesat/sprint/kapasitas — kerangka untuk §15 (Tendril/Hook Vine/dll
-  belum ada).
-- **Phase 8 World — BELUM** (area §18 belum dibangun).
+Kode hidup sekarang = VERTICAL SLICE ROOM 01 murni, 7 skrip:
+`Ruang01Main.gd` (orkestrator+input+cahaya), `Ruang01.gd` (dunia),
+`Avatar.gd` (pemain — moda dobel, energi, tumbuh=gerak, metamorfosis,
+kit gerak), `Config.gd` (autoload), `render/Ruang01View.gd` (Wang
+renderer), `render/AvatarView.gd` (12 anim konsep_tendril),
+`render/JejakView.gd` (sulur avatar).
 
-**Sisa sistem Menjalar yang masih hidup tapi dibungkam** (kode utuh,
-update tidak dipanggil / tersembunyi): sim tanaman liar (TreeSim/Strand —
-kini berfungsi sebagai jaringan awal dunia), crew/climber (basis musuh),
-babak/cycle-kalender lama, kartu ekonomi, panel tuning. Bongkar HANYA
-saat langkah GDD yang menggantikannya berdiri, atau saat pemilik proyek
-memintanya.
+- **Phase 1 Movement — ✓ inti** (LEPAS+MERAMBAT+transisi; belum: state
+  machine formal §28). **Phase 2 Energy — ✓**. **Phase 3 Network —
+  sebagian** (growth+jangkar ✓; node-objek/destruction/fast travel
+  belum). **Phase 4 Exploration — di-reset ke Room 01** (rute aman/
+  cepat/rahasia; sistem room formal menyusul SRD §38; interior & peta
+  M lama ada di riwayat git). **Phase 5-6 Stealth/Enemies — BELUM**
+  (sensor baru placeholder visual). **Phase 7 — benih metamorfosis
+  ✓**. **Phase 8 World — Room 01 = fondasi bahasanya.**
 
 ## Harness uji
 
-Pola: blok `UJI-SEMENTARA` di main.gd + flag `--uji`, DIBUANG sebelum
-commit. Fisika diuji DETERMINISTIK: panggil `avatar.update(1.0/60, input,
-world)` langsung dalam loop — headless berjalan ratusan fps, jangan
-mengukur per-frame layar. Jebakan titik uji: dunia penuh benda padat
-tersembunyi (gedung tetangga, pita ledge antar jendela, pipa x156) —
-tumbuh/gerak uji di langit murni y<24, dan cek tata letak sebelum
-menyalahkan mekanik.
+Pola: blok `UJI-SEMENTARA` di Ruang01Main.gd + flag `--uji` (jalankan:
+`godot --headless --path . -- --uji`), DIBUANG sebelum commit. Fisika
+diuji DETERMINISTIK: panggil `avatar.update(1.0/60, input, world)`
+langsung dalam loop — headless berjalan ratusan fps, jangan mengukur
+per-frame layar. Room 01: 15 asersi tata letak pernah dipakai di sini
+(lihat riwayat commit `2bb8172`) — pola siap dihidupkan lagi.
 
 ## Langkah berikutnya
 

@@ -477,3 +477,77 @@ const C_PUING_HL  = Color("7D7D75")   # sisi bongkah yang kena cahaya
 const C_PUING_DK  = Color("55554F")   # celah antar bongkah
 const C_DEBU      = Color("9A9A92")
 const C_RETAK     = Color("3A3A36")
+
+# ---------------------------------------------------------------------------
+# PIVOT IV (docs/13) — P1: avatar dua moda
+# ---------------------------------------------------------------------------
+# Semua kecepatan/percepatan dalam SATUAN simulasi per detik.
+var AVATAR_RAMBAT      = 34.0   # laju gerak di jaringan (moda MERAMBAT)
+var AVATAR_JALAN       = 24.0   # laju horizontal maksimum saat LEPAS
+var AVATAR_ACCEL       = 160.0  # percepatan horizontal LEPAS
+var AVATAR_GRAV        = 210.0  # gravitasi LEPAS
+var AVATAR_LOMPAT      = 62.0   # impuls lompat (ke atas)
+var AVATAR_LOMPAT_BIAYA = 3.0   # energi per lompatan
+var AVATAR_ENERGI_MAX  = 100.0
+var AVATAR_REGEN       = 7.0    # pemulihan energi per detik di jaringan
+var AVATAR_KURAS       = 2.5    # kikisan energi per detik saat LEPAS
+var AVATAR_LAYU_ENERGI = 40.0   # energi saat bangun setelah layu
+const AVATAR_TEMPEL_JEDA = 0.3  # detik sebelum boleh menempel lagi usai lepas
+const AVATAR_SETENGAH_LEBAR = 1.5   # kotak badan: pos = kaki
+const AVATAR_TINGGI    = 5.0
+const ZOOM_AVATAR      = 2.0    # zoom awal kamera-ikut P1
+
+# P2 (docs/13 §4): interior gedung — grid lapis kedua `dalam`
+var JANGKAR_BIAYA = 25.0   # F: menanam simpul jaringan di posisi avatar
+const T_RUANG         = 20  # udara interior
+const T_LANTAI        = 21  # slab lantai — padat
+const T_DINDING_DALAM = 22  # dinding kamar / cangkang — padat
+const T_VENT          = 23  # saluran ventilasi — bisa dilalui, menembus dinding
+const T_POROS         = 24  # poros lift — udara vertikal
+const T_TERALIS       = 25  # gerbang statis P2 — padat sampai upgrade (P7)
+const T_KERAN         = 26  # pipa bocor interior — stasiun AIR (P3)
+
+# P3 (docs/13 §3.1 & §4): menjalar = tumbuh, dan sumber daya beralamat
+var RAMBAT_TUMBUH_BIAYA = 1.2   # energi per satuan memperpanjang jaringan
+var AIR_ISI             = 18.0  # isi energi/dtk di akuifer / keran bocor
+var CAHAYA_ISI          = 12.0  # isi energi/dtk di bawah matahari (siang, terang)
+var CAHAYA_JENDELA      = 8.0   # isi energi/dtk dekat jendela cerah interior
+
+# Pengampunan platformer (GDD §7 rasa gerak)
+const COYOTE_DETIK    = 0.12    # masih boleh lompat setelah lepas pijakan
+const BUFFER_LOMPAT   = 0.12    # lompat ditekan sesaat sebelum mendarat
+const LOMPAT_POTONG   = 0.45    # pengali vel.y saat tombol lompat dilepas dini
+
+# GDD §7 + §9 (perbaikan penyimpangan #2): RUN dasar & biaya bergradasi.
+# LARI sengaja DI BAWAH laju merambat (34) — §6.1: merambat harus terasa
+# lebih cepat daripada LEPAS. Kuras = AVATAR_KURAS x faktor keadaan.
+var AVATAR_LARI  = 32.0    # laju horizontal saat Shift ditahan (LEPAS)
+var KURAS_DIAM   = 0.5     # faktor kuras saat diam           (§9: kecil)
+var KURAS_LARI   = 1.8     # faktor kuras saat berlari        (§9: sedang)
+
+# GDD §39 (perbaikan penyimpangan #1): sumber energi Room 01 = kebocoran
+# katup pipa (pipa membawa air, §12). Radius "cukup dekat untuk minum".
+var AIR_RADIUS = 5.0
+
+# RK Langkah 2 (SRD §13-15): sensor perawatan Room 01 — kenop tuning
+# untuk Langkah 3 (playtest tiga rute). Konsekuensi TERDETEKSI = jaringan
+# BERHENTI memulihkan energi selama sensor masih waspada (opsi 2b RK:
+# menyerang tepat hal yang membuat jaringan berharga).
+var SENSOR_KERUCUT_DASAR = 4.0    # setengah lebar kerucut di lensa
+var SENSOR_KERUCUT_LEBAR = 0.38   # pelebaran per satuan turun
+var SENSOR_WASPADA       = 4.0    # detik alarm (regen mati + pindai kunci)
+# Siklus pindai ala Splinter Cell (SRD §14 IDLE->SCAN, gerbang Langkah 3):
+# jendela aman untuk bergerak vs jendela bahaya untuk berlindung/diam
+var SENSOR_JEDA          = 3.0    # detik fase IDLE (kerucut redup, aman)
+var SENSOR_PINDAI        = 2.2    # detik fase SCAN (deteksi aktif)
+var KURAS_TERDETEKSI     = 2.5    # faktor kuras saat TERDETEKSI (menggigit)
+
+# Tahap CDD §9 (perbaikan penyimpangan #3): EMPAT tahap aktif — TUNAS
+# BARU, MUDA, DEWASA, TUA/KAYU (TERINFEKSI opsional menunggu cerita).
+# Murni tonggak WUJUD dari total pertumbuhan; TIDAK membuka kemampuan
+# apa pun (kemampuan = GDD §15, jatah Phase 7). Lesat & sprint-merambat
+# era pivot DIHAPUS — tidak berasal dari kanon mana pun.
+var TAHAP_MUDA   = 25.0    # tumbuh_total: TUNAS BARU -> MUDA
+var TAHAP_DEWASA = 70.0    # MUDA -> DEWASA
+var TAHAP_TUA    = 160.0   # DEWASA -> TUA/KAYU
+var UKURAN_PENUH = 200.0   # tumbuh_total saat badan mencapai ukuran penuh

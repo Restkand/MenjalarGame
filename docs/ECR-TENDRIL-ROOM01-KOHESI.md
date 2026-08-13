@@ -1,3 +1,5 @@
+> **HISTORIS - digantikan pipeline EDV3-TENDRIL-SPEK-EKSEKUSI.md.** Value hierarchy & uji kohesinya terlipat ke EDV3 pasal 3 dan 9.
+
 # TENDRIL — REVIEW & ART DIRECTION REVISION
 ## Single Room Environment: Tile Terasa Terpisah, Kontras, dan Tidak Menyatu
 

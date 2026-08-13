@@ -3,7 +3,7 @@
 **GROW. HIDE. SURVIVE.** Metroidvania 2D pixel art: ujung tumbuh tanaman
 merambat menjadikan sebuah gedung sebagai tubuhnya.
 
-## Sumber kebenaran desain (KEDUANYA ditulis pemilik proyek)
+## Sumber kebenaran desain (SEMUA ditulis pemilik proyek) — 7 AKTIF
 
 1. **`docs/GDD-TENDRIL.md`** — desain game menyeluruh (45 bagian).
 2. **`docs/SPP-TENDRIL-SPRITE.md`** — prompt pack produksi sprite (63
@@ -11,75 +11,60 @@ merambat menjadikan sebuah gedung sebagai tubuhnya.
 3. **`docs/ADR-TENDRIL-MASTER-A.md`** — keputusan art director:
    **MASTER A LOCKED** (silhouette/proporsi/daun/S-curve/palet terkunci;
    ujung tumbuh sudah di-refine jadi tunas menggulung via inpaint),
-   idle/detach/attach KEEP, merambat & lepas sudah di-refine dari master
-   refined, **Jump/Fall/Land DILARANG sebelum playtest** (§19), prioritas
-   = AvatarView Godot → playtest "apakah terasa hidup saat dikendalikan".
-   Sprite kanon di `aset/konsep_tendril/` (master + 5 strip animasi,
-   48px/frame, palet kanon; idle/detach/attach masih memakai ujung-daun
-   master pra-refine — sengaja, menunggu putusan playtest §21).
-4. **`docs/MDS-TENDRIL-GERAK.md`** — spec gerak & arah: ujung memimpin,
-   kiri/kanan bukan flip (fallback flip hanya prototype), belok organik.
-5. **`docs/OLR-TENDRIL-LOKOMOSI.md`** — REVISI lokomotasi yang MENIMPA
-   istilah MDS: bahasa resmi = **CRAWL** (kata "walking" TERLARANG di
-   prompt), Growing Tip Downward Rule, traveling body wave, Spatial
-   Displacement Rule (frame digenerate BERPINDAH lalu di-re-center oleh
-   gen_tendril.gd), turn dibuat ulang SETELAH crawl lolos playtest,
-   jump/fall/land menunggu. DOD: "TENDRIL sedang merayap", bukan
-   "menggulung".
-6. **`docs/SRD-TENDRIL-ROOM01.md`** — single room design map (39 bagian):
+   idle/detach/attach KEEP, prioritas = AvatarView Godot → playtest
+   "apakah terasa hidup saat dikendalikan". Sprite kanon di
+   `aset/konsep_tendril/` (48px/frame, palet kanon; idle/detach/attach
+   masih memakai ujung-daun master pra-refine — sengaja, menunggu
+   putusan playtest §21).
+4. **`docs/OLR-TENDRIL-LOKOMOSI.md`** — bahasa lokomotasi resmi:
+   **CRAWL** (kata "walking" TERLARANG di prompt), Growing Tip Downward
+   Rule, traveling body wave, Spatial Displacement Rule (frame
+   digenerate BERPINDAH lalu di-re-center saat perakitan). DOD:
+   "TENDRIL sedang merayap", bukan "menggulung".
+5. **`docs/SRD-TENDRIL-ROOM01.md`** — single room design map (39 bagian):
    vertical slice RUANG PERTAMA (service/maintenance room 24-32 x 14-18
-   tile) SEBELUM gedung besar. Area A-G (home network, open floor, crack,
-   wall/ceiling route, material, cahaya, bahaya), TIGA RUTE (aman lewat
-   jaringan / cepat lewat lantai / rahasia lewat celah), matriks adaptasi
-   §21, tutorial tanpa teks §23, urutan build §33 (Graybox → TENDRIL →
-   Environment → Stealth → Pixel Art), kriteria sukses §31, yang BELUM
-   perlu ada §32. Semua room berikutnya lahir dari bahasa desain Room 01.
-7. **`docs/RAD-TENDRIL-RUANG-SERVIS.md`** — art direction Room 01 (44
-   bagian): ruangan harus terbaca RUANG SERVIS gedung, BUKAN dungeon
-   batu. FUNCTION OVER ROCK (§3), tiga lapis §5 (structure /
-   infrastructure / wear+life), proporsi §6, kit modular §34 (pipa,
-   tray, panel, katup, drain, jeruji, lampu — susun di Godot, jangan
-   generate ruangan utuh), prompt per aset §26-33 + negative prompt
-   wajib §25, TENDRIL menyusup ke infrastruktur (§36), uji 5-detik §39,
-   urutan revisi §40, jangan terlalu cepat "abandoned" (§41).
-8. **`docs/ECR-TENDRIL-ROOM01-KOHESI.md`** — review kohesi environment
-   (50 bagian): masalah bukan lagi dungeon tapi TILE TERASA TERPISAH.
-   Enam masalah inti §2, VALUE HIERARCHY §4 (bg→wall→floor→metal→prop→
-   TENDRIL, bertahap), tile = material base saja §6, global lighting
-   tunggal §14-15, prop wajib punya koneksi §19, COHESION > DETAIL §50,
-   uji §36-40 (blur/grayscale/5 detik/seam/koneksi), alur §46, larangan
-   §47, prompt header konsistensi §24/§48. Evaluasi selalu pada GAMBAR
-   UTUH (§35), controlled wall section dulu (§41-42).
-9. **`docs/EDV2-TENDRIL-ARSITEKTUR-MODULAR.md`** — environment direction
-   V2 (42 bagian): workflow tile-first DIBUANG → PixelLab = bahan &
-   architectural pieces, Godot = penyusun ruangan. Empat level (material
-   → architecture → infrastructure → composition), MACRO SHAPE > MICRO
-   DETAIL, prinsip Carrion-like §4, architecture = gameplay §23.
-10. **`docs/EDV3-TENDRIL-SPEK-EKSEKUSI.md`** — V3 MENIMPA V2 secara
-   operasional: spek PixelLab yang bisa dieksekusi. Diagnosa D1-D8 §1,
-   PALET 18 WARNA TERKUNCI §3.1 (+aturan value: env ≤40%, amber ≤63%,
-   TENDRIL 60-85% selalu paling terang), parameter terkunci §3.2,
-   prompt PENDEK 8-20 kata §4 (buang abstraksi desain dari prompt!),
-   urutan generate berantai §5 (MASTER_ID → tileset → trim → arch →
-   infra → prop via INPAINTING → decal), aturan pipa wajib flange/
-   elbow/bracket, tugas Godot §8 (parallax, PointLight2D, contact
-   shadow, CanvasModulate 8FA0B8), QA GATES 1-6 §9, controlled strip
-   128 sebelum full room §10.
-11. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
+   tile) SEBELUM gedung besar. Area A-G, TIGA RUTE (aman lewat jaringan
+   / cepat lewat lantai / rahasia lewat celah), matriks adaptasi §21,
+   tutorial tanpa teks §23, urutan build §33, kriteria sukses §31, yang
+   BELUM perlu ada §32. Semua room berikutnya lahir dari bahasa desain
+   Room 01.
+6. **`docs/EDV3-TENDRIL-SPEK-EKSEKUSI.md`** — spek eksekusi environment
+   (PixelLab → Godot). Diagnosa D1-D8 §1, PALET 18 WARNA TERKUNCI §3.1
+   (+aturan value: env ≤40%, amber ≤63%, TENDRIL 60-85% selalu paling
+   terang), parameter terkunci §3.2, prompt PENDEK 8-20 kata §4 (buang
+   abstraksi desain dari prompt!), urutan generate berantai §5
+   (MASTER_ID → tileset → trim → arch → infra → prop via INPAINTING →
+   decal), aturan pipa wajib flange/elbow/bracket, tugas Godot §8
+   (parallax, PointLight2D, contact shadow, CanvasModulate 8FA0B8),
+   QA GATES 1-6 §9, controlled strip 128 sebelum full room §10.
+7. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
    papan acuan visualnya. Kanon untuk SEGALA hal tentang sang Ujung
-   Tumbuh: anatomi (ujung bercahaya sensitif cahaya, daun muda kamuflase,
-   sulur fleksibel, node pertumbuhan), palet hijau kanon (#102016,
-   #19351E, #285B2B, #4F8F32, #79B83F, #A8D94A), warna status
-   (kuning=terdeteksi/energi rendah, merah=diburu, ungu=racun,
-   biru-putih=listrik), LIMA tahap (Tunas Baru, Muda, Dewasa, Tua/Kayu,
-   Terinfeksi-opsional), proporsi (karakter 16–32 px < manusia 32–48 px),
-   8 Design Rules (§42), dan north star: "Kecil sebagai individu. Besar
-   sebagai jaringan."
+   Tumbuh: anatomi, palet hijau kanon (#102016, #19351E, #285B2B,
+   #4F8F32, #79B83F, #A8D94A), warna status (kuning=terdeteksi/energi
+   rendah, merah=diburu, ungu=racun, biru-putih=listrik), LIMA tahap,
+   proporsi (karakter 16–32 px < manusia 32–48 px), 8 Design Rules
+   (§42), north star: "Kecil sebagai individu. Besar sebagai jaringan."
 
-Baca KEDUANYA sebelum menyentuh mekanik/visual apa pun. 13 dokumen era
-Menjalar sengaja dihapus karena membuat produksi bercabang. Kalau sebuah
-keputusan tidak ada di GDD/CDD, tanyakan ke pemilik proyek — jangan
-mengarang arah.
+**Dokumen HISTORIS** (alasan desain tersimpan, bercap `> HISTORIS` di
+kepalanya masing-masing — JANGAN dipakai sebagai acuan aktif):
+
+- `docs/MDS-TENDRIL-GERAK.md` — ditimpa istilahnya oleh OLR.
+- `docs/RAD-TENDRIL-RUANG-SERVIS.md` — sebagian ditimpa EDV3 (FUNCTION
+  OVER ROCK & kit modular hidup lewat EDV3).
+- `docs/ECR-TENDRIL-ROOM01-KOHESI.md` — digantikan pipeline EDV3.
+- `docs/EDV2-TENDRIL-ARSITEKTUR-MODULAR.md` — ditimpa operasional oleh
+  EDV3 (prinsipnya dirangkum EDV3 §12).
+
+**Rencana kerja aktif (BUKAN kanon, dibuang setelah selesai):**
+`docs/RK-TENDRIL-FOKUS-BERIKUTNYA.md` — urutan Opsi A: [0] kebersihan
+dokumen ✓ → [1] utang FEEL (lompat/jatuh/crawl) → [2] SENSOR jadi nyata
+(sumbu kedua) → [3] playtest tiga rute (GERBANG KERAS) → [4] grading
+final art (dengan sensor menyala) → [5] lipat ke kanon, buang RK.
+
+Baca kanon aktif sebelum menyentuh mekanik/visual apa pun. 13 dokumen
+era Menjalar sengaja dihapus karena membuat produksi bercabang. Kalau
+sebuah keputusan tidak ada di GDD/CDD, tanyakan ke pemilik proyek —
+jangan mengarang arah.
 
 **Penyelarasan kode→CDD yang MASIH TERUTANG** (dicatat 13 Agu, belum
 dikerjakan — menunggu urutan dari pemilik proyek):
@@ -200,134 +185,52 @@ per-frame layar. Room 01: 15 asersi tata letak pernah dipakai di sini
 
 ## Langkah berikutnya
 
-**Crawl LULUS playtest 12 Agustus** — putusan pemilik proyek: "agak
-merayap dan menggulung tapi ya sudah lah untuk sekarang aman dan lulus
-uji coba" → LULUS dengan UTANG POLISH (crawl kanan/kiri masih sedikit
-menggulung; revisi saat pass animasi berikutnya, jangan reroll tanpa
-diminta).
+**Dikemudikan `docs/RK-TENDRIL-FOKUS-BERIKUTNYA.md` (Opsi A).**
+Langkah 0 (kebersihan dokumen) SELESAI 14 Agustus: kanon aktif 11 → 7,
+empat dokumen bercap HISTORIS, bagian ini dikompres (sejarah pass demi
+pass Room 01 hidup di dokumen historis + riwayat git).
 
-Gerbang OLR §34 terbuka → sudah dibangun sesudahnya (13 Agustus): belok
-crawl `putar_kiri`/`putar_kanan` (7f, seed 1051/1052) plus set udara
-`lompat` (7f play-once ~14 fps, membeku di frame akhir), `jatuh` (5f
-loop 10 fps), `darat` (5f play-once 0.18 dtk, menyala di tepi mendarat,
-gerbang `_udara_t > 0.12` supaya turunan kecil tidak memicu pegas).
-Semua digenerate dari master base64 dengan teks aksi ber-jangkar (BUKAN
-pin frame — dua base64 panjang dalam satu panggilan selalu korup).
-Prioritas state AvatarView: transisi > belok > darat > udara > gerak >
-idle. Ketiga anim udara NON-berarah (dicermin `hadap` seperti idle).
+**SEKARANG → Langkah 1: lunasi utang FEEL** (1-2 sesi, GDD §42):
 
-**Arah dibelokkan pemilik proyek 13 Agustus**: sebelum karakter
-didalami lagi, bangun MAP/LANDMARK dulu supaya uji karakter menyatu
-dengan lingkungan → lahir kanon **SRD-TENDRIL-ROOM01** dan **Room 01
-Phase 1 Graybox sudah berdiri**:
+- LOMPAT: belum terasa effort/impact — butuh pose lebih ekstrem.
+- JATUH: KURANG membungkuk, belum terkesan menerima impact.
+- CRAWL: masih sedikit menggulung (lulus 12 Agu dengan utang).
+- Boleh dibonceng: palet avatar & jejak pindah ke CDD §7 (file animasi
+  toh sedang disentuh). "Jangan reroll tanpa diminta" — RK Langkah 1
+  ADALAH permintaannya. Idle/detach/attach & bahasa-OLR merambat TIDAK
+  disentuh di langkah ini.
+- DOD: lompat terbaca sebagai usaha, mendarat terbaca menerima beban.
+  Uji dengan mata, bukan asersi.
 
-- Boot project sekarang `ruang01.tscn` (`Ruang01Main.gd`); kota lama
-  `main.tscn` utuh tapi tidak diboot — kembalikan `run/main_scene`
-  kalau perlu membuka dunia kota.
-- `scripts/Ruang01.gd` = dunia mandiri 32x18 tile (tile 8 satuan) yang
-  memenuhi 4-method antarmuka Avatar (padat_avatar/jaringan_di/
-  tandai_jaringan/di_gerbang_interior) — sistem moda/energi/tumbuh
-  dipakai apa adanya. `render/Ruang01View.gd` = graybox datar (§33:
-  beton kelabu, jaringan hijau satu-satunya, sensor placeholder tanpa
-  logika).
-- Tata letak = tiga rute §19: AMAN (benih jaringan rumah → dinding
-  kiri → plafon → dinding kanan), CEPAT (lantai → tangga peti 8-satuan
-  per anak → blok mesin di bawah sensor), RAHASIA (celah lantai 1 tile
-  → koridor drain berisi jaringan tersembunyi → cerobong keluar).
-  Panggung tinggi + kanopi rumah hanya terjangkau via jaringan/tumbuh.
-  Angka kunci: lompatan 9.2 satuan > anak tangga 8; lompatan datar
-  14.2 > celah 11.
-- Diverifikasi deterministik (15 asersi tata letak+fisika, blok
-  UJI-SEMENTARA sudah dibuang sesuai aturan): rute aman tak putus,
-  mulai langsung menempel, koridor bisa dirayapi & menempel di jaringan
-  tersembunyi.
+Sesudahnya sesuai RK: [2] sensor jadi nyata (tiga state SRD §13, warna
+kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga
+rute = GERBANG KERAS → [4] grading final art dengan sensor menyala →
+[5] lipat ke kanon & buang RK.
 
-**Playtest 13 Agustus (pemilik proyek)**: WASD jalan; animasi disukai —
-**BELOK LULUS** ("rotasi kiri↔kanan sudah terlihat natural"). **UTANG
-POLISH lompat/jatuh** (diluruskan pemilik proyek — catatan awal salah
-tangkap): lompat belum terasa effort/impact, dan jatuh justru KURANG
-membungkuk — belum terkesan menerima impact jatuh; keduanya butuh pose
-lebih ekstrem. JANGAN reroll tanpa diminta — antre pass animasi
-berikutnya.
+**Keadaan teknis yang perlu diketahui sesi berikutnya:**
 
-Arahan lanjutan pemilik proyek: kembangkan LATAR MAP dulu via PixelLab
-(Phase 5 SRD ditarik maju melewati Phase 3-4 — keputusan pemilik),
-supaya pengkarakteran karakter diuji menyatu dengan lingkungan (§1).
-**Sudah dikerjakan 13 Agustus**: paket `aset/ruang01/` (7 aset, seed
-2001-2017): beton_dinding & beton_lantai (fill 64 crop-tengah-32, snap
-palet kelabu ruangan 0E1114/171B1F/23282D/31383E/454E56/5A646D), latar
-panel logam (reroll — vignette pintu ditolak kurasi), pipa 32x64 tile
-vertikal, kabel, sensor (palet + amber D8A34A, TANPA hijau), retak
-(reroll — diagonal ditolak). Ruang01View kini bertekstur: tile 8 satuan
-x PPU 4 = 32 px = 1:1; latar diredupkan 0.44-0.55; kulit cangkang =
-dinding, massa pijakan = slab lantai; bibir permukaan diberi aksen;
-sensor digambar DI DEPAN jaringan. Kurasi lewat pratinjau komposisi
-scratchpad (pratinjau_ruang01.gd) karena headless tak bisa screenshot.
-
-**Revisi RUANG SERVIS sudah dieksekusi (13 Agustus, kanon RAD)**:
-pemilik menilai pass pertama masih terbaca dungeon batu → lahir
-RAD-TENDRIL-RUANG-SERVIS, dikerjakan sesuai urutan §40. Paket
-aset/ruang01 kini 16 aset (seed 2021-2033): dinding & lantai PANEL
-beton (bukan bata), jeruji walkway (tangga+panggung+birai), kit pipa
-(horizontal tileable, siku, vertikal, katup), rak kabel plafon, rantai
-listrik lengkap §12 (tray → conduit → kotak sambung → panel listrik →
-kabel makan ke blok mesin), drain di mulut celah lantai (fiksi koridor
-rahasia = saluran air), lampu fluorescent + pendar, stripe peringatan
-hemat (§18). LATAR: model DUA KALI menggambar bata meski dilarang keras
-→ jangan lawan modelnya: latar DIDERIVASI prosedural (dasar polos +
-noda samar dari deviasi luminance panel dinding) di gen_ruang01.gd
-scratchpad. Uji 5-detik §39 pass ke-2: Q1-Q4 lolos. Sisa nit yang
-sadar-diri: motif dinding masih repetitif per tile; pipa horizontal
-samar (sengaja, midground §21); blok mesin masih slab polos.
-
-**Pipeline EDV3 sudah dieksekusi (13 Agustus, kanon EDV2+EDV3)** —
-pemilik menilai hasil ECR masih belum lulus → dua dokumen baru,
-dikerjakan sesuai urutan §5: tileset Wang beton = MASTER MATERIAL,
-tileset baja DIRANTAI via base_tile_id dari master yang sama (ID tidak
-dicatat di repo atas permintaan pemilik — seed+prompt di _gen_params
-cukup untuk regenerasi); atlas 16-slot terindeks kunci-sudut
-marching-squares (renderer
-menghitung kunci per sel → trim/lip/sudut otomatis, D2 tamat); flange
-+ bracket (aturan pipa); panel listrik via INPAINT ke strip (menyatu
-sempurna — teknik terpenting, patch dipakai fase-selaras x%32==4
-y%32==8); noda_air decal alpha-dari-kegelapan; controlled strip 128
-LOLOS gate sebelum full room; PointLight2D bertangga + CanvasModulate
-8FA0B8 + cahaya hijau ikut avatar menggantikan kerucut poligon (D6);
-param generate tersimpan di aset/ruang01/_gen_params/. JEBAKAN MAHAL
-yang sudah dibayar: endpoint /image tileset = PRATINJAU dekoratif —
-iris dari spritesheet_url di metadata; semantik Wang "lower"=PADAT
-(verifikasi empiris, jangan percaya nama); blit Vector2i menelan
-pecahan (floori dulu); Select-Object -First MEMBUNUH proses di pipe;
-massa setebal 1 tile berkunci 0 → fallback slot 15; pita value harus
-ditegakkan di perakit (remap grey ke pita per kelas + palet atlas
-tanpa warna latar) atau material runtuh ke warna background.
-
-Sisa risiko yang diketahui: pemisah beton-vs-latar di bidang lebar
-masih tipis pada pratinjau pra-grading — nilai FINAL harus in-game
-(CanvasModulate+lampu mengubah bacaan); kalau kurang, naikkan lo pita
-beton di gen_ruang01_v3.gd scratchpad. Decal baru 1 dari 12 (§6 STEP
-8), varian center tile belum 3 (§7) — utang kit.
-
-**Catatan pass ECR sebelumnya (masih relevan sebagai sejarah)**: pemilik
-menilai tile terasa terpisah → lahir ECR, dikerjakan sesuai §46 TANPA
-generate tekstur baru (§47): gen_ruang01.gd jadi pipeline VALUE
-HIERARCHY — satu ramp kelabu global 16 langkah (0.043-0.47 dingin),
-pita luminance per kelas (latar .05-.07 < dinding .07-.12 < lantai
-.10-.15 < jeruji .12-.18 < prop ≤.24), flatten noise per aset, aksen
-amber/putih-dingin dipisah via ambang s>.42 / v>.72 (ramp 10 terlalu
-kasar — dinding & lantai sempat jatuh ke anak tangga sama). Ruang01View:
-modulasi panel 4×3 tile (0.94/1.0/1.06) + seam konstruksi, occlusion
-gradasi di tiap permukaan-bertemu-udara, drop shadow massa gantung,
-rod gantung panggung + balok pikul birai (§19), noda lembap lokal
-(§32), bibir sorot diturunkan 0.45→0.26. LULUS uji §41 controlled wall
-section, lalu §36-37 blur/grayscale ruangan penuh: hirarki bertahan,
-TENDRIL tetap paling terang. Pratinjau scratchpad kini juga
-menghasilkan versi grayscale.
-
-**Berikutnya: PLAYTEST kohesi oleh pemilik proyek** (ECR §49 checklist).
-Lalu sesuai arahan pemilik: kembali ke PENGKARAKTERAN karakter — lunasi
-utang lompat (effort/impact) & jatuh (KURANG membungkuk, belum kena
-impact), lalu OLR §34 GROW → ENERGY → CUT/DEATH → REGROW → ABILITY.
-Phase 3-4 SRD (interaksi material, stealth) menunggu urutan pemilik.
-Utang lain: merambat belum berbahasa OLR; idle/detach/attach masih
-master pra-refine.
+- Animasi avatar: 12 strip di `aset/konsep_tendril/` (idle, merambat,
+  kanan/kiri 11f crawl berpindah + re-center, putar_kiri/kanan 7f seed
+  1051/1052, lompat 7f play-once ~14 fps beku di ujung, jatuh 5f loop,
+  darat 5f play-once 0.18 dtk bergerbang `_udara_t > 0.12`, lepas,
+  detach, attach). Semua digenerate dari master base64 dengan teks aksi
+  ber-jangkar — JANGAN dua base64 panjang dalam satu panggilan (selalu
+  korup). Prioritas state AvatarView: transisi > belok > darat > udara >
+  gerak > idle; anim udara non-berarah (dicermin `hadap`).
+- Room 01 memakai pipeline EDV3 penuh: tileset Wang beton (MASTER) +
+  baja dirantai `base_tile_id`; atlas terindeks kunci-sudut, renderer
+  marching-squares (massa 1-tile → fallback slot 15); panel = patch
+  inpaint fase-selaras (x%32==4, y%32==8); PointLight2D bertangga +
+  CanvasModulate 8FA0B8 + cahaya hijau ikut avatar; seed+prompt di
+  `aset/ruang01/_gen_params/` (tanpa ID, keputusan pemilik).
+- Jebakan mahal yang SUDAH dibayar: endpoint /image tileset = pratinjau
+  dekoratif (iris dari `spritesheet_url` metadata); semantik Wang
+  "lower" = PADAT (verifikasi empiris); `Vector2i` menelan pecahan
+  (floori dulu); `Select-Object -First` membunuh proses di pipe; pita
+  value ditegakkan di perakit atau material runtuh ke warna latar.
+- Risiko tercatat: pemisah beton-vs-latar di bidang lebar masih tipis —
+  nilai final in-game DENGAN SENSOR MENYALA (RK Langkah 4); pijakan
+  wajib ≥2× luminance dinding di belakangnya (signifier, tidak boleh
+  ditunda); tombolnya `lo` pita beton di gen_ruang01_v3.gd scratchpad.
+- Utang kit environment: decal 1/12, varian center tile 0/3 — bayar di
+  RK Langkah 4 kalau sempat.

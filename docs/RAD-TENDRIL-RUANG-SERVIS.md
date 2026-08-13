@@ -1,3 +1,5 @@
+> **HISTORIS - sebagian ditimpa EDV3-TENDRIL-SPEK-EKSEKUSI.md.** FUNCTION OVER ROCK & kit modularnya hidup lewat EDV3.
+
 # TENDRIL — SERVICE / MAINTENANCE ROOM ART DIRECTION
 ## Revisi Visual Single Room agar Terasa Seperti Ruang Servis Gedung, Bukan Ruang Batu / Dungeon
 

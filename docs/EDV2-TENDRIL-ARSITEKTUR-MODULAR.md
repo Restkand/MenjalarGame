@@ -1,3 +1,5 @@
+> **HISTORIS - ditimpa operasional oleh EDV3-TENDRIL-SPEK-EKSEKUSI.md.** Prinsipnya dirangkum EDV3 pasal 12; pakai EDV3 untuk eksekusi.
+
 # TENDRIL — ENVIRONMENT DIRECTION V2
 ## Dari Tile-Based Room menjadi Modular Industrial Architecture
 

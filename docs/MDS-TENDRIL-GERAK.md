@@ -1,3 +1,5 @@
+> **HISTORIS - ditimpa istilahnya oleh OLR-TENDRIL-LOKOMOSI.md.** Simpan sebagai alasan desain; jangan pakai sebagai acuan bahasa gerak.
+
 # TENDRIL — MOVEMENT & DIRECTIONAL ANIMATION SPEC
 ## Forward Lean, Organic Locomotion, dan Turn Left ↔ Right
 

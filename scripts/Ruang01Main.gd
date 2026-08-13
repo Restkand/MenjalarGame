@@ -21,10 +21,12 @@ var avatar
 var avatar_view
 var cam
 var ruang_view             # Ruang01View — diberi tahu state sensor
-var sensor                 # RK Langkah 2: tiga state deteksi di grid
-var _waspada = 0.0         # sisa detik sensor waspada setelah TERDETEKSI
+var sensor                 # RK Langkah 2-3: deteksi bersiklus di grid
+var _waspada = 0.0         # sisa detik alarm setelah TERDETEKSI
 var _lampu_sensor          # PointLight2D amber sensor — didorong state
 var _t_sensor = 0.0        # penggerak denyut lampu sensor
+var _pos_diam = Vector2()  # pelacak gerak untuk aturan diam=tersembunyi
+var _grading               # CanvasModulate — bergeser hangat saat alarm
 var _cahaya_avatar         # PointLight2D hijau mengikuti TENDRIL (EDV3 §8)
 var _lompat_lalu = false   # edge Spasi
 var _jangkar_lalu = false  # edge F
@@ -60,9 +62,9 @@ func _ready():
 	# SUNGGUHAN mengembalikannya setempat — kerucut poligon dihapus.
 	# Tiap cahaya punya sumber terlihat: dua rumah lampu fluorescent,
 	# sensor amber, dan pendar biologis TENDRIL sendiri.
-	var grading = CanvasModulate.new()
-	grading.color = Color("8FA0B8")
-	add_child(grading)
+	_grading = CanvasModulate.new()
+	_grading.color = Color("8FA0B8")
+	add_child(_grading)
 	var tex_lampu = _tex_cahaya()
 	_lampu(tex_lampu, Vector2(272, 70), Color("C9D6DE"), 0.9, 5.0)
 	_lampu(tex_lampu, Vector2(848, 70), Color("C9D6DE"), 0.9, 5.0)
@@ -73,6 +75,7 @@ func _ready():
 
 	sensor = SensorCls.new()
 	sensor.pos = world.sensor_pos
+
 
 
 # tekstur cahaya BERTANGGA (4 tingkat, disaring nearest) — falloff halus
@@ -132,9 +135,13 @@ func _process(delta):
 		avatar.mulai(world.mulai_pos)
 		_waspada = 0.0
 
-	# RK Langkah 2: state sensor SEBELUM avatar bergerak — TERDETEKSI
-	# menyalakan kewaspadaan; selama waspada, jaringan menolak memulihkan
-	var st = sensor.state(avatar, world)
+	# RK Langkah 2-3: siklus pindai jalan dulu, lalu state — TERDETEKSI
+	# menyalakan alarm (pindai terkunci + jaringan menolak memulihkan)
+	sensor.alarm = _waspada > 0.0
+	sensor.update(delta)
+	var diam = _pos_diam.distance_to(avatar.pos) < delta * 3.0
+	_pos_diam = avatar.pos
+	var st = sensor.state(avatar, world, diam)
 	if st == sensor.TERDETEKSI:
 		_waspada = Config.SENSOR_WASPADA
 	else:
@@ -142,7 +149,22 @@ func _process(delta):
 	avatar.terdeteksi = st == sensor.TERDETEKSI
 	avatar.curiga = st == sensor.CURIGA
 	avatar.regen_mati = avatar.terdeteksi or _waspada > 0.0
-	ruang_view.sensor_state = st
+	# view: 0 idle-redup, 1 memindai, 2 curiga, 3 terdeteksi
+	var tampil = 0
+	if st == sensor.TERDETEKSI:
+		tampil = 3
+	elif st == sensor.CURIGA:
+		tampil = 2
+	elif sensor.memindai():
+		tampil = 1
+	ruang_view.sensor_state = tampil
+
+	# ruangan ikut bereaksi (opsi 2b RK: lampu ruangan berubah): grading
+	# bergeser hangat-waspada selama alarm, pulih dingin sesudahnya
+	var target_grading = Color("A6987F") if _waspada > 0.0 \
+			else Color("8FA0B8")
+	_grading.color = _grading.color.lerp(target_grading,
+			clamp(delta * 3.0, 0.0, 1.0))
 
 	# GDD §39/§16: minum dari kebocoran katup — sumber energi Room 01
 	avatar.mengisi = world.dekat_air(avatar.pos.x, avatar.pos.y - 2.0,
@@ -184,3 +206,4 @@ func _sumbu(neg1, neg2, pos1, pos2):
 	if Input.is_physical_key_pressed(pos1) or Input.is_physical_key_pressed(pos2):
 		v += 1.0
 	return v
+

@@ -256,12 +256,29 @@ perintah pemilik)** — audit lengkap lihat riwayat percakapan/commit:
   audit (semantik state → RK Langkah 5; kamuflase-berdaun; upacara
   kematian; UI; §38 grading → Langkah 4; struktur folder).
 
-**Berikutnya → RK Langkah 3: PLAYTEST TIGA RUTE (GERBANG KERAS).**
-Pemilik memainkan Room 01 tiga kali, satu per rute. Satu pertanyaan:
-apakah memilih rute terasa seperti keputusan? Rute selalu-menang →
-tuning angka (SENSOR_* / kuras); semua sama → naikkan konsekuensi;
-terasa memilih → Langkah 4 (grading dengan sensor menyala). JANGAN
-lanjut sebelum gerbang ini lolos.
+**Gerbang Langkah 3, putaran 1 (14 Agustus)**: putusan pemilik —
+"memilih rute HARUS terasa seperti keputusan; ini stealth game
+terinspirasi Splinter Cell" → sumbu stealth dipertajam sesuai resep RK
+(naikkan konsekuensi, jangan tambah rute):
+
+- SIKLUS PINDAI (SRD §14 IDLE→SCAN): sensor tidak lagi awas 24 jam —
+  IDLE 3 dtk (kerucut redup alpha .03, TIDAK mendeteksi) ↔ SCAN 2.2
+  dtk (kerucut menyala, deteksi aktif). Rute cepat = puzzle waktu.
+  Kenop: SENSOR_JEDA / SENSOR_PINDAI.
+- DIAM = TERSEMBUNYI (GDD §13 literal; penyimpangan audit #5 lunas):
+  diam di jaringan dalam kerucut saat SCAN = AMAN penuh; bergerak di
+  jaringan = CURIGA. Splinter Cell: kesabaran adalah senjata.
+- Konsekuensi menggigit (opsi 1+2 RK digabung): TERDETEKSI = kuras
+  ×2.5 (KURAS_TERDETEKSI) + jaringan menolak memulihkan + alarm
+  MENGUNCI sensor terus memindai selama waspada + grading ruangan
+  bergeser hangat (8FA0B8 → A6987F) lalu pulih.
+- Kerucut kini 4 tingkat alpha di view (idle/scan/curiga/terdeteksi) —
+  jendela aman vs bahaya terbaca tanpa teks.
+
+**Berikutnya → GERBANG Langkah 3 putaran 2**: pemilik mainkan tiga
+rute lagi. Pertanyaan sama: apakah memilih rute terasa seperti
+keputusan? Lolos → Langkah 4 (grading final DENGAN sensor menyala).
+JANGAN lanjut sebelum lolos.
 
 Sesudahnya sesuai RK: [2] sensor jadi nyata (tiga state SRD §13, warna
 kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga

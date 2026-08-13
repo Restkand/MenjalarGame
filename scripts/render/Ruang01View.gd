@@ -8,7 +8,10 @@ extends Node2D
 # Ruang01Main (D6). Bayangan kontak & occlusion digambar di sini (D8).
 
 var world
-var sensor_state = 0      # diisi Ruang01Main tiap frame (RK Langkah 2)
+# diisi Ruang01Main tiap frame: 0 idle-redup, 1 memindai, 2 curiga,
+# 3 terdeteksi (siklus pindai SRD §14 — jendela aman vs bahaya HARUS
+# terbaca dari kerucutnya)
+var sensor_state = 0
 var _state_lalu = -1
 var _tex = {}
 
@@ -183,7 +186,7 @@ func _draw():
 		Vector2(s.x - lebar_dasar, 118.0 * ppu),
 	])
 	var warna_zona = Color("D89A3C")
-	warna_zona.a = [0.05, 0.10, 0.18][clamp(sensor_state, 0, 2)]
+	warna_zona.a = [0.03, 0.11, 0.15, 0.22][clamp(sensor_state, 0, 3)]
 	draw_colored_polygon(kerucut, warna_zona)
 
 	# sensor paling depan

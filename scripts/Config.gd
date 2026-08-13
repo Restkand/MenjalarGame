@@ -535,7 +535,12 @@ var AIR_RADIUS = 5.0
 # menyerang tepat hal yang membuat jaringan berharga).
 var SENSOR_KERUCUT_DASAR = 4.0    # setengah lebar kerucut di lensa
 var SENSOR_KERUCUT_LEBAR = 0.38   # pelebaran per satuan turun
-var SENSOR_WASPADA       = 4.0    # detik regen mati setelah lolos pandang
+var SENSOR_WASPADA       = 4.0    # detik alarm (regen mati + pindai kunci)
+# Siklus pindai ala Splinter Cell (SRD §14 IDLE->SCAN, gerbang Langkah 3):
+# jendela aman untuk bergerak vs jendela bahaya untuk berlindung/diam
+var SENSOR_JEDA          = 3.0    # detik fase IDLE (kerucut redup, aman)
+var SENSOR_PINDAI        = 2.2    # detik fase SCAN (deteksi aktif)
+var KURAS_TERDETEKSI     = 2.5    # faktor kuras saat TERDETEKSI (menggigit)
 
 # Tahap CDD §9 (perbaikan penyimpangan #3): EMPAT tahap aktif — TUNAS
 # BARU, MUDA, DEWASA, TUA/KAYU (TERINFEKSI opsional menunggu cerita).

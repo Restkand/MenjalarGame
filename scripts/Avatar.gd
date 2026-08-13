@@ -208,12 +208,15 @@ func _rambat(dt, i, world):
 
 func _lepas(dt, i, world):
 	# biaya bergradasi GDD §9: diam kecil < jalan < lari sedang; lompat
-	# & tumbuh membayar tarifnya sendiri
+	# & tumbuh membayar tarifnya sendiri. TERDETEKSI (gerbang Langkah 3)
+	# = stres biologis: kuras melonjak selama masih dalam pandangan.
 	var faktor = 1.0
 	if di_tanah and i.arah.x == 0.0 and abs(vel.x) < 1.0:
 		faktor = Config.KURAS_DIAM
 	elif i.lari:
 		faktor = Config.KURAS_LARI
+	if terdeteksi:
+		faktor = max(faktor, Config.KURAS_TERDETEKSI)
 	energi -= Config.AVATAR_KURAS * faktor * dt
 
 	# menempel kembali begitu menyentuh jaringan (setelah jeda lepas)

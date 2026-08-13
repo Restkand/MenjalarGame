@@ -15,6 +15,7 @@ const AvatarCls      = preload("res://scripts/Avatar.gd")
 const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
 const JejakViewCls   = preload("res://scripts/render/JejakView.gd")
 const SensorCls      = preload("res://scripts/Sensor.gd")
+const HudCls         = preload("res://scripts/render/Hud.gd")
 
 var world
 var avatar
@@ -75,6 +76,11 @@ func _ready():
 
 	sensor = SensorCls.new()
 	sensor.pos = world.sensor_pos
+
+	# HUD GDD §31 di CanvasLayer sendiri — tidak ikut kamera/zoom
+	var lapis_hud = CanvasLayer.new()
+	add_child(lapis_hud)
+	lapis_hud.add_child(HudCls.new(avatar))
 
 
 

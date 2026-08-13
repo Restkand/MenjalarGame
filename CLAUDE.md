@@ -254,7 +254,12 @@ perintah pemilik)** — audit lengkap lihat riwayat percakapan/commit:
   kini {arah, lompat, lompat_tahan, lari, masuk}.
 - Utang yang SENGAJA belum: wujud sprite per tahap CDD (art), #4-#9
   audit (semantik state → RK Langkah 5; kamuflase-berdaun; upacara
-  kematian; UI; §38 grading → Langkah 4; struktur folder).
+  kematian; §38 grading → Langkah 4; struktur folder). UI LUNAS 15 Agu:
+  `render/Hud.gd` = HUD minimal GDD §31 di CanvasLayer (ENERGI bar 10
+  sel + MODA + VISIBILITAS TERSEMBUNYI/TERSAMAR/WASPADA/TERDETEKSI,
+  warna CDD §7, memudar saat nominal, bingkai kuning saat regen ditolak,
+  kedip gelap konsumen event layu_baru; ability [Q]/[E] SENGAJA belum —
+  Phase 7). Bar mini di atas kepala avatar dicabut dari AvatarView.
 
 **Gerbang Langkah 3, putaran 1 (14 Agustus)**: putusan pemilik —
 "memilih rute HARUS terasa seperti keputusan; ini stealth game

@@ -245,10 +245,5 @@ func _draw():
 		samar.a = 0.18
 		draw_arc(p, 12.0, 0.0, TAU, 20, samar, 1.0)
 
-	# bar energi (UI minimal GDD §31) — dinaikkan pas di atas sprite 32 px
-	var w = 26.0
-	var atas = p + Vector2(-w * 0.5, -16.0)
-	draw_rect(Rect2(atas, Vector2(w, 4.0)), Color(0.06, 0.12, 0.08, 0.7))
-	var isi = clamp(avatar.energi / avatar.energi_max, 0.0, 1.0)
-	var c = Color("A8D94A") if isi > 0.3 else Color("C25A4A")
-	draw_rect(Rect2(atas, Vector2(w * isi, 4.0)), c)
+	# bar energi lama di atas kepala DICABUT — energi kini bicara lewat
+	# HUD GDD §31 (Hud.gd); dunia menyisakan bahasa cincin & pendar saja

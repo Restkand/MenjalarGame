@@ -26,7 +26,15 @@ merambat menjadikan sebuah gedung sebagai tubuhnya.
    gen_tendril.gd), turn dibuat ulang SETELAH crawl lolos playtest,
    jump/fall/land menunggu. DOD: "TENDRIL sedang merayap", bukan
    "menggulung".
-6. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
+6. **`docs/SRD-TENDRIL-ROOM01.md`** — single room design map (39 bagian):
+   vertical slice RUANG PERTAMA (service/maintenance room 24-32 x 14-18
+   tile) SEBELUM gedung besar. Area A-G (home network, open floor, crack,
+   wall/ceiling route, material, cahaya, bahaya), TIGA RUTE (aman lewat
+   jaringan / cepat lewat lantai / rahasia lewat celah), matriks adaptasi
+   §21, tutorial tanpa teks §23, urutan build §33 (Graybox → TENDRIL →
+   Environment → Stealth → Pixel Art), kriteria sukses §31, yang BELUM
+   perlu ada §32. Semua room berikutnya lahir dari bahasa desain Room 01.
+7. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
    papan acuan visualnya. Kanon untuk SEGALA hal tentang sang Ujung
    Tumbuh: anatomi (ujung bercahaya sensitif cahaya, daun muda kamuflase,
    sulur fleksibel, node pertumbuhan), palet hijau kanon (#102016,
@@ -188,8 +196,36 @@ pin frame — dua base64 panjang dalam satu panggilan selalu korup).
 Prioritas state AvatarView: transisi > belok > darat > udara > gerak >
 idle. Ketiga anim udara NON-berarah (dicermin `hadap` seperti idle).
 
-**Berikutnya: PLAYTEST turn+udara oleh pemilik proyek**, lalu urutan
-OLR §34 lanjut: GROW → ENERGY → CUT/DEATH → REGROW → ABILITY. Utang
-lain yang antri: merambat belum direvisi ke bahasa OLR; idle/detach/
-attach masih master pra-refine (ADR mengizinkan sampai playtest
-gameplay).
+**Arah dibelokkan pemilik proyek 13 Agustus**: sebelum karakter
+didalami lagi, bangun MAP/LANDMARK dulu supaya uji karakter menyatu
+dengan lingkungan → lahir kanon **SRD-TENDRIL-ROOM01** dan **Room 01
+Phase 1 Graybox sudah berdiri**:
+
+- Boot project sekarang `ruang01.tscn` (`Ruang01Main.gd`); kota lama
+  `main.tscn` utuh tapi tidak diboot — kembalikan `run/main_scene`
+  kalau perlu membuka dunia kota.
+- `scripts/Ruang01.gd` = dunia mandiri 32x18 tile (tile 8 satuan) yang
+  memenuhi 4-method antarmuka Avatar (padat_avatar/jaringan_di/
+  tandai_jaringan/di_gerbang_interior) — sistem moda/energi/tumbuh
+  dipakai apa adanya. `render/Ruang01View.gd` = graybox datar (§33:
+  beton kelabu, jaringan hijau satu-satunya, sensor placeholder tanpa
+  logika).
+- Tata letak = tiga rute §19: AMAN (benih jaringan rumah → dinding
+  kiri → plafon → dinding kanan), CEPAT (lantai → tangga peti 8-satuan
+  per anak → blok mesin di bawah sensor), RAHASIA (celah lantai 1 tile
+  → koridor drain berisi jaringan tersembunyi → cerobong keluar).
+  Panggung tinggi + kanopi rumah hanya terjangkau via jaringan/tumbuh.
+  Angka kunci: lompatan 9.2 satuan > anak tangga 8; lompatan datar
+  14.2 > celah 11.
+- Diverifikasi deterministik (15 asersi tata letak+fisika, blok
+  UJI-SEMENTARA sudah dibuang sesuai aturan): rute aman tak putus,
+  mulai langsung menempel, koridor bisa dirayapi & menempel di jaringan
+  tersembunyi.
+
+**Berikutnya: PLAYTEST Room 01 oleh pemilik proyek** (kriteria §31 —
+utamanya TEST A-E §30), sekaligus playtest turn+udara yang belum
+dinilai. Sesudahnya urutan SRD §33: Phase 3 Environment Interaction
+(crack/damp/wood/cable/pipe) → Phase 4 Stealth (tiga state) → Phase 5
+Pixel Art (tileset PixelLab, prioritas §25). Utang karakter tetap
+antri: OLR §34 GROW → ENERGY → CUT/DEATH → REGROW → ABILITY; merambat
+belum berbahasa OLR; idle/detach/attach masih master pra-refine.

@@ -50,7 +50,22 @@ merambat menjadikan sebuah gedung sebagai tubuhnya.
    uji §36-40 (blur/grayscale/5 detik/seam/koneksi), alur §46, larangan
    §47, prompt header konsistensi §24/§48. Evaluasi selalu pada GAMBAR
    UTUH (§35), controlled wall section dulu (§41-42).
-9. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
+9. **`docs/EDV2-TENDRIL-ARSITEKTUR-MODULAR.md`** — environment direction
+   V2 (42 bagian): workflow tile-first DIBUANG → PixelLab = bahan &
+   architectural pieces, Godot = penyusun ruangan. Empat level (material
+   → architecture → infrastructure → composition), MACRO SHAPE > MICRO
+   DETAIL, prinsip Carrion-like §4, architecture = gameplay §23.
+10. **`docs/EDV3-TENDRIL-SPEK-EKSEKUSI.md`** — V3 MENIMPA V2 secara
+   operasional: spek PixelLab yang bisa dieksekusi. Diagnosa D1-D8 §1,
+   PALET 18 WARNA TERKUNCI §3.1 (+aturan value: env ≤40%, amber ≤63%,
+   TENDRIL 60-85% selalu paling terang), parameter terkunci §3.2,
+   prompt PENDEK 8-20 kata §4 (buang abstraksi desain dari prompt!),
+   urutan generate berantai §5 (MASTER_ID → tileset → trim → arch →
+   infra → prop via INPAINTING → decal), aturan pipa wajib flange/
+   elbow/bracket, tugas Godot §8 (parallax, PointLight2D, contact
+   shadow, CanvasModulate 8FA0B8), QA GATES 1-6 §9, controlled strip
+   128 sebelum full room §10.
+11. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
    papan acuan visualnya. Kanon untuk SEGALA hal tentang sang Ujung
    Tumbuh: anatomi (ujung bercahaya sensitif cahaya, daun muda kamuflase,
    sulur fleksibel, node pertumbuhan), palet hijau kanon (#102016,
@@ -276,7 +291,35 @@ scratchpad. Uji 5-detik §39 pass ke-2: Q1-Q4 lolos. Sisa nit yang
 sadar-diri: motif dinding masih repetitif per tile; pipa horizontal
 samar (sengaja, midground §21); blok mesin masih slab polos.
 
-**Pass KOHESI sudah dieksekusi (13 Agustus, kanon ECR)**: pemilik
+**Pipeline EDV3 sudah dieksekusi (13 Agustus, kanon EDV2+EDV3)** —
+pemilik menilai hasil ECR masih belum lulus → dua dokumen baru,
+dikerjakan sesuai urutan §5: tileset Wang beton = MASTER MATERIAL,
+tileset baja DIRANTAI via base_tile_id dari master yang sama (ID tidak
+dicatat di repo atas permintaan pemilik — seed+prompt di _gen_params
+cukup untuk regenerasi); atlas 16-slot terindeks kunci-sudut
+marching-squares (renderer
+menghitung kunci per sel → trim/lip/sudut otomatis, D2 tamat); flange
++ bracket (aturan pipa); panel listrik via INPAINT ke strip (menyatu
+sempurna — teknik terpenting, patch dipakai fase-selaras x%32==4
+y%32==8); noda_air decal alpha-dari-kegelapan; controlled strip 128
+LOLOS gate sebelum full room; PointLight2D bertangga + CanvasModulate
+8FA0B8 + cahaya hijau ikut avatar menggantikan kerucut poligon (D6);
+param generate tersimpan di aset/ruang01/_gen_params/. JEBAKAN MAHAL
+yang sudah dibayar: endpoint /image tileset = PRATINJAU dekoratif —
+iris dari spritesheet_url di metadata; semantik Wang "lower"=PADAT
+(verifikasi empiris, jangan percaya nama); blit Vector2i menelan
+pecahan (floori dulu); Select-Object -First MEMBUNUH proses di pipe;
+massa setebal 1 tile berkunci 0 → fallback slot 15; pita value harus
+ditegakkan di perakit (remap grey ke pita per kelas + palet atlas
+tanpa warna latar) atau material runtuh ke warna background.
+
+Sisa risiko yang diketahui: pemisah beton-vs-latar di bidang lebar
+masih tipis pada pratinjau pra-grading — nilai FINAL harus in-game
+(CanvasModulate+lampu mengubah bacaan); kalau kurang, naikkan lo pita
+beton di gen_ruang01_v3.gd scratchpad. Decal baru 1 dari 12 (§6 STEP
+8), varian center tile belum 3 (§7) — utang kit.
+
+**Catatan pass ECR sebelumnya (masih relevan sebagai sejarah)**: pemilik
 menilai tile terasa terpisah → lahir ECR, dikerjakan sesuai §46 TANPA
 generate tekstur baru (§47): gen_ruang01.gd jadi pipeline VALUE
 HIERARCHY — satu ramp kelabu global 16 langkah (0.043-0.47 dingin),

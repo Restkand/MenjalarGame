@@ -19,6 +19,7 @@ var world
 var avatar
 var avatar_view
 var cam
+var _cahaya_avatar         # PointLight2D hijau mengikuti TENDRIL (EDV3 §8)
 var _lompat_lalu = false   # edge Spasi
 var _lesat_lalu = false    # edge Shift
 var _jangkar_lalu = false  # edge F
@@ -48,6 +49,51 @@ func _ready():
 	cam.position = avatar.pos * float(Config.PPU)
 	add_child(cam)
 	cam.make_current()
+
+	# EDV3 §8 (D5/D6): grading global mendinginkan scene, lalu cahaya
+	# SUNGGUHAN mengembalikannya setempat — kerucut poligon dihapus.
+	# Tiap cahaya punya sumber terlihat: dua rumah lampu fluorescent,
+	# sensor amber, dan pendar biologis TENDRIL sendiri.
+	var grading = CanvasModulate.new()
+	grading.color = Color("8FA0B8")
+	add_child(grading)
+	var tex_lampu = _tex_cahaya()
+	_lampu(tex_lampu, Vector2(272, 70), Color("C9D6DE"), 0.9, 5.0)
+	_lampu(tex_lampu, Vector2(848, 70), Color("C9D6DE"), 0.9, 5.0)
+	_lampu(tex_lampu, Vector2(720, 62), Color("D89A3C"), 0.55, 3.0)
+	_cahaya_avatar = _lampu(tex_lampu, avatar.pos * float(Config.PPU),
+			Color("D6FF8F"), 0.4, 2.5)
+
+
+# tekstur cahaya BERTANGGA (4 tingkat, disaring nearest) — falloff halus
+# akan merusak bahasa pixel art (aturan lama kota dipertahankan)
+func _tex_cahaya():
+	var img = Image.create_empty(64, 64, false, Image.FORMAT_RGBA8)
+	for y in range(64):
+		for x in range(64):
+			var d = Vector2(x - 32, y - 32).length()
+			var a = 0.0
+			if d < 10.0:
+				a = 1.0
+			elif d < 18.0:
+				a = 0.62
+			elif d < 26.0:
+				a = 0.32
+			elif d < 31.0:
+				a = 0.12
+			img.set_pixel(x, y, Color(1, 1, 1, a))
+	return ImageTexture.create_from_image(img)
+
+
+func _lampu(tex, pos, warna, energi, skala):
+	var l = PointLight2D.new()
+	l.texture = tex
+	l.position = pos
+	l.color = warna
+	l.energy = energi
+	l.texture_scale = skala
+	add_child(l)
+	return l
 
 
 func _process(delta):
@@ -80,9 +126,11 @@ func _process(delta):
 
 	avatar.update(delta, i, world)
 
-	# kamera mengejar titik tengah badan
+	# kamera mengejar titik tengah badan; cahaya hijau mengikuti TENDRIL
 	cam.position = (avatar.pos + Vector2(0.0, -Config.AVATAR_TINGGI * 0.5)) \
 			* float(Config.PPU)
+	_cahaya_avatar.position = (avatar.pos
+			+ Vector2(0.0, -Config.AVATAR_TINGGI * 0.5)) * float(Config.PPU)
 
 
 func _sumbu(neg1, neg2, pos1, pos2):

@@ -309,11 +309,22 @@ landai — skrip di scratchpad bedah_badan/bedah_sambung). JANGAN
 bedah crawl lagi tanpa arahan baru pemilik. Utang kosmetik yang
 DITERIMA sadar: kepala mepet tepi kanan kanvas (baris hijau tanpa
 outline) + massa gelap di bawah kepala (bukan gelombang tipis murni).
-Rencana set berikutnya: jump/fall/land → detach/attach → merambat;
-lalu AvatarView dialihkan ke aset/player (sprite 32px — sesuaikan
-rect gambar dari 48). SPP perlu revisi pemilik (ditulis untuk
-Master A). Gerbang RK Langkah 3 putaran 2 tetap antri setelah
-karakter berdiri.
+JUMP/FALL/LAND SELESAI 15 Agu (LOLOS pemilik): bahasa PEGAS —
+lompat_pegas 6f (squash gepeng 2f -> master -> meregang -> puncak
+beku), jatuh_pegas 6f loop goyah, darat_pegas 5f (splat -> bangkit
+-> settle -> master). Kurasi susun-ulang lintas-generasi; splat
+mentah f04 RUSAK dari generator (hijau meluber keluar kanvas) —
+diganti f05 blob bermuka; lengan lompat dirapikan; SEMUA hijau
+mentah kolom tepi ditutup outline (audit 0 luka). Frame mentah
+utuh di akun (grup lompat_pegas/jatuh_pegas/darat_pegas).
+**AvatarView SUDAH DIALIHKAN ke aset/player 15 Agu** (rect 32px,
+kaki sejajar posisi lama): idle/crawl BERARAH digambar apa adanya,
+strip pegas dicermin hadap; MERAMBAT = placeholder idle sampai
+animasi merambat dibuat; belok/detach/attach nonaktif otomatis
+(pagar has()) sampai strip player-nya ada. Master A resmi pensiun
+dari view. Sisa set: merambat -> detach/attach -> belok.
+SPP perlu revisi pemilik (ditulis untuk Master A). Gerbang RK
+Langkah 3 putaran 2 tetap antri setelah karakter berdiri.
 
 Sesudahnya sesuai RK: [2] sensor jadi nyata (tiga state SRD §13, warna
 kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga

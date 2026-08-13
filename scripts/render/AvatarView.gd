@@ -1,21 +1,20 @@
 extends Node2D
 
-# Tampilan TENDRIL (ADR §18: Godot AvatarView = prioritas setelah master
-# LOCKED). Lima animasi kanon dari aset/konsep_tendril/: idle, merambat,
-# lepas, detach, attach — 48 px per frame, palet kanon CDD §7.
+# Tampilan TENDRIL — KARAKTER PLAYER buatan pemilik (aset/player, 32 px
+# per frame, palet CDD §7 + putih mata). Master A (konsep_tendril)
+# pensiun dari view ini — diarsipkan sebagai calon NPC.
 #
-# Aturan state (CDD §15-16): pergantian moda MEMUTAR transisi sekali —
-# detach 0.28 dtk (target 0.15-0.30), attach 0.20 dtk (target 0.10-0.25) —
-# lalu jatuh ke loop moda. Idle dipakai saat nyaris diam di moda mana pun:
-# organisme harus terlihat hidup justru ketika pemain tidak berbuat apa-apa
-# (CDD Rule 8). Kecepatan main 8-12 fps sesuai catatan papan pemilik proyek.
-
-# Set prototype spec gerak §26: idle, gerak kanan & kiri (digenerate
-# TERPISAH — bukan cermin, §8), belok dua arah (§21), merambat, transisi.
-# "lepas" lama tinggal sebagai cadangan.
-const ANIM = ["idle", "merambat", "kanan", "kiri", "putar_kiri",
-		"putar_kanan", "lompat", "jatuh", "darat", "lepas", "detach",
-		"attach"]
+# Strip yang ada: idle_timur/barat (7f), crawl_timur/barat (9f, bedah
+# v7), lompat/jatuh/darat_pegas (6/6/5f, bahasa pegas). Idle & crawl
+# BERARAH (digambar apa adanya); strip pegas satu arah timur, dicermin
+# `hadap`. MERAMBAT sementara memakai idle (placeholder sampai animasi
+# merambat player dibuat). Belok/detach/attach otomatis nonaktif sampai
+# strip-nya ada — state machine sudah memagari dengan has().
+# Idle dipakai saat nyaris diam di moda mana pun: organisme harus
+# terlihat hidup justru ketika pemain diam (CDD Rule 8), 8-12 fps.
+const ANIM = ["idle_timur", "idle_barat", "crawl_timur", "crawl_barat",
+		"lompat_pegas", "jatuh_pegas", "darat_pegas", "putar_kiri",
+		"putar_kanan", "detach", "attach"]
 
 var avatar
 var _t = 0.0
@@ -41,10 +40,10 @@ func _init(a):
 	visible = false
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	for n in ANIM:
-		var jalur = "res://aset/konsep_tendril/%s.png" % n
+		var jalur = "res://aset/player/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			var t = load(jalur)
-			_anim[n] = {"tex": t, "n": max(1, t.get_width() / 48)}
+			_anim[n] = {"tex": t, "n": max(1, t.get_width() / 32)}
 
 
 func _process(delta):
@@ -93,7 +92,7 @@ func _process(delta):
 		_udara_t += delta
 	else:
 		if _udara_t > 0.12 and avatar.moda == avatar.LEPAS \
-				and _anim.has("darat"):
+				and _anim.has("darat_pegas"):
 			_darat_t = 0.18   # sentuhan singkat: pegas memantul lalu tegak
 		_udara_t = 0.0
 	_darat_t = max(0.0, _darat_t - delta)
@@ -106,24 +105,23 @@ func _process(delta):
 			else 0.0
 	_miring = lerpf(_miring, target_miring, clamp(delta * 8.0, 0.0, 1.0))
 	# prioritas: transisi > belok > darat > udara > gerak > idle
+	var timur = avatar.hadap > 0.0
 	if _transisi_t > 0.0 and _anim.has(_transisi):
 		_state = _transisi
 	elif _putar_t > 0.0:
 		_state = _putar
 	elif avatar.moda == avatar.MERAMBAT:
-		_state = "merambat" if bergerak else "idle"
+		# placeholder: idle sampai animasi merambat player dibuat
+		_state = "idle_timur" if timur else "idle_barat"
 	elif _darat_t > 0.0:
-		_state = "darat"
+		_state = "darat_pegas"
 	elif not avatar.di_tanah:
 		# naik = LOMPAT (play-once, membeku di frame akhir), turun = JATUH
-		var udara = "lompat" if avatar.vel.y < 0.0 else "jatuh"
-		_state = udara if _anim.has(udara) else "lepas"
+		_state = "lompat_pegas" if avatar.vel.y < 0.0 else "jatuh_pegas"
 	elif bergerak:
-		# strip berarah (spec §22-23) kalau ada; "lepas" lama = cadangan
-		var arah_anim = "kanan" if avatar.hadap > 0.0 else "kiri"
-		_state = arah_anim if _anim.has(arah_anim) else "lepas"
+		_state = "crawl_timur" if timur else "crawl_barat"
 	else:
-		_state = "idle"
+		_state = "idle_timur" if timur else "idle_barat"
 
 	queue_redraw()
 
@@ -156,35 +154,37 @@ func _draw():
 		elif _state == "putar_kiri" or _state == "putar_kanan":
 			# belok diputar SEKALI (spec §16), maju sesuai sisa waktunya
 			fr = int(clamp((1.0 - _putar_t / 0.32) * a.n, 0.0, a.n - 1.0))
-		elif _state == "lompat":
-			# play-once ~14 fps, MEMBEKU di frame akhir selama masih naik
+		elif _state == "lompat_pegas":
+			# play-once ~14 fps: squash gepeng 2f lalu melesat, MEMBEKU
+			# di frame puncak selama masih naik
 			fr = int(clamp(_udara_t * 14.0, 0.0, a.n - 1.0))
-		elif _state == "jatuh":
-			# melayang turun = loop lembut berbasis waktu
+		elif _state == "jatuh_pegas":
+			# melayang turun = loop goyah lembut berbasis waktu
 			fr = int(_t * 10.0) % a.n
-		elif _state == "darat":
-			# pegas mendarat diputar SEKALI, maju sesuai sisa waktunya
+		elif _state == "darat_pegas":
+			# splat mendarat diputar SEKALI, maju sesuai sisa waktunya
 			fr = int(clamp((1.0 - _darat_t / 0.18) * a.n, 0.0, a.n - 1.0))
-		elif _state == "idle":
+		elif _state.begins_with("idle"):
 			# idle berbasis waktu, 8 fps — napas pelan (papan: 8-12 fps)
 			fr = int(_t * 8.0) % a.n
 		else:
-			# lokomotasi berbasis jarak: satu frame tiap ~3 satuan (tempo
+			# crawl berbasis jarak: satu frame tiap ~3 satuan (tempo
 			# diturunkan — playtest: siklus terasa terburu-buru); berhenti
 			# = liukan berhenti (tidak ada moonwalk)
 			fr = int(_jarak / 3.0) % a.n
-		# strip BERARAH (kanan/kiri/putar) digambar apa adanya — arah sudah
-		# di dalam gambarnya (spec §8). Selain itu: cermin fallback §25.
-		# Matriks T·R·S menerapkan cermin sebelum rotasi, jadi condongan
-		# dikalikan hadap supaya selalu ke depan.
-		var berarah = _state in ["kanan", "kiri", "putar_kiri",
-				"putar_kanan"]
+		# idle/crawl BERARAH: strip timur & barat terpisah, digambar apa
+		# adanya. Strip pegas satu arah timur — dicermin `hadap` (anim
+		# udara non-berarah, pola lama). Matriks T·R·S menerapkan cermin
+		# sebelum rotasi, jadi condongan dikalikan hadap supaya selalu
+		# ke depan.
+		var berarah = _state.begins_with("idle") \
+				or _state.begins_with("crawl") or _state.begins_with("putar")
 		var cermin = 1.0 if berarah else avatar.hadap
 		draw_set_transform(p, _miring * avatar.hadap,
 				Vector2(cermin, 1.0))
 		draw_texture_rect_region(a.tex,
-				Rect2(Vector2(-24.0, -26.0), Vector2(48.0, 48.0)),
-				Rect2(fr * 48.0, 0.0, 48.0, 48.0))
+				Rect2(Vector2(-16.0, -10.0), Vector2(32.0, 32.0)),
+				Rect2(fr * 32.0, 0.0, 32.0, 32.0))
 		draw_set_transform_matrix(Transform2D())
 	else:
 		# cadangan prosedural bila strip belum ada
@@ -208,9 +208,9 @@ func _draw():
 		samar.a = 0.18
 		draw_arc(p, 12.0, 0.0, TAU, 20, samar, 1.0)
 
-	# bar energi (UI minimal GDD §31)
+	# bar energi (UI minimal GDD §31) — dinaikkan pas di atas sprite 32 px
 	var w = 26.0
-	var atas = p + Vector2(-w * 0.5, -26.0)
+	var atas = p + Vector2(-w * 0.5, -16.0)
 	draw_rect(Rect2(atas, Vector2(w, 4.0)), Color(0.06, 0.12, 0.08, 0.7))
 	var isi = clamp(avatar.energi / avatar.energi_max, 0.0, 1.0)
 	var c = Color("A8D94A") if isi > 0.3 else Color("C25A4A")

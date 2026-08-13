@@ -222,10 +222,30 @@ Phase 1 Graybox sudah berdiri**:
   mulai langsung menempel, koridor bisa dirayapi & menempel di jaringan
   tersembunyi.
 
-**Berikutnya: PLAYTEST Room 01 oleh pemilik proyek** (kriteria §31 —
-utamanya TEST A-E §30), sekaligus playtest turn+udara yang belum
-dinilai. Sesudahnya urutan SRD §33: Phase 3 Environment Interaction
-(crack/damp/wood/cable/pipe) → Phase 4 Stealth (tiga state) → Phase 5
-Pixel Art (tileset PixelLab, prioritas §25). Utang karakter tetap
-antri: OLR §34 GROW → ENERGY → CUT/DEATH → REGROW → ABILITY; merambat
-belum berbahasa OLR; idle/detach/attach masih master pra-refine.
+**Playtest 13 Agustus (pemilik proyek)**: WASD jalan; animasi disukai —
+**BELOK LULUS** ("rotasi kiri↔kanan sudah terlihat natural"). **UTANG
+POLISH lompat/jatuh**: lompat belum terasa ada impact/effort, jatuh
+terlalu membungkuk sehingga terbaca seperti crawl. JANGAN reroll tanpa
+diminta — antre untuk pass animasi berikutnya.
+
+Arahan lanjutan pemilik proyek: kembangkan LATAR MAP dulu via PixelLab
+(Phase 5 SRD ditarik maju melewati Phase 3-4 — keputusan pemilik),
+supaya pengkarakteran karakter diuji menyatu dengan lingkungan (§1).
+**Sudah dikerjakan 13 Agustus**: paket `aset/ruang01/` (7 aset, seed
+2001-2017): beton_dinding & beton_lantai (fill 64 crop-tengah-32, snap
+palet kelabu ruangan 0E1114/171B1F/23282D/31383E/454E56/5A646D), latar
+panel logam (reroll — vignette pintu ditolak kurasi), pipa 32x64 tile
+vertikal, kabel, sensor (palet + amber D8A34A, TANPA hijau), retak
+(reroll — diagonal ditolak). Ruang01View kini bertekstur: tile 8 satuan
+x PPU 4 = 32 px = 1:1; latar diredupkan 0.44-0.55; kulit cangkang =
+dinding, massa pijakan = slab lantai; bibir permukaan diberi aksen;
+sensor digambar DI DEPAN jaringan. Kurasi lewat pratinjau komposisi
+scratchpad (pratinjau_ruang01.gd) karena headless tak bisa screenshot.
+
+**Berikutnya: PLAYTEST Room 01 bertekstur** (§30 TEST A-E, §31; §1:
+"apakah TENDRIL terasa kecil dibanding bangunan?"). Lalu sesuai arahan:
+kembali ke PENGKARAKTERAN karakter (utang lompat/jatuh di atas, lalu
+OLR §34 GROW → ENERGY → CUT/DEATH → REGROW → ABILITY). Phase 3
+Environment Interaction & Phase 4 Stealth SRD menyusul urutan pemilik.
+Utang lain: merambat belum berbahasa OLR; idle/detach/attach masih
+master pra-refine.

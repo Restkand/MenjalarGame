@@ -528,6 +528,14 @@ const LOMPAT_POTONG   = 0.45    # pengali vel.y saat tombol lompat dilepas dini
 # tunas, sulur, perambat, lebat. Ukuran badan tumbuh KONTINU mengikuti
 # tumbuh_total; tahap hanyalah tonggak kemampuan & pergantian wujud
 # (permintaan pemilik proyek: transisi jangan patah-patah).
+# RK Langkah 2 (SRD §13-15): sensor perawatan Room 01 — kenop tuning
+# untuk Langkah 3 (playtest tiga rute). Konsekuensi TERDETEKSI = jaringan
+# BERHENTI memulihkan energi selama sensor masih waspada (opsi 2b RK:
+# menyerang tepat hal yang membuat jaringan berharga).
+var SENSOR_KERUCUT_DASAR = 4.0    # setengah lebar kerucut di lensa
+var SENSOR_KERUCUT_LEBAR = 0.38   # pelebaran per satuan turun
+var SENSOR_WASPADA       = 4.0    # detik regen mati setelah lolos pandang
+
 var TAHAP3_TUMBUH  = 25.0   # kecambah -> TUNAS
 var TAHAP4_TUMBUH  = 70.0   # tunas -> SULUR (membuka LESAT & sprint)
 var TAHAP5_JANGKAR = 2      # sulur -> PERAMBAT (plus pernah air & cahaya)

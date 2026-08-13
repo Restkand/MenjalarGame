@@ -191,6 +191,23 @@ func _draw():
 		draw_circle(p, 6.0, Color("4F8F32"))
 		draw_circle(p + Vector2(-2.0, -2.0), 3.0, Color("A8D94A"))
 
+	# status deteksi (RK Langkah 2, warna kanon CDD §7: kuning =
+	# terdeteksi) — bahasa cincin, bukan UI teks (SRD §12/§23)
+	if avatar.terdeteksi:
+		var kuning = Color("D89A3C")
+		kuning.a = 0.75 + 0.25 * sin(_t * 14.0)
+		draw_arc(p, 15.0 + 1.5 * sin(_t * 14.0), 0.0, TAU, 24, kuning, 2.0)
+	elif avatar.regen_mati:
+		# sensor masih waspada: jaringan menolak memulihkan — cincin
+		# kuning redup mengingatkan kenapa energi tidak naik
+		var was = Color("D89A3C")
+		was.a = 0.35
+		draw_arc(p, 13.0, 0.0, TAU, 24, was, 1.5)
+	elif avatar.curiga:
+		var samar = Color("D89A3C")
+		samar.a = 0.18
+		draw_arc(p, 12.0, 0.0, TAU, 20, samar, 1.0)
+
 	# bar energi (UI minimal GDD §31)
 	var w = 26.0
 	var atas = p + Vector2(-w * 0.5, -26.0)

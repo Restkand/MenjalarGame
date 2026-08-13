@@ -8,6 +8,8 @@ extends Node2D
 # Ruang01Main (D6). Bayangan kontak & occlusion digambar di sini (D8).
 
 var world
+var sensor_state = 0      # diisi Ruang01Main tiap frame (RK Langkah 2)
+var _state_lalu = -1
 var _tex = {}
 
 const C_JARING = Color("6FBF3E")   # green base §3.1
@@ -149,12 +151,34 @@ func _draw():
 			var normal = Vector2(-arah.y, arah.x) * sisi * 4.0
 			draw_circle(p + normal, 3.0, C_DAUN)
 
-	# sensor paling depan — kerucutnya DIHAPUS (D6): PointLight2D amber
-	# di Ruang01Main yang menyinari
+	# zona deteksi sensor (RK Langkah 2): BUKAN cahaya palsu (D6 tetap
+	# dihormati — pendarnya urusan PointLight2D), melainkan SIGNIFIER
+	# gameplay yang jujur: digambar dari angka Config yang SAMA dengan
+	# logika Sensor.gd, alpha mengikuti state (tutorial tanpa teks §23)
 	var s = world.sensor_pos * ppu
+	var dy_dasar = 118.0 - world.sensor_pos.y
+	var lebar_dasar = (Config.SENSOR_KERUCUT_DASAR
+			+ dy_dasar * Config.SENSOR_KERUCUT_LEBAR) * ppu
+	var kerucut = PackedVector2Array([
+		s + Vector2(-Config.SENSOR_KERUCUT_DASAR * ppu, 0.0),
+		s + Vector2(Config.SENSOR_KERUCUT_DASAR * ppu, 0.0),
+		Vector2(s.x + lebar_dasar, 118.0 * ppu),
+		Vector2(s.x - lebar_dasar, 118.0 * ppu),
+	])
+	var warna_zona = Color("D89A3C")
+	warna_zona.a = [0.05, 0.10, 0.18][clamp(sensor_state, 0, 2)]
+	draw_colored_polygon(kerucut, warna_zona)
+
+	# sensor paling depan
 	if _tex.has("sensor"):
 		draw_texture_rect(_tex.sensor, Rect2(s.x - 16.0, 28.0, 32, 32),
 				false)
+
+
+func _process(_delta):
+	if sensor_state != _state_lalu:
+		_state_lalu = sensor_state
+		queue_redraw()
 
 
 # kunci Wang: sudut = padat hanya bila SELURUH 4 sel di sudut itu padat

@@ -32,6 +32,12 @@ var jejak = []             # P3: jalur sulur yang DITUMBUHKAN avatar —
 var hadap = 1.0            # arah hadap terakhir (untuk lesat tanpa arah)
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 
+# RK Langkah 2 — status deteksi sensor, DIISI main tiap frame sebelum
+# update() (Avatar tidak tahu sensor; ia hanya merasakan akibatnya)
+var terdeteksi = false     # kuning: terlihat sensor dalam keadaan terbuka
+var curiga = false         # tersamar di jaringan dalam jangkauan sensor
+var regen_mati = false     # sensor waspada: jaringan menolak memulihkan
+
 # metamorfosis (P3.9, papan acuan §1): 1 BIJI, 2 KECAMBAH, 3 TUNAS,
 # 4 SULUR, 5 PERAMBAT, 6 LEBAT. Ukuran badan kontinu (ukuran()), tahap
 # hanyalah tonggak kemampuan & wujud.
@@ -150,7 +156,11 @@ func jangkar(world):
 
 func _rambat(dt, i, world):
 	var arah = i.arah
-	energi = min(energi_max, energi + Config.AVATAR_REGEN * dt)
+	# konsekuensi deteksi (RK 2b): selama sensor waspada, jaringan
+	# MENOLAK memulihkan — ketahuan lalu bersembunyi tidak langsung
+	# mengembalikan hak pulih
+	if not regen_mati:
+		energi = min(energi_max, energi + Config.AVATAR_REGEN * dt)
 	simpul = pos
 	simpul_dalam = di_dalam
 

@@ -209,8 +209,37 @@ pass Room 01 hidup di dokumen historis + riwayat git).
   (6FBF3E/A8E85C, sama dengan jaringan benih — "makhluk & pertumbuhan-
   nya"); warna Menjalar (C_BRANCH/C_LEAF) tidak dipakai lagi.
 - Idle/detach/attach & bahasa-OLR merambat sengaja TIDAK disentuh.
-- DOD Langkah 1 dinilai MATA PEMILIK in-game: lompat = usaha, mendarat
-  = menerima beban. Lolos → RK Langkah 2 (sensor jadi nyata).
+- DOD Langkah 1: LOLOS 14 Agustus dengan catatan ketidakpuasan pemilik
+  (utang FEEL belum nol — jangan dianggap lunas total).
+
+**Langkah 2 (sensor jadi nyata) DIKERJAKAN 14 Agustus:**
+
+- `scripts/Sensor.gd`: tiga state SRD §13 di grid — AMAN / CURIGA
+  (tersamar: moda MERAMBAT = kamuflase daun) / TERDETEKSI (terbuka).
+  Kerucut menghadap bawah (Config.SENSOR_KERUCUT_DASAR 4.0 + LEBAR 0.38
+  per satuan, berhenti y=118) + raycast garis-pandang di grid (beton
+  memutus — bayangan tangga & koridor drain jadi tempat sembunyi
+  sungguhan).
+- Konsekuensi = opsi 2b RK yang "lebih menarik": TERDETEKSI menyalakan
+  kewaspadaan Config.SENSOR_WASPADA 4 dtk; selama waspada `avatar.
+  regen_mati` — jaringan MENOLAK memulihkan energi (gate di _rambat).
+  Ketahuan lalu sembunyi ≠ langsung boleh pulih.
+- Bahasa tanpa teks (SRD §23): lampu sensor berdenyut kuning per state,
+  cincin kuning kanon CDD §7 di avatar (terang=TERDETEKSI, redup=
+  waspada, samar=CURIGA), dan ZONA kerucut digambar dari angka Config
+  yang SAMA dengan logika (signifier jujur — bukan cahaya palsu D6;
+  pendarnya tetap PointLight2D).
+- DOD RK terverifikasi deterministik (blok uji sudah dibuang): lantai
+  terbuka & puncak blok = TERDETEKSI; merambat plafon = CURIGA saja;
+  koridor drain = AMAN; balik tangga = AMAN via LoS; regen berhenti
+  saat waspada & pulih sesudahnya.
+
+**Berikutnya → RK Langkah 3: PLAYTEST TIGA RUTE (GERBANG KERAS).**
+Pemilik memainkan Room 01 tiga kali, satu per rute. Satu pertanyaan:
+apakah memilih rute terasa seperti keputusan? Rute selalu-menang →
+tuning angka (SENSOR_* / kuras); semua sama → naikkan konsekuensi;
+terasa memilih → Langkah 4 (grading dengan sensor menyala). JANGAN
+lanjut sebelum gerbang ini lolos.
 
 Sesudahnya sesuai RK: [2] sensor jadi nyata (tiga state SRD §13, warna
 kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga

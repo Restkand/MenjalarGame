@@ -14,11 +14,17 @@ const Ruang01ViewCls = preload("res://scripts/render/Ruang01View.gd")
 const AvatarCls      = preload("res://scripts/Avatar.gd")
 const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
 const JejakViewCls   = preload("res://scripts/render/JejakView.gd")
+const SensorCls      = preload("res://scripts/Sensor.gd")
 
 var world
 var avatar
 var avatar_view
 var cam
+var ruang_view             # Ruang01View — diberi tahu state sensor
+var sensor                 # RK Langkah 2: tiga state deteksi di grid
+var _waspada = 0.0         # sisa detik sensor waspada setelah TERDETEKSI
+var _lampu_sensor          # PointLight2D amber sensor — didorong state
+var _t_sensor = 0.0        # penggerak denyut lampu sensor
 var _cahaya_avatar         # PointLight2D hijau mengikuti TENDRIL (EDV3 §8)
 var _lompat_lalu = false   # edge Spasi
 var _lesat_lalu = false    # edge Shift
@@ -30,7 +36,8 @@ func _ready():
 	avatar = AvatarCls.new()
 	avatar.mulai(world.mulai_pos)
 
-	add_child(Ruang01ViewCls.new(world))
+	ruang_view = Ruang01ViewCls.new(world)
+	add_child(ruang_view)
 	add_child(JejakViewCls.new(avatar))
 	avatar_view = AvatarViewCls.new(avatar)
 	avatar_view.visible = true
@@ -60,9 +67,13 @@ func _ready():
 	var tex_lampu = _tex_cahaya()
 	_lampu(tex_lampu, Vector2(272, 70), Color("C9D6DE"), 0.9, 5.0)
 	_lampu(tex_lampu, Vector2(848, 70), Color("C9D6DE"), 0.9, 5.0)
-	_lampu(tex_lampu, Vector2(720, 62), Color("D89A3C"), 0.55, 3.0)
+	_lampu_sensor = _lampu(tex_lampu, Vector2(720, 62), Color("D89A3C"),
+			0.55, 3.0)
 	_cahaya_avatar = _lampu(tex_lampu, avatar.pos * float(Config.PPU),
 			Color("D6FF8F"), 0.4, 2.5)
+
+	sensor = SensorCls.new()
+	sensor.pos = world.sensor_pos
 
 
 # tekstur cahaya BERTANGGA (4 tingkat, disaring nearest) — falloff halus
@@ -123,6 +134,35 @@ func _process(delta):
 	if Input.is_physical_key_pressed(KEY_R):
 		world.build()
 		avatar.mulai(world.mulai_pos)
+		_waspada = 0.0
+
+	# RK Langkah 2: state sensor SEBELUM avatar bergerak — TERDETEKSI
+	# menyalakan kewaspadaan; selama waspada, jaringan menolak memulihkan
+	var st = sensor.state(avatar, world)
+	if st == sensor.TERDETEKSI:
+		_waspada = Config.SENSOR_WASPADA
+	else:
+		_waspada = max(0.0, _waspada - delta)
+	avatar.terdeteksi = st == sensor.TERDETEKSI
+	avatar.curiga = st == sensor.CURIGA
+	avatar.regen_mati = avatar.terdeteksi or _waspada > 0.0
+	ruang_view.sensor_state = st
+
+	# lampu sensor berbicara (SRD §23 tanpa teks): kuning menyala keras
+	# saat TERDETEKSI, berdenyut pelan selama masih waspada, redup normal
+	_t_sensor += delta
+	if avatar.terdeteksi:
+		_lampu_sensor.energy = 1.3 + 0.35 * sin(_t_sensor * 14.0)
+		_lampu_sensor.texture_scale = 4.2
+	elif _waspada > 0.0:
+		_lampu_sensor.energy = 0.9 + 0.25 * sin(_t_sensor * 7.0)
+		_lampu_sensor.texture_scale = 3.6
+	elif avatar.curiga:
+		_lampu_sensor.energy = 0.75
+		_lampu_sensor.texture_scale = 3.2
+	else:
+		_lampu_sensor.energy = 0.55
+		_lampu_sensor.texture_scale = 3.0
 
 	avatar.update(delta, i, world)
 

@@ -29,6 +29,7 @@ var _alpha = 1.0          # pudar §31 — target 1 saat penting
 var _tenang = 0.0         # lama keadaan nominal berturut-turut
 var _moda_lalu = -1
 var _energi_lalu = -1.0
+var _tempel_lalu = false  # tepi bisa_tempel — bangunkan HUD untuk petunjuk
 var _layu_flash = 0.0     # sisa kedip gelap layu
 
 var _font
@@ -53,10 +54,12 @@ func _process(delta):
 	var nominal = isi > 0.9 and not avatar.terdeteksi and not avatar.curiga \
 			and not avatar.regen_mati and not avatar.mengisi \
 			and _layu_flash <= 0.0
-	if avatar.moda != _moda_lalu or abs(isi - _energi_lalu) > 0.1:
+	if avatar.moda != _moda_lalu or abs(isi - _energi_lalu) > 0.1 \
+			or (avatar.bisa_tempel and not _tempel_lalu):
 		_tenang = 0.0
 		_moda_lalu = avatar.moda
 		_energi_lalu = isi
+	_tempel_lalu = avatar.bisa_tempel
 	_tenang = _tenang + delta if nominal else 0.0
 	var target = 0.14 if _tenang > 3.0 else 1.0
 	_alpha = lerpf(_alpha, target, clamp(delta * 6.0, 0.0, 1.0))
@@ -78,7 +81,7 @@ func _draw():
 	# panel bayang tipis supaya terbaca di atas scene terang mana pun
 	var latar = C_LATAR
 	latar.a = 0.55 * a
-	draw_rect(Rect2(x - 12.0, y - 12.0, 288.0, 158.0), latar)
+	draw_rect(Rect2(x - 12.0, y - 12.0, 288.0, 196.0), latar)
 
 	# --- ENERGI: bar 10 sel (mock §31) -------------------------------
 	_label(x, y, "ENERGI", a)
@@ -122,6 +125,15 @@ func _draw():
 		c3 = C_KUNING
 		c3.a = 0.6
 	_nilai(x, y3 + 26.0, txt, c3, a)
+
+	# --- petunjuk tombol kontekstual (jawaban "memencet apa?") --------
+	var y4 = y3 + 56.0
+	if avatar.moda == avatar.MERAMBAT:
+		_label(x, y4, "[SPASI] LEPAS   [ESC] JEDA", a)
+	elif avatar.bisa_tempel:
+		_label(x, y4, "[W/S] MERAMBAT   [ESC] JEDA", a)
+	else:
+		_label(x, y4, "[ESC] JEDA", a)
 
 
 func _label(x, y, teks, a):

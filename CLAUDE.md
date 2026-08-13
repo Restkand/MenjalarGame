@@ -260,6 +260,13 @@ perintah pemilik)** — audit lengkap lihat riwayat percakapan/commit:
   warna CDD §7, memudar saat nominal, bingkai kuning saat regen ditolak,
   kedip gelap konsumen event layu_baru; ability [Q]/[E] SENGAJA belum —
   Phase 7). Bar mini di atas kepala avatar dicabut dari AvatarView.
+  UX 15 Agu (permintaan pemilik "tidak paham memencet apa"): AUTO-TEMPEL
+  DIHAPUS — menempel kini DISENGAJA gaya tangga (sentuh garis + W/S;
+  `avatar.bisa_tempel` = petunjuk kontekstual di HUD "[W/S] MERAMBAT" /
+  "[SPASI] LEPAS"); LEPAS murni platformer di beton tileset. MENU JEDA
+  `render/MenuJeda.gd` (ESC buka/tutup, R ulang; main process ALWAYS +
+  anak PAUSABLE, logika _process dipagari paused) sekaligus kartu
+  KENDALI. Terverifikasi deterministik (blok uji dibuang).
 
 **Gerbang Langkah 3, putaran 1 (14 Agustus)**: putusan pemilik —
 "memilih rute HARUS terasa seperti keputusan; ini stealth game

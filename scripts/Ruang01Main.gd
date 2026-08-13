@@ -16,6 +16,7 @@ const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
 const JejakViewCls   = preload("res://scripts/render/JejakView.gd")
 const SensorCls      = preload("res://scripts/Sensor.gd")
 const HudCls         = preload("res://scripts/render/Hud.gd")
+const MenuJedaCls    = preload("res://scripts/render/MenuJeda.gd")
 
 var world
 var avatar
@@ -31,6 +32,8 @@ var _grading               # CanvasModulate — bergeser hangat saat alarm
 var _cahaya_avatar         # PointLight2D hijau mengikuti TENDRIL (EDV3 §8)
 var _lompat_lalu = false   # edge Spasi
 var _jangkar_lalu = false  # edge F
+var _esc_lalu = false      # edge Esc — menu jeda
+var menu_jeda
 
 
 func _ready():
@@ -82,6 +85,16 @@ func _ready():
 	add_child(lapis_hud)
 	lapis_hud.add_child(HudCls.new(avatar))
 
+	# MENU JEDA: main berjalan TERUS (membaca ESC saat pohon dibekukan);
+	# seluruh logika game di _process dipagari get_tree().paused, dan
+	# anak-anak yang punya _process ditandai PAUSABLE eksplisit supaya
+	# ikut beku (di bawah induk ALWAYS, INHERIT berarti ikut jalan)
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	for anak in get_children():
+		anak.process_mode = Node.PROCESS_MODE_PAUSABLE
+	menu_jeda = MenuJedaCls.new()
+	add_child(menu_jeda)
+
 
 
 # tekstur cahaya BERTANGGA (4 tingkat, disaring nearest) — falloff halus
@@ -116,6 +129,21 @@ func _lampu(tex, pos, warna, energi, skala):
 
 
 func _process(delta):
+	# MENU JEDA: ESC membuka/menutup; saat jeda hanya ESC & R yang hidup
+	var esc = Input.is_physical_key_pressed(KEY_ESCAPE)
+	if esc and not _esc_lalu:
+		get_tree().paused = not get_tree().paused
+		menu_jeda.buka(get_tree().paused)
+	_esc_lalu = esc
+	if get_tree().paused:
+		if Input.is_physical_key_pressed(KEY_R):
+			get_tree().paused = false
+			menu_jeda.buka(false)
+			world.build()
+			avatar.mulai(world.mulai_pos)
+			_waspada = 0.0
+		return
+
 	var arah = Vector2(
 			_sumbu(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT),
 			_sumbu(KEY_W, KEY_UP, KEY_S, KEY_DOWN))

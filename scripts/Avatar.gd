@@ -30,6 +30,7 @@ var sumber = ""            # "air" / "cahaya" saat mengisi — untuk ikon HUD
 var jejak = []             # P3: jalur sulur yang DITUMBUHKAN avatar —
                            # [{pos, dalam}] digambar JejakView
 var hadap = 1.0            # arah hadap terakhir (dipakai view & belok)
+var bisa_tempel = false    # LEPAS menyentuh jaringan — petunjuk HUD [W]
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 
 # RK Langkah 2 — status deteksi sensor, DIISI main tiap frame sebelum
@@ -65,6 +66,7 @@ func mulai(p):
 	di_tanah = false
 	di_dalam = false
 	mengisi = false
+	bisa_tempel = false
 	jejak = []
 	_tempel_jeda = 0.0
 	tahap = 1
@@ -140,6 +142,7 @@ func jangkar(world):
 
 func _rambat(dt, i, world):
 	var arah = i.arah
+	bisa_tempel = false
 	# konsekuensi deteksi (RK 2b): selama sensor waspada, jaringan
 	# MENOLAK memulihkan — ketahuan lalu bersembunyi tidak langsung
 	# mengembalikan hak pulih
@@ -241,10 +244,16 @@ func _lepas(dt, i, world):
 		faktor = max(faktor, Config.KURAS_TERDETEKSI)
 	energi -= Config.AVATAR_KURAS * faktor * dt
 
-	# menempel kembali begitu menyentuh jaringan (setelah jeda lepas)
-	if _tempel_jeda <= 0.0 \
-			and world.jaringan_di(int(round(pos.x)), int(round(pos.y - 2.0))):
+	# menempel jadi DISENGAJA (putusan pemilik: auto-tempel membingungkan
+	# — jalan biasa di lantai rumah tersedot ke moda rambat tanpa
+	# diminta). Tata bahasa tangga klasik: menyentuh jaringan + tekan
+	# ATAS/BAWAH = menempel. bisa_tempel diumumkan ke HUD sebagai
+	# petunjuk tombol kontekstual.
+	bisa_tempel = _tempel_jeda <= 0.0 \
+			and world.jaringan_di(int(round(pos.x)), int(round(pos.y - 2.0)))
+	if bisa_tempel and i.arah.y != 0.0:
 		moda = MERAMBAT
+		bisa_tempel = false
 		vel = Vector2()
 		_melompat = false
 		simpul = pos

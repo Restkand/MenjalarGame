@@ -29,7 +29,7 @@ var mengisi = false        # P3: sedang di sumber (untuk denyut view)
 var sumber = ""            # "air" / "cahaya" saat mengisi — untuk ikon HUD
 var jejak = []             # P3: jalur sulur yang DITUMBUHKAN avatar —
                            # [{pos, dalam}] digambar JejakView
-var hadap = 1.0            # arah hadap terakhir (untuk lesat tanpa arah)
+var hadap = 1.0            # arah hadap terakhir (dipakai view & belok)
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 
 # RK Langkah 2 — status deteksi sensor, DIISI main tiap frame sebelum
@@ -38,9 +38,9 @@ var terdeteksi = false     # kuning: terlihat sensor dalam keadaan terbuka
 var curiga = false         # tersamar di jaringan dalam jangkauan sensor
 var regen_mati = false     # sensor waspada: jaringan menolak memulihkan
 
-# metamorfosis (P3.9, papan acuan §1): 1 BIJI, 2 KECAMBAH, 3 TUNAS,
-# 4 SULUR, 5 PERAMBAT, 6 LEBAT. Ukuran badan kontinu (ukuran()), tahap
-# hanyalah tonggak kemampuan & wujud.
+# Tahap CDD §9: 1 TUNAS BARU, 2 MUDA, 3 DEWASA, 4 TUA/KAYU. Murni
+# tonggak WUJUD dari tumbuh_total — TIDAK membuka kemampuan (GDD §15 =
+# jatah Phase 7). Ukuran badan tetap kontinu lewat ukuran().
 var tahap = 1
 var tahap_baru = 0         # event sekali-baca untuk kartu metamorfosis main
 var energi_max = 100.0
@@ -49,11 +49,9 @@ var jangkar_n = 0
 var pernah_air = false     # pernah minum dari keran/akuifer (diisi main)
 var pernah_cahaya = false
 
-# kit gerak (P3.75, docs/13 §3.2)
+# pengampunan platformer (GDD §7)
 var _coyote = 0.0          # sisa waktu "masih boleh lompat" setelah lepas pijakan
 var _buffer = 0.0          # sisa waktu lompat-lebih-awal yang masih dihormati
-var _lesat_t = 0.0         # sisa durasi dash (gravitasi mati)
-var _lesat_cd = 0.0        # jeda antar dash
 var _melompat = false      # sedang di fase naik lompatan (untuk potong dini)
 
 
@@ -79,8 +77,7 @@ func mulai(p):
 
 
 func tahap_nama():
-	return ["", "BIJI", "KECAMBAH", "TUNAS", "SULUR", "PERAMBAT",
-			"LEBAT"][tahap]
+	return ["", "TUNAS BARU", "MUDA", "DEWASA", "TUA/KAYU"][tahap]
 
 
 # Kemajuan tumbuh 0..1 — memilih frame strip pertumbuhan 16-frame DAN
@@ -100,26 +97,13 @@ func isi(jumlah):
 
 
 # i = Dictionary input dari main: arah (Vector2), lompat (edge),
-# lompat_tahan (bool), lesat (edge), sprint (bool), masuk (edge)
+# lompat_tahan (bool), lari (bool — GDD §7 RUN), masuk (edge)
 func update(dt, i, world):
 	if dt <= 0.0:
 		return
 	_tempel_jeda = max(0.0, _tempel_jeda - dt)
-	_lesat_cd = max(0.0, _lesat_cd - dt)
 	if i.arah.x != 0.0:
 		hadap = signf(i.arah.x)
-
-	# tonggak metamorfosis yang tidak terikat momen tumbuh (P3.9):
-	# SULUR -> PERAMBAT: dua jangkar + pernah air & cahaya
-	if tahap == 4 and jangkar_n >= int(Config.TAHAP5_JANGKAR) \
-			and pernah_air and pernah_cahaya:
-		tahap = 5
-		tahap_baru = 5
-		energi_max = Config.AVATAR_ENERGI_MAX * Config.TAHAP5_ENERGI
-	# PERAMBAT -> LEBAT: tubuh jaringan sudah luas
-	elif tahap == 5 and tumbuh_total >= Config.TAHAP6_TUMBUH:
-		tahap = 6
-		tahap_baru = 6
 
 	# E di jendela/pintu fasad: keluar-masuk gedung (P2). Transisi memutus
 	# moda merambat — di sisi seberang Anda jatuh dulu ke lantai/jaringan.
@@ -175,15 +159,9 @@ func _rambat(dt, i, world):
 
 	if arah == Vector2.ZERO:
 		return
-	# sprint merambat (P3.75): Shift ditahan = mengalir lebih cepat di
-	# jaringan, bayar energi per detik — untuk menyeberangi wilayah yang
-	# sudah dikuasai dengan gesit
-	var laju = Config.AVATAR_RAMBAT
-	if tahap >= 4 and i.sprint \
-			and energi > Config.RAMBAT_SPRINT_BIAYA * dt + 6.0:
-		laju *= Config.RAMBAT_SPRINT
-		energi -= Config.RAMBAT_SPRINT_BIAYA * dt
-	var langkah = arah.normalized() * laju * dt
+	# laju merambat tunggal — sprint era pivot dihapus (bukan kanon);
+	# merambat memang sudah moda tercepat (GDD §6.1)
+	var langkah = arah.normalized() * Config.AVATAR_RAMBAT * dt
 	# coba gerak penuh; kalau keluar jaringan, coba per sumbu (menyusur).
 	# Kandidat yang tidak benar-benar bergerak DILEWATI — kandidat sumbu
 	# dengan komponen nol adalah "gerakan nol yang selalu sah" dan diam-diam
@@ -206,19 +184,21 @@ func _rambat(dt, i, world):
 	if world.padat_avatar(cx, cy, di_dalam):
 		return
 	var biaya = langkah.length() * Config.RAMBAT_TUMBUH_BIAYA
-	if tahap >= 6:
-		biaya *= Config.TAHAP6_BIAYA   # LEBAT: tumbuh lebih murah
 	if energi <= biaya + 4.0:
 		return   # sisakan napas — jangan layu karena tumbuh
 	energi -= biaya
 	pos = tumbuh_ke
 	world.tandai_jaringan(cx, cy)
-	# tonggak tumbuh (P3.9): KECAMBAH -> TUNAS -> SULUR dari total jaringan
+	# tonggak wujud CDD §9 — murni dari total pertumbuhan, tanpa membuka
+	# kemampuan apa pun
 	tumbuh_total += langkah.length()
-	if tahap == 2 and tumbuh_total >= Config.TAHAP3_TUMBUH:
+	if tahap == 1 and tumbuh_total >= Config.TAHAP_MUDA:
+		tahap = 2
+		tahap_baru = 2
+	elif tahap == 2 and tumbuh_total >= Config.TAHAP_DEWASA:
 		tahap = 3
 		tahap_baru = 3
-	elif tahap == 3 and tumbuh_total >= Config.TAHAP4_TUMBUH:
+	elif tahap == 3 and tumbuh_total >= Config.TAHAP_TUA:
 		tahap = 4
 		tahap_baru = 4
 	if jejak.is_empty() \
@@ -227,48 +207,32 @@ func _rambat(dt, i, world):
 
 
 func _lepas(dt, i, world):
-	energi -= Config.AVATAR_KURAS * dt
+	# biaya bergradasi GDD §9: diam kecil < jalan < lari sedang; lompat
+	# & tumbuh membayar tarifnya sendiri
+	var faktor = 1.0
+	if di_tanah and i.arah.x == 0.0 and abs(vel.x) < 1.0:
+		faktor = Config.KURAS_DIAM
+	elif i.lari:
+		faktor = Config.KURAS_LARI
+	energi -= Config.AVATAR_KURAS * faktor * dt
 
-	# menempel kembali begitu menyentuh jaringan (setelah jeda lepas).
-	# BIBIT yang pertama kali menyentuh jaringan BERAKAR — metamorfosis
-	# pertama (P3.9): sejak ini ia tanaman, bukan biji berkaki.
+	# menempel kembali begitu menyentuh jaringan (setelah jeda lepas)
 	if _tempel_jeda <= 0.0 \
 			and world.jaringan_di(int(round(pos.x)), int(round(pos.y - 2.0))):
-		if tahap == 1:
-			tahap = 2
-			tahap_baru = 2
 		moda = MERAMBAT
 		vel = Vector2()
 		_melompat = false
-		_lesat_t = 0.0
 		simpul = pos
 		return
 
-	# LESAT (P3.75): burst pendek segala arah, gravitasi mati selama dash —
-	# jurus menyeberang celah & meraih jaringan yang nyaris tak tergapai.
-	# Terbuka di tahap SULUR (P3.9).
-	if tahap >= 4 and i.lesat and _lesat_cd <= 0.0 \
-			and energi > Config.LESAT_BIAYA + 4.0:
-		var d = i.arah
-		if d == Vector2.ZERO:
-			d = Vector2(hadap, 0.0)
-		vel = d.normalized() * Config.LESAT_KECEPATAN
-		_lesat_t = Config.LESAT_DETIK
-		_lesat_cd = Config.LESAT_ULANG
-		energi -= Config.LESAT_BIAYA
-		_melompat = false
-	if _lesat_t > 0.0:
-		_lesat_t -= dt
-		_gerak_tabrak(dt, world)
-		_cek_layu(world)
-		return
-
-	# coyote & buffer (P3.75): pengampunan waktu khas platformer yang enak
+	# coyote & buffer: pengampunan waktu khas platformer yang enak
 	_coyote = Config.COYOTE_DETIK if di_tanah else max(0.0, _coyote - dt)
 	_buffer = Config.BUFFER_LOMPAT if i.lompat else max(0.0, _buffer - dt)
 
-	# horizontal: akselerasi menuju kecepatan target
-	var target = i.arah.x * Config.AVATAR_JALAN
+	# horizontal: akselerasi menuju target — RUN dasar GDD §7 saat Shift
+	# ditahan (tetap di bawah laju merambat, §6.1)
+	var laju = Config.AVATAR_LARI if i.lari else Config.AVATAR_JALAN
+	var target = i.arah.x * laju
 	vel.x = move_toward(vel.x, target, Config.AVATAR_ACCEL * dt)
 	# vertikal: gravitasi + lompat (tanah ATAU sisa coyote)
 	vel.y += Config.AVATAR_GRAV * dt

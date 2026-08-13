@@ -28,7 +28,13 @@ var padat_t = PackedByteArray()   # 1 per tile = beton graybox
 var jaringan = {}                 # Vector2i satuan -> 1
 var jalur_seed = []               # [Vector2 a, Vector2 b] — digambar view
 var mulai_pos = Vector2(28.0, 111.9)   # di jaringan rumah (§5: START)
-var sensor_pos = Vector2(180.0, 10.0)  # placeholder MAINTENANCE SENSOR (§14)
+var sensor_pos = Vector2(180.0, 10.0)  # MAINTENANCE SENSOR (§14)
+# GDD §39 (penyimpangan #1): sumber energi = KEBOCORAN KATUP di pipa
+# dinding kanan (pipa membawa air, GDD §12) — tepat di jalur jaringan
+# tujuan, jadi juga alasan untuk kembali (§34). Node terpasang di
+# jaringan rumah = checkpoint kelahiran (§6.2).
+var air_pos = Vector2(242.0, 64.0)
+var node_pos = Vector2(28.0, 109.0)
 
 
 func _init():
@@ -131,6 +137,6 @@ func jaringan_di(px, py):
 	return false
 
 
-# dipakai main untuk pesan HUD sederhana; tidak ada air/keran di Phase 1
-func dekat_air(_px, _py, _di_dalam):
-	return false
+# GDD §39: cukup dekat dengan kebocoran katup = bisa minum (§16 AIR)
+func dekat_air(px, py, _di_dalam):
+	return Vector2(px, py).distance_to(air_pos) <= Config.AIR_RADIUS

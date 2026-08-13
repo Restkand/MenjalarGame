@@ -151,6 +151,23 @@ func _draw():
 			var normal = Vector2(-arah.y, arah.x) * sisi * 4.0
 			draw_circle(p + normal, 3.0, C_DAUN)
 
+	# GDD §39 (penyimpangan #1): dua penanda MVP, bahasa bentuk tanpa teks
+	# — NODE kelahiran di jaringan rumah (§6.2: checkpoint/respawn) dan
+	# KEBOCORAN KATUP sebagai sumber air (§16; cincin minum di AvatarView
+	# yang mengabarkan saat menghisap)
+	var np = world.node_pos * ppu
+	draw_circle(np, 7.0, Color("3E7A32"))
+	draw_circle(np, 4.0, Color("6FBF3E"))
+	draw_circle(np + Vector2(-1.0, -1.0), 1.6, Color("A8E85C"))
+	var ap = world.air_pos * ppu
+	var tetes = Color("8FA3AE")
+	tetes.a = 0.55
+	draw_rect(Rect2(ap.x - 14.0, ap.y + 18.0, 2.0, 8.0), tetes)
+	draw_rect(Rect2(ap.x - 14.0, ap.y + 30.0, 2.0, 5.0), tetes)
+	var genang = Color("8FA3AE")
+	genang.a = 0.30
+	draw_rect(Rect2(ap.x - 18.0, ap.y + 38.0, 10.0, 2.0), genang)
+
 	# zona deteksi sensor (RK Langkah 2): BUKAN cahaya palsu (D6 tetap
 	# dihormati — pendarnya urusan PointLight2D), melainkan SIGNIFIER
 	# gameplay yang jujur: digambar dari angka Config yang SAMA dengan

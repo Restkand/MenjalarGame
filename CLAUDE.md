@@ -234,6 +234,28 @@ pass Room 01 hidup di dokumen historis + riwayat git).
   koridor drain = AMAN; balik tangga = AMAN via LoS; regen berhenti
   saat waspada & pulih sesudahnya.
 
+**Penyimpangan GDD #1-#3 DIPERBAIKI (14 Agustus, atas audit &
+perintah pemilik)** — audit lengkap lihat riwayat percakapan/commit:
+
+- #1 (§39 MVP): Room 01 kini punya SUMBER ENERGI — kebocoran katup pipa
+  dinding kanan (`Ruang01.air_pos`, minum via `dekat_air` + AIR_ISI
+  18/dtk, radius Config.AIR_RADIUS 5) — sekaligus alasan-kembali §34;
+  dan NODE terpasang di jaringan rumah (`node_pos`, bola hijau =
+  checkpoint kelahiran §6.2). Tetesan + genangan digambar di view.
+- #2 (§7/§9): RUN dasar = tahan Shift saat LEPAS (AVATAR_LARI 32 —
+  sengaja DI BAWAH merambat 34, §6.1); biaya bergradasi: diam ×0.5 <
+  jalan ×1.0 < lari ×1.8 (KURAS_DIAM/KURAS_LARI), lompat & tumbuh
+  tetap bertarif sendiri.
+- #3 (progression): LESAT & SPRINT-MERAMBAT DIHAPUS (bukan kanon;
+  kemampuan = GDD §15 jatah Phase 7; kode di riwayat git). Tahap
+  dipetakan ulang ke CDD §9: TUNAS BARU → MUDA (25) → DEWASA (70) →
+  TUA/KAYU (160), murni tonggak wujud dari tumbuh_total, TANPA membuka
+  kemampuan; pengali energi/biaya per tahap ikut dicabut. Input dict
+  kini {arah, lompat, lompat_tahan, lari, masuk}.
+- Utang yang SENGAJA belum: wujud sprite per tahap CDD (art), #4-#9
+  audit (semantik state → RK Langkah 5; kamuflase-berdaun; upacara
+  kematian; UI; §38 grading → Langkah 4; struktur folder).
+
 **Berikutnya → RK Langkah 3: PLAYTEST TIGA RUTE (GERBANG KERAS).**
 Pemilik memainkan Room 01 tiga kali, satu per rute. Satu pertanyaan:
 apakah memilih rute terasa seperti keputusan? Rute selalu-menang →

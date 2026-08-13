@@ -513,21 +513,22 @@ var AIR_ISI             = 18.0  # isi energi/dtk di akuifer / keran bocor
 var CAHAYA_ISI          = 12.0  # isi energi/dtk di bawah matahari (siang, terang)
 var CAHAYA_JENDELA      = 8.0   # isi energi/dtk dekat jendela cerah interior
 
-# P3.75 (docs/13 §3.2): kit gerak & peta
-var LESAT_KECEPATAN   = 95.0    # dash: kecepatan burst
-var LESAT_DETIK       = 0.16    # dash: durasi (gravitasi mati selama ini)
-var LESAT_BIAYA       = 6.0
-var LESAT_ULANG       = 0.45    # dash: jeda antar pemakaian
-var RAMBAT_SPRINT     = 1.8     # pengali laju merambat saat Shift ditahan
-var RAMBAT_SPRINT_BIAYA = 3.0   # energi/dtk sprint merambat
+# Pengampunan platformer (GDD §7 rasa gerak)
 const COYOTE_DETIK    = 0.12    # masih boleh lompat setelah lepas pijakan
 const BUFFER_LOMPAT   = 0.12    # lompat ditekan sesaat sebelum mendarat
 const LOMPAT_POTONG   = 0.45    # pengali vel.y saat tombol lompat dilepas dini
 
-# P3.9 (papan acuan §1): metamorfosis avatar ENAM tahap — biji, kecambah,
-# tunas, sulur, perambat, lebat. Ukuran badan tumbuh KONTINU mengikuti
-# tumbuh_total; tahap hanyalah tonggak kemampuan & pergantian wujud
-# (permintaan pemilik proyek: transisi jangan patah-patah).
+# GDD §7 + §9 (perbaikan penyimpangan #2): RUN dasar & biaya bergradasi.
+# LARI sengaja DI BAWAH laju merambat (34) — §6.1: merambat harus terasa
+# lebih cepat daripada LEPAS. Kuras = AVATAR_KURAS x faktor keadaan.
+var AVATAR_LARI  = 32.0    # laju horizontal saat Shift ditahan (LEPAS)
+var KURAS_DIAM   = 0.5     # faktor kuras saat diam           (§9: kecil)
+var KURAS_LARI   = 1.8     # faktor kuras saat berlari        (§9: sedang)
+
+# GDD §39 (perbaikan penyimpangan #1): sumber energi Room 01 = kebocoran
+# katup pipa (pipa membawa air, §12). Radius "cukup dekat untuk minum".
+var AIR_RADIUS = 5.0
+
 # RK Langkah 2 (SRD §13-15): sensor perawatan Room 01 — kenop tuning
 # untuk Langkah 3 (playtest tiga rute). Konsekuensi TERDETEKSI = jaringan
 # BERHENTI memulihkan energi selama sensor masih waspada (opsi 2b RK:
@@ -536,10 +537,12 @@ var SENSOR_KERUCUT_DASAR = 4.0    # setengah lebar kerucut di lensa
 var SENSOR_KERUCUT_LEBAR = 0.38   # pelebaran per satuan turun
 var SENSOR_WASPADA       = 4.0    # detik regen mati setelah lolos pandang
 
-var TAHAP3_TUMBUH  = 25.0   # kecambah -> TUNAS
-var TAHAP4_TUMBUH  = 70.0   # tunas -> SULUR (membuka LESAT & sprint)
-var TAHAP5_JANGKAR = 2      # sulur -> PERAMBAT (plus pernah air & cahaya)
-var TAHAP5_ENERGI  = 1.4    # pengali kapasitas energi PERAMBAT
-var TAHAP6_TUMBUH  = 160.0  # perambat -> LEBAT
-var TAHAP6_BIAYA   = 0.75   # LEBAT: tumbuh lebih murah (pengali biaya)
-var UKURAN_PENUH   = 200.0  # tumbuh_total saat badan mencapai ukuran penuh
+# Tahap CDD §9 (perbaikan penyimpangan #3): EMPAT tahap aktif — TUNAS
+# BARU, MUDA, DEWASA, TUA/KAYU (TERINFEKSI opsional menunggu cerita).
+# Murni tonggak WUJUD dari total pertumbuhan; TIDAK membuka kemampuan
+# apa pun (kemampuan = GDD §15, jatah Phase 7). Lesat & sprint-merambat
+# era pivot DIHAPUS — tidak berasal dari kanon mana pun.
+var TAHAP_MUDA   = 25.0    # tumbuh_total: TUNAS BARU -> MUDA
+var TAHAP_DEWASA = 70.0    # MUDA -> DEWASA
+var TAHAP_TUA    = 160.0   # DEWASA -> TUA/KAYU
+var UKURAN_PENUH = 200.0   # tumbuh_total saat badan mencapai ukuran penuh

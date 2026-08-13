@@ -6,7 +6,7 @@ extends Node2D
 # vertical slice. Pola input mengikuti aturan produksi: SEMUA input
 # dibaca terpusat di file main scene, Avatar tidak pernah membaca Input.
 #
-# Kendali: WASD/panah gerak, Spasi lompat/lepas, Shift lesat/sprint,
+# Kendali: WASD/panah gerak, Spasi lompat/lepas, Shift LARI (GDD §7),
 # F jangkar, R ulang.
 
 const Ruang01Cls     = preload("res://scripts/Ruang01.gd")
@@ -27,7 +27,6 @@ var _lampu_sensor          # PointLight2D amber sensor — didorong state
 var _t_sensor = 0.0        # penggerak denyut lampu sensor
 var _cahaya_avatar         # PointLight2D hijau mengikuti TENDRIL (EDV3 §8)
 var _lompat_lalu = false   # edge Spasi
-var _lesat_lalu = false    # edge Shift
 var _jangkar_lalu = false  # edge F
 
 
@@ -113,19 +112,16 @@ func _process(delta):
 			_sumbu(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
 
 	var lompat_tahan = Input.is_physical_key_pressed(KEY_SPACE)
-	var lesat_tahan = Input.is_physical_key_pressed(KEY_SHIFT)
 	var jangkar_tahan = Input.is_physical_key_pressed(KEY_F)
 
 	var i = {
 		"arah": arah,
 		"lompat": lompat_tahan and not _lompat_lalu,
 		"lompat_tahan": lompat_tahan,
-		"lesat": lesat_tahan and not _lesat_lalu,
-		"sprint": lesat_tahan,
+		"lari": Input.is_physical_key_pressed(KEY_SHIFT),
 		"masuk": false,
 	}
 	_lompat_lalu = lompat_tahan
-	_lesat_lalu = lesat_tahan
 
 	if jangkar_tahan and not _jangkar_lalu:
 		avatar.jangkar(world)
@@ -147,6 +143,14 @@ func _process(delta):
 	avatar.curiga = st == sensor.CURIGA
 	avatar.regen_mati = avatar.terdeteksi or _waspada > 0.0
 	ruang_view.sensor_state = st
+
+	# GDD §39/§16: minum dari kebocoran katup — sumber energi Room 01
+	avatar.mengisi = world.dekat_air(avatar.pos.x, avatar.pos.y - 2.0,
+			false)
+	if avatar.mengisi:
+		avatar.isi(Config.AIR_ISI * delta)
+		avatar.sumber = "air"
+		avatar.pernah_air = true
 
 	# lampu sensor berbicara (SRD §23 tanpa teks): kuning menyala keras
 	# saat TERDETEKSI, berdenyut pelan selama masih waspada, redup normal

@@ -190,17 +190,27 @@ Langkah 0 (kebersihan dokumen) SELESAI 14 Agustus: kanon aktif 11 → 7,
 empat dokumen bercap HISTORIS, bagian ini dikompres (sejarah pass demi
 pass Room 01 hidup di dokumen historis + riwayat git).
 
-**SEKARANG → Langkah 1: lunasi utang FEEL** (1-2 sesi, GDD §42):
+**Langkah 1 (utang FEEL) DIKERJAKAN 14 Agustus — menunggu mata pemilik:**
 
-- LOMPAT: belum terasa effort/impact — butuh pose lebih ekstrem.
-- JATUH: KURANG membungkuk, belum terkesan menerima impact.
-- CRAWL: masih sedikit menggulung (lulus 12 Agu dengan utang).
-- Boleh dibonceng: palet avatar & jejak pindah ke CDD §7 (file animasi
-  toh sedang disentuh). "Jangan reroll tanpa diminta" — RK Langkah 1
-  ADALAH permintaannya. Idle/detach/attach & bahasa-OLR merambat TIDAK
-  disentuh di langkah ini.
-- DOD: lompat terbaca sebagai usaha, mendarat terbaca menerima beban.
-  Uji dengan mata, bukan asersi.
+- JATUH v2 (seed 1062) MENANG telak: 4 frame loop tubuh MEMBUNGKUK
+  rendah, ujung terselip di depan bawah, daun tersapu — frame tegak
+  pembuka dibuang supaya loop konsisten.
+- LOMPAT: generasi v2 (seed 1061) squash-nya tidak keluar per-frame →
+  diselamatkan lewat KURASI SUSUN-ULANG: strip 6f = jongkok kompak
+  (ditahan 2f) → master → meregang → puncak menyala (beku selama naik).
+  Teknik baru yang terbukti: frame satu generasi boleh disusun ulang
+  jadi urutan aksi — identitas tetap konsisten.
+- CRAWL v3 kanan+kiri (seed 1063/1064): DITOLAK kurasi — dua-duanya
+  justru lebih menggulung tegak dari versi lama yang sudah lulus.
+  Crawl lama DIPERTAHANKAN; utang gulung kecil tetap tercatat. Pelajaran:
+  larangan "never coil upright" di teks aksi TIDAK dipatuhi model —
+  jangan reroll crawl lagi tanpa teknik baru (mis. pin frame rendah).
+- Boncengan lunas: JejakView pindah ke hijau TENDRIL EDV3 §3.1
+  (6FBF3E/A8E85C, sama dengan jaringan benih — "makhluk & pertumbuhan-
+  nya"); warna Menjalar (C_BRANCH/C_LEAF) tidak dipakai lagi.
+- Idle/detach/attach & bahasa-OLR merambat sengaja TIDAK disentuh.
+- DOD Langkah 1 dinilai MATA PEMILIK in-game: lompat = usaha, mendarat
+  = menerima beban. Lolos → RK Langkah 2 (sensor jadi nyata).
 
 Sesudahnya sesuai RK: [2] sensor jadi nyata (tiga state SRD §13, warna
 kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga

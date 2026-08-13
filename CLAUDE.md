@@ -296,13 +296,24 @@ Struktur aset karakter:
 
 Pipeline animasi player: `animate_character` mode v3 (deskripsi aksi
 custom, ~1 generasi/arah untuk 32px; HINDARI template humanoid —
-retarget kerangka merusak anatomi non-humanoid). Idle 2 arah
-(timur+barat, 6f, nama idle_napas) sedang diproses sebagai uji perdana.
-Rencana set: idle → crawl timur/barat (bahasa OLR) → jump/fall/land →
-detach/attach → merambat; lalu AvatarView dialihkan ke aset/player
-(sprite 32px — sesuaikan rect gambar dari 48). SPP perlu revisi
-pemilik (ditulis untuk Master A). Gerbang RK Langkah 3 putaran 2 tetap
-antri setelah karakter berdiri.
+retarget kerangka merusak anatomi non-humanoid). Idle 2 arah SELESAI
+(idle_timur 7f + idle_barat cermin). CRAWL timur+barat SELESAI dan
+DIKUNCI di **bedah v7** (commit 2038ca8): body gelombang dari
+animasi akun "crawl_timur" + bedah wajah deterministik per frame
+(sapu seluruh tanda interior 3 pass, lalu SATU mata hitam 2x3 +
+kilau putih dijangkarkan ke cakram kepala pada fraksi tetap 42%
+tinggi / 3 px dari tepi depan; barat = cermin). PUTUSAN PEMILIK
+15 Agu: v7 = versi terbaik; TIGA perbaikan lanjutan DITOLAK semua
+(susun prosedural penuh; tutup-outline datar; busur bola + tanjakan
+landai — skrip di scratchpad bedah_badan/bedah_sambung). JANGAN
+bedah crawl lagi tanpa arahan baru pemilik. Utang kosmetik yang
+DITERIMA sadar: kepala mepet tepi kanan kanvas (baris hijau tanpa
+outline) + massa gelap di bawah kepala (bukan gelombang tipis murni).
+Rencana set berikutnya: jump/fall/land → detach/attach → merambat;
+lalu AvatarView dialihkan ke aset/player (sprite 32px — sesuaikan
+rect gambar dari 48). SPP perlu revisi pemilik (ditulis untuk
+Master A). Gerbang RK Langkah 3 putaran 2 tetap antri setelah
+karakter berdiri.
 
 Sesudahnya sesuai RK: [2] sensor jadi nyata (tiga state SRD §13, warna
 kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga

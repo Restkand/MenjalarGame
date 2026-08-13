@@ -14,7 +14,8 @@ extends Node2D
 # TERPISAH — bukan cermin, §8), belok dua arah (§21), merambat, transisi.
 # "lepas" lama tinggal sebagai cadangan.
 const ANIM = ["idle", "merambat", "kanan", "kiri", "putar_kiri",
-		"putar_kanan", "lepas", "detach", "attach"]
+		"putar_kanan", "lompat", "jatuh", "darat", "lepas", "detach",
+		"attach"]
 
 var avatar
 var _t = 0.0
@@ -29,6 +30,8 @@ var _miring = 0.0         # condongan ujung ke arah gerak (CDD §5.1/SPP §56)
 var _hadap_lalu = 1.0     # deteksi balik arah → animasi BELOK (spec §9)
 var _putar_t = 0.0        # sisa waktu animasi belok
 var _putar = ""           # "putar_kiri" (kanan→kiri) / "putar_kanan"
+var _udara_t = 0.0        # lama melayang — penggerak frame LOMPAT (play-once)
+var _darat_t = 0.0        # sisa waktu animasi mendarat (play-once)
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
 
@@ -83,6 +86,18 @@ func _process(delta):
 		_jarak += pindah
 	_pos_lalu = avatar.pos
 
+	# udara & pendaratan (OLR §34, setelah crawl lulus playtest): LOMPAT
+	# maju berbasis lama melayang (play-once), DARAT menyala di tepi
+	# menyentuh tanah kembali — hanya bermakna di moda LEPAS
+	if avatar.moda == avatar.LEPAS and not avatar.di_tanah:
+		_udara_t += delta
+	else:
+		if _udara_t > 0.12 and avatar.moda == avatar.LEPAS \
+				and _anim.has("darat"):
+			_darat_t = 0.18   # sentuhan singkat: pegas memantul lalu tegak
+		_udara_t = 0.0
+	_darat_t = max(0.0, _darat_t - delta)
+
 	# ujung memimpin (permintaan playtest, sesuai ADR §11): saat berjalan
 	# LEPAS, tubuh condong halus ke arah gerak sehingga ujung/daun tampak
 	# melangkah lebih dulu. Kecil (~9°) supaya tidak terbaca mau jatuh;
@@ -90,13 +105,20 @@ func _process(delta):
 	var target_miring = 0.16 if (bergerak and avatar.moda == avatar.LEPAS) \
 			else 0.0
 	_miring = lerpf(_miring, target_miring, clamp(delta * 8.0, 0.0, 1.0))
+	# prioritas: transisi > belok > darat > udara > gerak > idle
 	if _transisi_t > 0.0 and _anim.has(_transisi):
 		_state = _transisi
 	elif _putar_t > 0.0:
 		_state = _putar
 	elif avatar.moda == avatar.MERAMBAT:
 		_state = "merambat" if bergerak else "idle"
-	elif bergerak or not avatar.di_tanah:
+	elif _darat_t > 0.0:
+		_state = "darat"
+	elif not avatar.di_tanah:
+		# naik = LOMPAT (play-once, membeku di frame akhir), turun = JATUH
+		var udara = "lompat" if avatar.vel.y < 0.0 else "jatuh"
+		_state = udara if _anim.has(udara) else "lepas"
+	elif bergerak:
 		# strip berarah (spec §22-23) kalau ada; "lepas" lama = cadangan
 		var arah_anim = "kanan" if avatar.hadap > 0.0 else "kiri"
 		_state = arah_anim if _anim.has(arah_anim) else "lepas"
@@ -134,6 +156,15 @@ func _draw():
 		elif _state == "putar_kiri" or _state == "putar_kanan":
 			# belok diputar SEKALI (spec §16), maju sesuai sisa waktunya
 			fr = int(clamp((1.0 - _putar_t / 0.32) * a.n, 0.0, a.n - 1.0))
+		elif _state == "lompat":
+			# play-once ~14 fps, MEMBEKU di frame akhir selama masih naik
+			fr = int(clamp(_udara_t * 14.0, 0.0, a.n - 1.0))
+		elif _state == "jatuh":
+			# melayang turun = loop lembut berbasis waktu
+			fr = int(_t * 10.0) % a.n
+		elif _state == "darat":
+			# pegas mendarat diputar SEKALI, maju sesuai sisa waktunya
+			fr = int(clamp((1.0 - _darat_t / 0.18) * a.n, 0.0, a.n - 1.0))
 		elif _state == "idle":
 			# idle berbasis waktu, 8 fps — napas pelan (papan: 8-12 fps)
 			fr = int(_t * 8.0) % a.n

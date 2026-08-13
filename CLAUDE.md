@@ -172,9 +172,24 @@ menyalahkan mekanik.
 
 ## Langkah berikutnya
 
-**MOVEMENT PLAYTEST oleh pemilik proyek** (ADR §18-19): AvatarView sudah
-memutar 5 animasi TENDRIL (idle/merambat/lepas loop 10 fps + transisi
-detach 0.28 dtk & attach 0.20 dtk sesuai target CDD §15-16). Pertanyaan
-playtest: "apakah TENDRIL terasa hidup saat dikendalikan?" Hasilnya
-menentukan LOCK atau REROLL (lepas prioritas #1, merambat #2). Jump/Fall/
-Land baru boleh SETELAH playtest lolos (ADR §20).
+**Crawl LULUS playtest 12 Agustus** — putusan pemilik proyek: "agak
+merayap dan menggulung tapi ya sudah lah untuk sekarang aman dan lulus
+uji coba" → LULUS dengan UTANG POLISH (crawl kanan/kiri masih sedikit
+menggulung; revisi saat pass animasi berikutnya, jangan reroll tanpa
+diminta).
+
+Gerbang OLR §34 terbuka → sudah dibangun sesudahnya (13 Agustus): belok
+crawl `putar_kiri`/`putar_kanan` (7f, seed 1051/1052) plus set udara
+`lompat` (7f play-once ~14 fps, membeku di frame akhir), `jatuh` (5f
+loop 10 fps), `darat` (5f play-once 0.18 dtk, menyala di tepi mendarat,
+gerbang `_udara_t > 0.12` supaya turunan kecil tidak memicu pegas).
+Semua digenerate dari master base64 dengan teks aksi ber-jangkar (BUKAN
+pin frame — dua base64 panjang dalam satu panggilan selalu korup).
+Prioritas state AvatarView: transisi > belok > darat > udara > gerak >
+idle. Ketiga anim udara NON-berarah (dicermin `hadap` seperti idle).
+
+**Berikutnya: PLAYTEST turn+udara oleh pemilik proyek**, lalu urutan
+OLR §34 lanjut: GROW → ENERGY → CUT/DEATH → REGROW → ABILITY. Utang
+lain yang antri: merambat belum direvisi ke bahasa OLR; idle/detach/
+attach masih master pra-refine (ADR mengizinkan sampai playtest
+gameplay).

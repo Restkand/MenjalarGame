@@ -34,7 +34,15 @@ merambat menjadikan sebuah gedung sebagai tubuhnya.
    §21, tutorial tanpa teks §23, urutan build §33 (Graybox → TENDRIL →
    Environment → Stealth → Pixel Art), kriteria sukses §31, yang BELUM
    perlu ada §32. Semua room berikutnya lahir dari bahasa desain Room 01.
-7. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
+7. **`docs/RAD-TENDRIL-RUANG-SERVIS.md`** — art direction Room 01 (44
+   bagian): ruangan harus terbaca RUANG SERVIS gedung, BUKAN dungeon
+   batu. FUNCTION OVER ROCK (§3), tiga lapis §5 (structure /
+   infrastructure / wear+life), proporsi §6, kit modular §34 (pipa,
+   tray, panel, katup, drain, jeruji, lampu — susun di Godot, jangan
+   generate ruangan utuh), prompt per aset §26-33 + negative prompt
+   wajib §25, TENDRIL menyusup ke infrastruktur (§36), uji 5-detik §39,
+   urutan revisi §40, jangan terlalu cepat "abandoned" (§41).
+8. **`docs/CDD-TENDRIL-KARAKTER.md`** — desain karakter (46 bagian) +
    papan acuan visualnya. Kanon untuk SEGALA hal tentang sang Ujung
    Tumbuh: anatomi (ujung bercahaya sensitif cahaya, daun muda kamuflase,
    sulur fleksibel, node pertumbuhan), palet hijau kanon (#102016,
@@ -224,9 +232,11 @@ Phase 1 Graybox sudah berdiri**:
 
 **Playtest 13 Agustus (pemilik proyek)**: WASD jalan; animasi disukai —
 **BELOK LULUS** ("rotasi kiri↔kanan sudah terlihat natural"). **UTANG
-POLISH lompat/jatuh**: lompat belum terasa ada impact/effort, jatuh
-terlalu membungkuk sehingga terbaca seperti crawl. JANGAN reroll tanpa
-diminta — antre untuk pass animasi berikutnya.
+POLISH lompat/jatuh** (diluruskan pemilik proyek — catatan awal salah
+tangkap): lompat belum terasa effort/impact, dan jatuh justru KURANG
+membungkuk — belum terkesan menerima impact jatuh; keduanya butuh pose
+lebih ekstrem. JANGAN reroll tanpa diminta — antre pass animasi
+berikutnya.
 
 Arahan lanjutan pemilik proyek: kembangkan LATAR MAP dulu via PixelLab
 (Phase 5 SRD ditarik maju melewati Phase 3-4 — keputusan pemilik),
@@ -242,10 +252,26 @@ dinding, massa pijakan = slab lantai; bibir permukaan diberi aksen;
 sensor digambar DI DEPAN jaringan. Kurasi lewat pratinjau komposisi
 scratchpad (pratinjau_ruang01.gd) karena headless tak bisa screenshot.
 
-**Berikutnya: PLAYTEST Room 01 bertekstur** (§30 TEST A-E, §31; §1:
-"apakah TENDRIL terasa kecil dibanding bangunan?"). Lalu sesuai arahan:
-kembali ke PENGKARAKTERAN karakter (utang lompat/jatuh di atas, lalu
-OLR §34 GROW → ENERGY → CUT/DEATH → REGROW → ABILITY). Phase 3
-Environment Interaction & Phase 4 Stealth SRD menyusul urutan pemilik.
-Utang lain: merambat belum berbahasa OLR; idle/detach/attach masih
-master pra-refine.
+**Revisi RUANG SERVIS sudah dieksekusi (13 Agustus, kanon RAD)**:
+pemilik menilai pass pertama masih terbaca dungeon batu → lahir
+RAD-TENDRIL-RUANG-SERVIS, dikerjakan sesuai urutan §40. Paket
+aset/ruang01 kini 16 aset (seed 2021-2033): dinding & lantai PANEL
+beton (bukan bata), jeruji walkway (tangga+panggung+birai), kit pipa
+(horizontal tileable, siku, vertikal, katup), rak kabel plafon, rantai
+listrik lengkap §12 (tray → conduit → kotak sambung → panel listrik →
+kabel makan ke blok mesin), drain di mulut celah lantai (fiksi koridor
+rahasia = saluran air), lampu fluorescent + pendar, stripe peringatan
+hemat (§18). LATAR: model DUA KALI menggambar bata meski dilarang keras
+→ jangan lawan modelnya: latar DIDERIVASI prosedural (dasar polos +
+noda samar dari deviasi luminance panel dinding) di gen_ruang01.gd
+scratchpad. Uji 5-detik §39 pass ke-2: Q1-Q4 lolos. Sisa nit yang
+sadar-diri: motif dinding masih repetitif per tile; pipa horizontal
+samar (sengaja, midground §21); blok mesin masih slab polos.
+
+**Berikutnya: PLAYTEST ruang servis oleh pemilik proyek** (RAD §39 +
+SRD §30-31). Lalu sesuai arahan pemilik: kembali ke PENGKARAKTERAN
+karakter — lunasi utang lompat (effort/impact) & jatuh (KURANG
+membungkuk, belum kena impact), lalu OLR §34 GROW → ENERGY → CUT/DEATH
+→ REGROW → ABILITY. Phase 3-4 SRD (interaksi material, stealth)
+menunggu urutan pemilik. Utang lain: merambat belum berbahasa OLR;
+idle/detach/attach masih master pra-refine.

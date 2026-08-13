@@ -43,7 +43,29 @@ func _init(a):
 		var jalur = "res://aset/player/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			var t = load(jalur)
-			_anim[n] = {"tex": t, "n": max(1, t.get_width() / 32)}
+			var jml = max(1, t.get_width() / 32)
+			_anim[n] = {"tex": t, "n": jml, "geser": _pusat(t, jml)}
+
+
+# Badan karakter tidak di tengah kanvas 32 px (menumpuk di satu sisi) —
+# tanpa koreksi, ganti hadap membuat badan MELONCAT +-15 px (temuan
+# playtest pemilik). Ukur pusat massa horizontal rata-rata seluruh
+# frame strip sekali saat muat; _draw menggeser rect sebesar selisihnya
+# supaya badan selalu berpivot tepat di posisi avatar.
+func _pusat(tex, jml):
+	var img = tex.get_image()
+	img.convert(Image.FORMAT_RGBA8)
+	var jumlah = 0.0
+	var bobot = 0
+	for i in range(jml):
+		for y in range(img.get_height()):
+			for x in range(32):
+				if img.get_pixel(i * 32 + x, y).a >= 0.5:
+					jumlah += x
+					bobot += 1
+	if bobot == 0:
+		return 0.0
+	return 16.0 - jumlah / bobot   # positif = badan condong kiri kanvas
 
 
 func _process(delta):
@@ -111,8 +133,13 @@ func _process(delta):
 	elif _putar_t > 0.0:
 		_state = _putar
 	elif avatar.moda == avatar.MERAMBAT:
-		# placeholder: idle sampai animasi merambat player dibuat
-		_state = "idle_timur" if timur else "idle_barat"
+		# placeholder sampai animasi merambat player dibuat: BERGERAK di
+		# jaringan = crawl (lantai rumah adalah jaringan — tanpa ini
+		# jalan kiri/kanan terlihat diam, temuan playtest pemilik)
+		if bergerak:
+			_state = "crawl_timur" if timur else "crawl_barat"
+		else:
+			_state = "idle_timur" if timur else "idle_barat"
 	elif _darat_t > 0.0:
 		_state = "darat_pegas"
 	elif not avatar.di_tanah:
@@ -183,7 +210,7 @@ func _draw():
 		draw_set_transform(p, _miring * avatar.hadap,
 				Vector2(cermin, 1.0))
 		draw_texture_rect_region(a.tex,
-				Rect2(Vector2(-16.0, -10.0), Vector2(32.0, 32.0)),
+				Rect2(Vector2(-16.0 + a.geser, -10.0), Vector2(32.0, 32.0)),
 				Rect2(fr * 32.0, 0.0, 32.0, 32.0))
 		draw_set_transform_matrix(Transform2D())
 	else:

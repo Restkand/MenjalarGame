@@ -155,6 +155,7 @@ func _rambat(dt, i, world):
 		_tempel_jeda = Config.AVATAR_TEMPEL_JEDA
 		vel = Vector2(arah.x * Config.AVATAR_JALAN,
 				-Config.AVATAR_LOMPAT * 0.75)
+		_keluarkan_badan(world)
 		return
 
 	if arah == Vector2.ZERO:
@@ -166,11 +167,17 @@ func _rambat(dt, i, world):
 	# Kandidat yang tidak benar-benar bergerak DILEWATI — kandidat sumbu
 	# dengan komponen nol adalah "gerakan nol yang selalu sah" dan diam-diam
 	# menyumbat cabang tumbuh di bawah.
+	# Sel tujuan SAH bila jaringan tersentuh di KAKI atau BADAN (selaras
+	# aturan menempel y-2) dan selnya BUKAN beton — dua temuan playtest
+	# pemilik: (a) band +-1 membuat ujung merayap MASUK beton plafon lalu
+	# buntu; (b) kaki di lantai membulat ke sel padat di luar band garis
+	# sehingga gerak horizontal mati begitu menempel.
 	for calon in [pos + langkah, pos + Vector2(langkah.x, 0.0),
 			pos + Vector2(0.0, langkah.y)]:
 		if calon.distance_squared_to(pos) < 0.0001:
 			continue
-		if world.jaringan_di(int(round(calon.x)), int(round(calon.y))):
+		if _sel_rambat_sah(world, int(round(calon.x)),
+				int(round(calon.y)), int(round(calon.y - 2.0))):
 			pos = calon
 			return
 
@@ -182,7 +189,11 @@ func _rambat(dt, i, world):
 	var cx = int(round(tumbuh_ke.x))
 	var cy = int(round(tumbuh_ke.y))
 	if world.padat_avatar(cx, cy, di_dalam):
-		return
+		# kaki membulat ke sel padat (mis. berdiri di lantai): coba tumbuh
+		# di tinggi badan — memperpanjang garis di ketinggian garis itu
+		cy = int(round(tumbuh_ke.y - 2.0))
+		if world.padat_avatar(cx, cy, di_dalam):
+			return
 	var biaya = langkah.length() * Config.RAMBAT_TUMBUH_BIAYA
 	if energi <= biaya + 4.0:
 		return   # sisakan napas — jangan layu karena tumbuh
@@ -204,6 +215,17 @@ func _rambat(dt, i, world):
 	if jejak.is_empty() \
 			or jejak[jejak.size() - 1].pos.distance_to(pos) >= 1.5:
 		jejak.append({"pos": pos, "dalam": di_dalam})
+
+
+# sel tujuan merambat sah? jaringan tersentuh di ketinggian kaki ATAU
+# badan, dan sel yang dipakai bukan beton (ujung menempel di permukaan,
+# tidak menembus — menembus beton = urusan bor, GDD P7)
+func _sel_rambat_sah(world, cx, cy_kaki, cy_badan):
+	if world.jaringan_di(cx, cy_kaki) \
+			and not world.padat_avatar(cx, cy_kaki, di_dalam):
+		return true
+	return world.jaringan_di(cx, cy_badan) \
+			and not world.padat_avatar(cx, cy_badan, di_dalam)
 
 
 func _lepas(dt, i, world):
@@ -257,6 +279,23 @@ func _lepas(dt, i, world):
 	_cek_layu(world)
 
 
+# Merambat boleh menembus beton (jaringan menempel di permukaan), tapi
+# LEPAS tidak: saat melepaskan diri dari garis yang menempel plafon/
+# dinding, badan bisa sedang tumpang-tindih beton — dorong kaki TURUN
+# ke posisi legal dulu (turun = arah alami melepaskan diri). Terbatas:
+# kalau tidak ketemu posisi legal, batal turun (biarkan tabrakan yang
+# menahan) — jangan pernah teleport liar.
+func _keluarkan_badan(world):
+	var hw = Config.AVATAR_SETENGAH_LEBAR
+	var t = Config.AVATAR_TINGGI
+	if not _tabrak(world, pos.x, pos.y, hw, t):
+		return
+	for turun in range(1, int(t) + 4):
+		if not _tabrak(world, pos.x, pos.y + turun, hw, t):
+			pos.y += turun
+			return
+
+
 # layu: energi habis di luar jaringan — bangun di simpul terakhir
 # (termasuk kembali ke lapis tempat simpul itu ditanam)
 func _cek_layu(world):
@@ -289,11 +328,21 @@ func _gerak_tabrak(dt, world):
 		if vel.y > 0.0:
 			# rapatkan kaki FLUSH ke atas sel padat (x.99): tanpa ini avatar
 			# melayang 1 satuan lalu tenggelam pelan tiap frame, dan
-			# di_tanah berkedip sehingga lompatan sering tertelan
+			# di_tanah berkedip sehingga lompatan sering tertelan.
+			# TERBATAS 3 langkah: badan yang benar-benar terjepit di dalam
+			# massa (mis. terlepas di bawah garis plafon) tidak boleh
+			# memanjat tembus — apalagi beku di while tak berujung
+			# (temuan playtest pemilik: nyangkut di pojok kiri-atas).
+			var y_awal = pos.y
 			pos.y = floor(by)
-			while _tabrak(world, pos.x, pos.y, hw, t):
+			var naik = 0
+			while _tabrak(world, pos.x, pos.y, hw, t) and naik < 3:
 				pos.y -= 1.0
-			pos.y += 0.99
+				naik += 1
+			if _tabrak(world, pos.x, pos.y, hw, t):
+				pos.y = y_awal   # terjepit: tahan di posisi legal terakhir
+			else:
+				pos.y += 0.99
 		vel.y = 0.0
 
 	# di_tanah dari PROBE sel tepat di bawah kaki — stabil antar frame,

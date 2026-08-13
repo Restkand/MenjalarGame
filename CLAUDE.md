@@ -275,10 +275,21 @@ terinspirasi Splinter Cell" → sumbu stealth dipertajam sesuai resep RK
 - Kerucut kini 4 tingkat alpha di view (idle/scan/curiga/terdeteksi) —
   jendela aman vs bahaya terbaca tanpa teks.
 
-**Berikutnya → GERBANG Langkah 3 putaran 2**: pemilik mainkan tiga
-rute lagi. Pertanyaan sama: apakah memilih rute terasa seperti
-keputusan? Lolos → Langkah 4 (grading final DENGAN sensor menyala).
-JANGAN lanjut sebelum lolos.
+**MASTER A DIBUKA KEMBALI (14 Agustus, putusan pemilik)**: membaca
+ulang CDD §2-§5 + papan TRANSISI MODA + sketsa baru pemilik, Master A
+dinyatakan "sangat jauh dari harapan" — ia terbaca sebagai SELURUH
+TANAMAN mini, padahal CDD §2 kalimat pertama: pemain mengendalikan
+KEPALA SULUR MUDA (kepala bulat bercahaya berpucuk gulung, organisme
+mungil yang terlepas dari jaringan induk). CDD menang atas kunci ADR.
+Empat kandidat MASTER B digenerate (seed 4001-4004, palet CDD §7,
+48px): lembar seleksi di `aset/konsep_tendril/master_b_kandidat.png`
+(A ekor-sulur / B kaki-akar — paling dekat sketsa / C ubur-akar —
+paling bercahaya / D ujung-condong — paling "ujung dari jaringan").
+MENUNGGU PILIHAN & KUNCI PEMILIK. Sesudah terkunci: refine (inpaint
+bila perlu) → 12 animasi dibangun ulang dari resep yang sudah ada →
+SPP perlu revisi pemilik (prompt pack-nya ditulis untuk Master A).
+Gerbang RK Langkah 3 putaran 2 tetap antri, tapi karakter dulu sesuai
+arah pemilik.
 
 Sesudahnya sesuai RK: [2] sensor jadi nyata (tiga state SRD §13, warna
 kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga

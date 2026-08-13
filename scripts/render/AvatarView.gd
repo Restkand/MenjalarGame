@@ -207,8 +207,18 @@ func _draw():
 		var berarah = _state.begins_with("idle") \
 				or _state.begins_with("crawl") or _state.begins_with("putar")
 		var cermin = 1.0 if berarah else avatar.hadap
+		# SQUASH & STRETCH pegas dari kecepatan (koreksi feel pemilik:
+		# "tidak terasa dia melompat"): di udara badan MEREGANG mengikuti
+		# laju vertikal — makin kencang naik/turun makin panjang; saat
+		# darat, strip splat yang bicara. Frame antisipasi jongkok sudah
+		# dibuang dari strip lompat (antisipasi di udara terbaca janggal).
+		var regang = 0.0
+		if avatar.moda == avatar.LEPAS and not avatar.di_tanah:
+			regang = clamp(abs(avatar.vel.y) / Config.AVATAR_LOMPAT,
+					0.0, 1.0)
+		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
 		draw_set_transform(p, _miring * avatar.hadap,
-				Vector2(cermin, 1.0))
+				Vector2(cermin * skala.x, skala.y))
 		draw_texture_rect_region(a.tex,
 				Rect2(Vector2(-16.0 + a.geser, -10.0), Vector2(32.0, 32.0)),
 				Rect2(fr * 32.0, 0.0, 32.0, 32.0))

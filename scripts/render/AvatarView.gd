@@ -15,9 +15,8 @@ extends Node2D
 # Idle dipakai saat nyaris diam di moda mana pun: organisme harus
 # terlihat hidup justru ketika pemain diam (CDD Rule 8), 8-12 fps.
 const ANIM = ["idle_timur", "idle_barat", "crawl_timur", "crawl_barat",
-		"rambat_ujung", "rambat_ujung_senyap", "lompat_pegas",
-		"jatuh_pegas", "darat_pegas", "putar_kiri", "putar_kanan",
-		"detach", "attach"]
+		"lompat_pegas", "jatuh_pegas", "darat_pegas", "putar_kiri",
+		"putar_kanan", "detach", "attach"]
 
 var avatar
 var _t = 0.0
@@ -33,11 +32,6 @@ var _putar_t = 0.0        # sisa waktu animasi belok
 var _putar = ""           # "putar_kiri" (kanan→kiri) / "putar_kanan"
 var _udara_t = 0.0        # lama melayang — penggerak frame LOMPAT (play-once)
 var _darat_t = 0.0        # sisa waktu animasi mendarat (play-once)
-var _sudut_rambat = 0.0   # sudut gerak ujung tunas di jaringan (radian)
-var _state_seb = ""       # deteksi pergantian wujud -> transisi tumbuh
-var _tumbuh_t = 0.0       # sisa waktu transisi mekar
-var _tumbuh_total = 0.2
-var _tumbuh_dari = 1.0    # skala awal mekar
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
 
@@ -84,7 +78,9 @@ func _process(delta):
 	if avatar.moda != _moda_lalu:
 		if _moda_lalu != -1:
 			_transisi = "detach" if avatar.moda == avatar.LEPAS else "attach"
-			_transisi_t = 0.28 if _transisi == "detach" else 0.20
+			# morph 9f PixelLab: ujung atas rentang CDD §15-16 supaya
+			# transformasinya sempat terbaca
+			_transisi_t = 0.30 if _transisi == "detach" else 0.25
 		_moda_lalu = avatar.moda
 	_transisi_t = max(0.0, _transisi_t - delta)
 
@@ -115,17 +111,6 @@ func _process(delta):
 		_jarak += pindah
 	_pos_lalu = avatar.pos
 
-	# ujung tunas 8-ARAH (permintaan pemilik: natural ke mana pun):
-	# sudut mengikuti arah gerak KONTINU via lerp_angle — sprite ujung
-	# ~10px nyaris simetris, rotasi tidak pernah janggal; arah terbaca
-	# dari jejak daun yang tertanam, bukan dari sprite yang berputar.
-	# Berhenti = sudut terakhir dipertahankan (tanaman diam menghadap
-	# arah tumbuhnya).
-	if avatar.moda == avatar.MERAMBAT and bergerak and pindah > 0.001:
-		var v = gerak / pindah
-		_sudut_rambat = lerp_angle(_sudut_rambat, atan2(v.y, v.x),
-				clamp(delta * 8.0, 0.0, 1.0))
-
 	# udara & pendaratan (OLR §34, setelah crawl lulus playtest): LOMPAT
 	# maju berbasis lama melayang (play-once), DARAT menyala di tepi
 	# menyentuh tanah kembali — hanya bermakna di moda LEPAS
@@ -148,20 +133,12 @@ func _process(delta):
 	elif _putar_t > 0.0:
 		_state = _putar
 	elif avatar.moda == avatar.MERAMBAT:
-		# WUJUD GANDA (putusan pemilik, membayar CDD §11 vs §14): di
-		# jaringan pemain BUKAN makhluk imut — ia tanaman murni tanpa
-		# wajah. Bergerak = undulasi terang; diam = SENYAP gelap
-		# (kamuflase yang selama ini cuma aturan sensor jadi terlihat).
-		if bergerak:
-			if _anim.has("rambat_ujung"):
-				_state = "rambat_ujung"
-			else:
-				# cadangan lama: crawl (kalau strip ujung hilang)
-				_state = "crawl_timur" if timur else "crawl_barat"
-		elif _anim.has("rambat_ujung_senyap"):
-			_state = "rambat_ujung_senyap"
-		else:
-			_state = "idle_timur" if timur else "idle_barat"
+		# WUJUD AKHIR (putusan pemilik): di jaringan pemain TIDAK punya
+		# sprite sama sekali — ia ADALAH pertumbuhan itu sendiri. Posisi
+		# dibawa kepala jejak daun (DaunView) + pendar cahaya avatar.
+		# Satu-satunya saat wujud terlihat berubah = transisi detach/
+		# attach (morph PixelLab).
+		_state = "rambat_sembunyi"
 	elif _darat_t > 0.0:
 		_state = "darat_pegas"
 	elif not avatar.di_tanah:
@@ -171,28 +148,6 @@ func _process(delta):
 		_state = "crawl_timur" if timur else "crawl_barat"
 	else:
 		_state = "idle_timur" if timur else "idle_barat"
-
-	# TRANSISI TUMBUH (koreksi pemilik: idle -> merambat terlalu patah):
-	# tiap pergantian wujud, sprite baru MEKAR dari kecil — masuk moda
-	# rambat = tunas menyembul dari garis, keluar = makhluk mekar
-	# kembali; antar-wujud rambat (gerak<->senyap) hanya denyut halus.
-	if _state != _state_seb:
-		var rambat_baru = _state.begins_with("rambat")
-		var rambat_lama = _state_seb.begins_with("rambat")
-		if rambat_baru and not rambat_lama:
-			_tumbuh_total = 0.2
-			_tumbuh_t = 0.2
-			_tumbuh_dari = 0.35
-		elif rambat_baru and rambat_lama:
-			_tumbuh_total = 0.12
-			_tumbuh_t = 0.12
-			_tumbuh_dari = 0.8
-		elif rambat_lama:
-			_tumbuh_total = 0.16
-			_tumbuh_t = 0.16
-			_tumbuh_dari = 0.5
-		_state_seb = _state
-	_tumbuh_t = max(0.0, _tumbuh_t - delta)
 
 	queue_redraw()
 
@@ -219,7 +174,7 @@ func _draw():
 		var fr
 		if _state == "detach" or _state == "attach":
 			# transisi diputar SEKALI, maju sesuai sisa waktunya
-			var total = 0.28 if _state == "detach" else 0.20
+			var total = 0.30 if _state == "detach" else 0.25
 			var maju = 1.0 - _transisi_t / total
 			fr = int(clamp(maju * a.n, 0.0, a.n - 1.0))
 		elif _state == "putar_kiri" or _state == "putar_kanan":
@@ -235,9 +190,6 @@ func _draw():
 		elif _state == "darat_pegas":
 			# splat mendarat diputar SEKALI, maju sesuai sisa waktunya
 			fr = int(clamp((1.0 - _darat_t / 0.18) * a.n, 0.0, a.n - 1.0))
-		elif _state == "rambat_ujung_senyap":
-			# senyap: sisa napas sangat pelan — nyaris benda mati
-			fr = int(_t * 3.0) % a.n
 		elif _state.begins_with("idle"):
 			# idle berbasis waktu, 8 fps — napas pelan (papan: 8-12 fps)
 			fr = int(_t * 8.0) % a.n
@@ -252,8 +204,7 @@ func _draw():
 		# sebelum rotasi, jadi condongan dikalikan hadap supaya selalu
 		# ke depan.
 		var berarah = _state.begins_with("idle") \
-				or _state.begins_with("crawl") or _state.begins_with("putar") \
-				or _state.begins_with("rambat")
+				or _state.begins_with("crawl") or _state.begins_with("putar")
 		var cermin = 1.0 if berarah else avatar.hadap
 		# SQUASH & STRETCH pegas dari kecepatan (koreksi feel pemilik:
 		# "tidak terasa dia melompat"): di udara badan MEREGANG mengikuti
@@ -265,31 +216,14 @@ func _draw():
 			regang = clamp(abs(avatar.vel.y) / Config.AVATAR_LOMPAT,
 					0.0, 1.0)
 		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
-		if _tumbuh_t > 0.0:
-			var mekar = _tumbuh_dari + (1.0 - _tumbuh_dari) \
-					* (1.0 - _tumbuh_t / _tumbuh_total)
-			skala *= mekar
-		var rotasi = 0.0
-		# wujud untaian rambat: BERPIVOT DI GARIS (posisi avatar = titik
-		# di garis jaringan) dan rect terpusat — batang untaian (tengah
-		# kanvas) jatuh tepat di garis sehingga daunnya membungkus garis,
-		# bukan berdiri di atasnya (koreksi pemilik). Rotasi panjat
-		# vertikal berputar di garis yang sama.
-		var untai = _state.begins_with("rambat")
-		var pivot = p
-		var rect_y = -10.0
-		if untai:
-			pivot = avatar.pos * float(Config.PPU)
-			rect_y = -16.0
-			rotasi = _sudut_rambat
-		draw_set_transform(pivot, rotasi,
-				Vector2(cermin * skala.x, skala.y))
+		draw_set_transform(p, 0.0, Vector2(cermin * skala.x, skala.y))
 		draw_texture_rect_region(a.tex,
-				Rect2(Vector2(-16.0 + a.geser, rect_y), Vector2(32.0, 32.0)),
+				Rect2(Vector2(-16.0 + a.geser, -10.0), Vector2(32.0, 32.0)),
 				Rect2(fr * 32.0, 0.0, 32.0, 32.0))
 		draw_set_transform_matrix(Transform2D())
-	else:
-		# cadangan prosedural bila strip belum ada
+	elif _state != "rambat_sembunyi":
+		# cadangan prosedural bila strip belum ada; "rambat_sembunyi"
+		# SENGAJA tanpa gambar — pemain = pertumbuhan itu sendiri
 		draw_circle(p, 6.0, Color("4F8F32"))
 		draw_circle(p + Vector2(-2.0, -2.0), 3.0, Color("A8D94A"))
 

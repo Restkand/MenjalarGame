@@ -376,8 +376,19 @@ Terverifikasi deterministik (blok uji dibuang): rata-rata denyut
 ±15% RAMBAT, 67 gumpalan / 108 satuan. Strip untai besar DIHAPUS;
 grup climb imut akun arsip. Penggelapan tangga-palet = resep GRATIS
 (iris_ujung di scratchpad).
-Sisa set: detach/attach = MOMEN TRANSFORMASI imut<->tanaman (beat
-horor kunci berikutnya) -> belok.
+WUJUD AKHIR RAMBAT (putusan pemilik 15 Agu): saat merambat TIDAK ADA
+sprite avatar sama sekali — pemain = pertumbuhan itu sendiri (kepala
+jejak daun DaunView + pendar cahaya = penanda posisi; state
+"rambat_sembunyi" di view sengaja tanpa gambar, jumbai/ujung
+dihapus). TRANSFORMASI DETACH/ATTACH SELESAI (izin boros pemilik,
+2 generasi): attach.png = makhluk meleleh jadi gundukan daun lalu
+pudar (2 frame ekor alfa 70/35%; Avatar menanam gumpalan NYATA di
+titik melebur = serah-terima mulus), detach.png = menyembul liar
+dari dedaunan (frame awal pudar 50%); grup akun ubah_menempel/
+ubah_melepas; durasi 0.25/0.30 = ujung atas rentang CDD §15-16
+(kalau pemilik ingin morph lebih dramatis, angkanya di AvatarView —
+melampaui rentang CDD = keputusan pemilik). Sisa set: belok
+(opsional).
 SPP perlu revisi pemilik (ditulis untuk Master A). Gerbang RK
 Langkah 3 putaran 2 tetap antri setelah karakter berdiri.
 

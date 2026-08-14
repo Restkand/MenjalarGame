@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwd08q5tqjq5h"
-path="res://.godot/imported/rambat_ujung.png-7cbdd5378e686e23d6e40bb6b8a8ac6c.ctex"
+uid="uid://coixcqv56hm0w"
+path="res://.godot/imported/attach.png-c104ed441ecf32545bc2e26220650513.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://aset/player/rambat_ujung.png"
-dest_files=["res://.godot/imported/rambat_ujung.png-7cbdd5378e686e23d6e40bb6b8a8ac6c.ctex"]
+source_file="res://aset/player/attach.png"
+dest_files=["res://.godot/imported/attach.png-c104ed441ecf32545bc2e26220650513.ctex"]
 
 [params]
 

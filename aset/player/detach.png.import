@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://3vo60h1x6uca"
-path="res://.godot/imported/rambat_ujung_senyap.png-9289660f56bc34eed246f83f67ddb479.ctex"
+uid="uid://g4x2afknkbi3"
+path="res://.godot/imported/detach.png-53b0a28cc6b7b51fcf1cfd10051b4a83.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://aset/player/rambat_ujung_senyap.png"
-dest_files=["res://.godot/imported/rambat_ujung_senyap.png-9289660f56bc34eed246f83f67ddb479.ctex"]
+source_file="res://aset/player/detach.png"
+dest_files=["res://.godot/imported/detach.png-53b0a28cc6b7b51fcf1cfd10051b4a83.ctex"]
 
 [params]
 

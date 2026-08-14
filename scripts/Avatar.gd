@@ -286,6 +286,11 @@ func _lepas(dt, i, world):
 		vel = Vector2()
 		_melompat = false
 		simpul = pos
+		# gumpalan ditanam TEPAT di titik melebur: akhir animasi attach
+		# (makhluk luruh jadi dedaunan) diserahterimakan ke gumpalan
+		# nyata — tubuh benar-benar "menjadi tanaman di sini"
+		jejak_daun.append({"pos": pos, "sudut": 0.0,
+				"varian": jejak_daun.size() % 3, "dalam": di_dalam})
 		return
 
 	# coyote & buffer: pengampunan waktu khas platformer yang enak

@@ -35,7 +35,7 @@ func _init(w):
 			"pipa_siku", "katup", "rak_kabel", "kabel", "saluran", "sensor",
 			"retak", "panel_v3", "kotak_sambung", "lampu", "flange",
 			"bracket", "noda_air", "sulur_jaringan", "materi_lembap",
-			"materi_retak"]:
+			"materi_retak", "tangki_air"]:
 		var jalur = "res://aset/ruang01/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			_tex[n] = load(jalur)
@@ -138,6 +138,11 @@ func _draw():
 		draw_texture_rect(_tex.noda_air, Rect2(276, 408, 32, 32), false)
 		draw_texture_rect(_tex.noda_air, Rect2(920, 320, 32, 32), false)
 		draw_texture_rect(_tex.noda_air, Rect2(430, 96, 32, 32), false)
+	# demo create_map_object side-view (RK Langkah 4 kelak: prop servis
+	# tambahan lewat jalur ini): tangki air menapak lantai sisi kanan
+	if _tex.has("tangki_air"):
+		draw_texture_rect(_tex.tangki_air, Rect2(1660, 800, 64, 96),
+				false)
 	if _tex.has("saluran"):
 		draw_texture_rect(_tex.saluran, Rect2(256, 434, 32, 16), false)
 	if _tex.has("retak"):

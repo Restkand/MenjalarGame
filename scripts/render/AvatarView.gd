@@ -32,7 +32,8 @@ var _putar_t = 0.0        # sisa waktu animasi belok
 var _putar = ""           # "putar_kiri" (kanan→kiri) / "putar_kanan"
 var _udara_t = 0.0        # lama melayang — penggerak frame LOMPAT (play-once)
 var _darat_t = 0.0        # sisa waktu animasi mendarat (play-once)
-var _vertikal = 0         # merambat vertikal: 1 naik / -1 turun / 0 datar
+var _sudut_rambat = 0.0   # sudut gerak untaian di jaringan (radian)
+var _rambat_timur = true  # strip untaian: timur (ujung kanan) / barat
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
 
@@ -110,13 +111,21 @@ func _process(delta):
 		_jarak += pindah
 	_pos_lalu = avatar.pos
 
-	# merambat vertikal (garis dinding): kepala memimpin arah panjat —
-	# sprite timur diputar 90 derajat (naik = kepala atas; turun = kepala
-	# bawah, selaras Growing Tip Downward Rule OLR)
-	_vertikal = 0
-	if avatar.moda == avatar.MERAMBAT and bergerak \
-			and abs(gerak.y) > abs(gerak.x) * 1.4:
-		_vertikal = 1 if gerak.y < 0.0 else -1
+	# untaian rambat 8-ARAH (permintaan pemilik: natural ke mana pun,
+	# seperti tanaman merambat): sudut gambar mengikuti arah gerak di
+	# jaringan secara KONTINU, dihaluskan lerp_angle supaya tikungan
+	# melengkung organik. Kiri-an memakai strip barat (ujung menggulung
+	# tetap memimpin, tidak pernah terbalik). Saat berhenti, sudut
+	# terakhir DIPERTAHANKAN — tanaman diam menghadap arah tumbuhnya.
+	if avatar.moda == avatar.MERAMBAT and bergerak and pindah > 0.001:
+		var v = gerak / pindah
+		if abs(v.x) > 0.05:
+			_rambat_timur = v.x > 0.0
+		var target_sudut = atan2(v.y, v.x)
+		if not _rambat_timur:
+			target_sudut = wrapf(target_sudut - PI, -PI, PI)
+		_sudut_rambat = lerp_angle(_sudut_rambat, target_sudut,
+				clamp(delta * 8.0, 0.0, 1.0))
 
 	# udara & pendaratan (OLR §34, setelah crawl lulus playtest): LOMPAT
 	# maju berbasis lama melayang (play-once), DARAT menyala di tepi
@@ -150,11 +159,9 @@ func _process(delta):
 		# (kamuflase yang selama ini cuma aturan sensor jadi terlihat).
 		if bergerak:
 			if _anim.has("merambat_timur"):
-				# vertikal: selalu strip timur — heading dibawa rotasi
-				if _vertikal != 0:
-					_state = "merambat_timur"
-				else:
-					_state = "merambat_timur" if timur else "merambat_barat"
+				# strip dipilih dari arah gerak; sudut kontinu di gambar
+				_state = "merambat_timur" if _rambat_timur \
+						else "merambat_barat"
 			else:
 				# cadangan lama: crawl (kalau strip merambat hilang)
 				_state = "crawl_timur" if timur else "crawl_barat"
@@ -233,6 +240,8 @@ func _draw():
 				or _state.begins_with("crawl") or _state.begins_with("putar") \
 				or _state.begins_with("merambat") or _state == "rambat_senyap"
 		var cermin = 1.0 if berarah else avatar.hadap
+		if _state == "rambat_senyap" and not _rambat_timur:
+			cermin = -1.0   # senyap satu strip: cermin ikut arah terakhir
 		# SQUASH & STRETCH pegas dari kecepatan (koreksi feel pemilik:
 		# "tidak terasa dia melompat"): di udara badan MEREGANG mengikuti
 		# laju vertikal — makin kencang naik/turun makin panjang; saat
@@ -256,8 +265,7 @@ func _draw():
 		if untai:
 			pivot = avatar.pos * float(Config.PPU)
 			rect_y = -16.0
-			if _vertikal != 0:
-				rotasi = -PI * 0.5 * _vertikal
+			rotasi = _sudut_rambat
 		draw_set_transform(pivot, rotasi,
 				Vector2(cermin * skala.x, skala.y))
 		draw_texture_rect_region(a.tex,

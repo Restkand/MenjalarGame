@@ -360,8 +360,11 @@ Bergerak = merambat_timur/barat 8f undulasi gelombang-kolom
 DETERMINISTIK (nol generasi); diam = rambat_senyap 4f GELAP dua
 tangga palet, napas 3 fps — kamuflase sensor akhirnya TERLIHAT;
 identitas pemain saat merambat murni dari gerak (arah horor
-"membunuh dalam diam" pemilik). Panjat vertikal: strip timur
-dirotasi 90 derajat berpivot di garis (OLR). Grup animasi "merambat"
+"membunuh dalam diam" pemilik). Arah gambar 8-ARAH KONTINU
+(permintaan pemilik): sudut mengikuti arah gerak via lerp_angle
+(tikungan melengkung organik), kiri-an pakai strip barat (ujung tak
+pernah terbalik), diam mempertahankan sudut terakhir, semua berpivot
+di garis. Grup animasi "merambat"
 (climb imut) di akun TIDAK terpakai — arsip. Penggelapan
 tangga-palet = resep GRATIS untuk frame apa pun (gelap_rambat/
 susun_untai di scratchpad).

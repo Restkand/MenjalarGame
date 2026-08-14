@@ -482,17 +482,22 @@ const C_RETAK     = Color("3A3A36")
 # PIVOT IV (docs/13) — P1: avatar dua moda
 # ---------------------------------------------------------------------------
 # Semua kecepatan/percepatan dalam SATUAN simulasi per detik.
-var AVATAR_RAMBAT      = 34.0   # laju gerak di jaringan (moda MERAMBAT)
-# denyut tumbuh BERBEBAN (playtest pemilik: AVATAR_RAMBAT = laju PUNCAK
-# juluran; cengkeram melambat dalam, rata-rata efektif ~72% puncak)
+# PAKET BEBAN FISIKA (playtest pemilik 15 Agu: semua gerak diperlambat
+# supaya berbobot, tidak menggelincir). Invarian dijaga: urutan kanon
+# jalan < lari < rambat-puncak (GDD §6.1/§7), dan tinggi lompat tetap
+# ±9.2 satuan (anak tangga peti 8 satuan HARUS tetap terlompati —
+# LOMPAT^2 / (2*GRAV)).
+var AVATAR_RAMBAT      = 27.0   # laju PUNCAK juluran di jaringan
+# denyut tumbuh: cengkeram melambat dalam, rata-rata efektif ~72% puncak
 var RAMBAT_DENYUT       = 1.1   # detik satu siklus julur-cengkeram
 var RAMBAT_DENYUT_DASAR = 0.25  # laju terendah saat mencengkeram (0..1)
 var RAMBAT_DAUN_JARAK   = 1.6   # satuan antar gumpalan daun tertanam
 var RAMBAT_DAUN_MAX     = 600   # gumpalan tertanam terbanyak (ring)
-var AVATAR_JALAN       = 24.0   # laju horizontal maksimum saat LEPAS
-var AVATAR_ACCEL       = 160.0  # percepatan horizontal LEPAS
-var AVATAR_GRAV        = 210.0  # gravitasi LEPAS
-var AVATAR_LOMPAT      = 62.0   # impuls lompat (ke atas)
+var AVATAR_JALAN       = 17.0   # laju horizontal maksimum saat LEPAS
+var AVATAR_ACCEL       = 60.0   # gas: ~0.3 dtk menuju laju penuh
+var AVATAR_REM         = 100.0  # rem: berhenti/berbalik lebih cengkeram
+var AVATAR_GRAV        = 250.0  # gravitasi: jatuh lebih berbobot
+var AVATAR_LOMPAT      = 68.0   # impuls lompat (tinggi ~9.25 terjaga)
 var AVATAR_LOMPAT_BIAYA = 3.0   # energi per lompatan
 var AVATAR_ENERGI_MAX  = 100.0
 var AVATAR_REGEN       = 7.0    # pemulihan energi per detik di jaringan
@@ -525,9 +530,9 @@ const BUFFER_LOMPAT   = 0.12    # lompat ditekan sesaat sebelum mendarat
 const LOMPAT_POTONG   = 0.45    # pengali vel.y saat tombol lompat dilepas dini
 
 # GDD §7 + §9 (perbaikan penyimpangan #2): RUN dasar & biaya bergradasi.
-# LARI sengaja DI BAWAH laju merambat (34) — §6.1: merambat harus terasa
-# lebih cepat daripada LEPAS. Kuras = AVATAR_KURAS x faktor keadaan.
-var AVATAR_LARI  = 32.0    # laju horizontal saat Shift ditahan (LEPAS)
+# LARI sengaja DI BAWAH laju rambat-puncak (27) — §6.1: merambat harus
+# terasa lebih cepat daripada LEPAS. Kuras = AVATAR_KURAS x faktor.
+var AVATAR_LARI  = 24.0    # laju horizontal saat Shift ditahan (LEPAS)
 var KURAS_DIAM   = 0.5     # faktor kuras saat diam           (§9: kecil)
 var KURAS_LARI   = 1.8     # faktor kuras saat berlari        (§9: sedang)
 

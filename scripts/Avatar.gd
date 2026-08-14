@@ -297,11 +297,16 @@ func _lepas(dt, i, world):
 	_coyote = Config.COYOTE_DETIK if di_tanah else max(0.0, _coyote - dt)
 	_buffer = Config.BUFFER_LOMPAT if i.lompat else max(0.0, _buffer - dt)
 
-	# horizontal: akselerasi menuju target — RUN dasar GDD §7 saat Shift
-	# ditahan (tetap di bawah laju merambat, §6.1)
+	# horizontal: GAS pelan (badan berbobot butuh waktu mencapai laju),
+	# REM lebih cengkeram saat berhenti/berbalik — tanpa pemisahan ini
+	# gerak terasa menggelincir (playtest pemilik). RUN = Shift (GDD §7,
+	# tetap di bawah rambat-puncak §6.1).
 	var laju = Config.AVATAR_LARI if i.lari else Config.AVATAR_JALAN
 	var target = i.arah.x * laju
-	vel.x = move_toward(vel.x, target, Config.AVATAR_ACCEL * dt)
+	var dorong = Config.AVATAR_ACCEL
+	if i.arah.x == 0.0 or (vel.x != 0.0 and signf(target) != signf(vel.x)):
+		dorong = Config.AVATAR_REM
+	vel.x = move_toward(vel.x, target, dorong * dt)
 	# vertikal: gravitasi + lompat (tanah ATAU sisa coyote)
 	vel.y += Config.AVATAR_GRAV * dt
 	if _buffer > 0.0 and (di_tanah or _coyote > 0.0) \

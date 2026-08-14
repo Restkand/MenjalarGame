@@ -15,8 +15,11 @@ var sensor_state = 0
 var _state_lalu = -1
 var _tex = {}
 
-const C_JARING = Color("6FBF3E")   # green base §3.1
-const C_DAUN   = Color("A8E85C")   # green highlight
+# DIGELAPKAN (playtest pemilik: vegetasi terlalu terang, kurang horor)
+# — massa tanaman tenggelam ke rona gelap; satu-satunya hijau menyala
+# di layar adalah UJUNG yang hidup (aturan value EDV3 justru menguat)
+const C_JARING = Color("3E7A32")   # green base §3.1, tangga gelap
+const C_DAUN   = Color("4F8F32")   # aksen daun redup
 const C_BAYANG = Color("0B0E12")
 const C_LOGAM  = Color("1B2128")   # rod/balok penopang
 const C_KABEL  = Color("1B2128")
@@ -30,7 +33,7 @@ func _init(w):
 	for n in ["atlas_beton", "atlas_baja", "latar", "pipa", "pipa_h",
 			"pipa_siku", "katup", "rak_kabel", "kabel", "saluran", "sensor",
 			"retak", "panel_v3", "kotak_sambung", "lampu", "flange",
-			"bracket", "noda_air"]:
+			"bracket", "noda_air", "sulur_jaringan"]:
 		var jalur = "res://aset/ruang01/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			_tex[n] = load(jalur)
@@ -140,28 +143,39 @@ func _draw():
 	_stripe(Vector2(676, 442))
 	_stripe(Vector2(324, 154))
 
-	# BIOLOGICAL INVASION: jaringan hijau — satu-satunya elemen terang
+	# BIOLOGICAL INVASION: jaringan benih = SULUR BERGAMBAR (permintaan
+	# pemilik: garis + bulatan prosedural diganti model tanaman generate
+	# seed 1301) — tekstur diubin sepanjang segmen, dirotasi mengikuti
+	# arahnya; garis lama tinggal cadangan bila tekstur hilang
 	for seg in world.jalur_seed:
 		var a = seg[0] * ppu
 		var b = seg[1] * ppu
-		draw_line(a, b, C_JARING, 3.0)
-		var jarak = a.distance_to(b)
-		var n = int(jarak / (10.0 * ppu))
-		for i in range(n + 1):
-			var p = a.lerp(b, float(i) / float(max(1, n)))
-			var sisi = 1.0 if i % 2 == 0 else -1.0
-			var arah = (b - a).normalized()
-			var normal = Vector2(-arah.y, arah.x) * sisi * 4.0
-			draw_circle(p + normal, 3.0, C_DAUN)
+		if _tex.has("sulur_jaringan"):
+			var tex_s = _tex.sulur_jaringan
+			var tw = float(tex_s.get_width())
+			var th = float(tex_s.get_height())
+			var v = b - a
+			draw_set_transform(a, v.angle(), Vector2.ONE)
+			var pjg = v.length()
+			var x = 0.0
+			while x < pjg:
+				var w = min(tw, pjg - x)
+				draw_texture_rect_region(tex_s,
+						Rect2(x, -th * 0.5, w, th),
+						Rect2(0.0, 0.0, w, th))
+				x += tw
+			draw_set_transform_matrix(Transform2D())
+		else:
+			draw_line(a, b, C_JARING, 3.0)
 
 	# GDD §39 (penyimpangan #1): dua penanda MVP, bahasa bentuk tanpa teks
 	# — NODE kelahiran di jaringan rumah (§6.2: checkpoint/respawn) dan
 	# KEBOCORAN KATUP sebagai sumber air (§16; cincin minum di AvatarView
 	# yang mengabarkan saat menghisap)
 	var np = world.node_pos * ppu
-	draw_circle(np, 7.0, Color("3E7A32"))
-	draw_circle(np, 4.0, Color("6FBF3E"))
-	draw_circle(np + Vector2(-1.0, -1.0), 1.6, Color("A8E85C"))
+	draw_circle(np, 7.0, Color("285B2B"))
+	draw_circle(np, 4.0, Color("3E7A32"))
+	draw_circle(np + Vector2(-1.0, -1.0), 1.6, Color("79B83F"))
 	var ap = world.air_pos * ppu
 	var tetes = Color("8FA3AE")
 	tetes.a = 0.55

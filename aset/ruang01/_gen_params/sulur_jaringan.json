@@ -1,0 +1,8 @@
+{
+  "alat": "create_image_pixflux",
+  "seed": 1301,
+  "ukuran": "96x32 -> trim pita 96x16",
+  "deskripsi": "long thin creeping vine strand lying horizontally across the whole image, dark woody stem with small dark green leaves along it, flat repeating edge-to-edge, no border, side view, moody overgrown plant",
+  "palet_paksa": ["102016", "19351E", "285B2B", "4F8F32", "5C4433", "7A5C3A"],
+  "catatan": "pengganti garis+bulatan prosedural jaringan benih (permintaan pemilik); Ruang01View mengubinnya sepanjang segmen jalur_seed, dirotasi mengikuti arah segmen"
+}

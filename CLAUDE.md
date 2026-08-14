@@ -3,7 +3,7 @@
 **GROW. HIDE. SURVIVE.** Metroidvania 2D pixel art: ujung tumbuh tanaman
 merambat menjadikan sebuah gedung sebagai tubuhnya.
 
-## Sumber kebenaran desain (SEMUA ditulis pemilik proyek) — 7 AKTIF
+## Sumber kebenaran desain (SEMUA ditulis pemilik proyek) — 8 AKTIF
 
 1. **`docs/GDD-TENDRIL.md`** — desain game menyeluruh (45 bagian).
 2. **`docs/SPP-TENDRIL-SPRITE.md`** — prompt pack produksi sprite (63
@@ -44,6 +44,17 @@ merambat menjadikan sebuah gedung sebagai tubuhnya.
    rendah, merah=diburu, ungu=racun, biru-putih=listrik), LIMA tahap,
    proporsi (karakter 16–32 px < manusia 32–48 px), 8 Design Rules
    (§42), north star: "Kecil sebagai individu. Besar sebagai jaringan."
+8. **`docs/SRD-TENDRIL-RUANG00-LAB.md`** — RUANG 00: Lab Botani
+   (kelahiran + tutorial 4 mekanik tanpa teks). Putusan pemilik 15 Agu:
+   dokumen lab-nya (semula kandidat Room 01) dijadikan ruangan PEMBUKA,
+   posisi = ruang tersembunyi bertetangga Room 01 (lorong keluar lab →
+   ruang servis; dari sisi Room 01 tersamar, kandidat: gril ventilasi /
+   ujung koridor drain §19), ukuran diciutkan 60×20 → ±32×14 (GDD §39).
+   Aturan permukaan §5 (kaca mati, baja menolak, basah cepat) sejalan
+   matriks SRD Room 01 §10. Grow light JANGAN ungu (bentrok status
+   racun CDD §7). Prompt di dalamnya = referensi niat pra-EDV3 — tulis
+   ulang lewat EDV3 §4 saat produksi. DIPRODUKSI SETELAH gerbang RK
+   Langkah 3 lolos; amendemen SRD Room 01 §19/§38 menunggu pemilik.
 
 **Dokumen HISTORIS** (alasan desain tersimpan, bercap `> HISTORIS` di
 kepalanya masing-masing — JANGAN dipakai sebagai acuan aktif):
@@ -254,7 +265,19 @@ perintah pemilik)** — audit lengkap lihat riwayat percakapan/commit:
   kini {arah, lompat, lompat_tahan, lari, masuk}.
 - Utang yang SENGAJA belum: wujud sprite per tahap CDD (art), #4-#9
   audit (semantik state → RK Langkah 5; kamuflase-berdaun; upacara
-  kematian; UI; §38 grading → Langkah 4; struktur folder).
+  kematian; §38 grading → Langkah 4; struktur folder). UI LUNAS 15 Agu:
+  `render/Hud.gd` = HUD minimal GDD §31 di CanvasLayer (ENERGI bar 10
+  sel + MODA + VISIBILITAS TERSEMBUNYI/TERSAMAR/WASPADA/TERDETEKSI,
+  warna CDD §7, memudar saat nominal, bingkai kuning saat regen ditolak,
+  kedip gelap konsumen event layu_baru; ability [Q]/[E] SENGAJA belum —
+  Phase 7). Bar mini di atas kepala avatar dicabut dari AvatarView.
+  UX 15 Agu (permintaan pemilik "tidak paham memencet apa"): AUTO-TEMPEL
+  DIHAPUS — menempel kini DISENGAJA gaya tangga (sentuh garis + W/S;
+  `avatar.bisa_tempel` = petunjuk kontekstual di HUD "[W/S] MERAMBAT" /
+  "[SPASI] LEPAS"); LEPAS murni platformer di beton tileset. MENU JEDA
+  `render/MenuJeda.gd` (ESC buka/tutup, R ulang; main process ALWAYS +
+  anak PAUSABLE, logika _process dipagari paused) sekaligus kartu
+  KENDALI. Terverifikasi deterministik (blok uji dibuang).
 
 **Gerbang Langkah 3, putaran 1 (14 Agustus)**: putusan pemilik —
 "memilih rute HARUS terasa seperti keputusan; ini stealth game
@@ -319,10 +342,53 @@ mentah kolom tepi ditutup outline (audit 0 luka). Frame mentah
 utuh di akun (grup lompat_pegas/jatuh_pegas/darat_pegas).
 **AvatarView SUDAH DIALIHKAN ke aset/player 15 Agu** (rect 32px,
 kaki sejajar posisi lama): idle/crawl BERARAH digambar apa adanya,
-strip pegas dicermin hadap; MERAMBAT = placeholder idle sampai
-animasi merambat dibuat; belok/detach/attach nonaktif otomatis
+strip pegas dicermin hadap; belok/detach/attach nonaktif otomatis
 (pagar has()) sampai strip player-nya ada. Master A resmi pensiun
-dari view. Sisa set: merambat -> detach/attach -> belok.
+dari view.
+MERAMBAT SELESAI 15 Agu sebagai WUJUD GANDA (putusan pemilik —
+membayar sebagian utang CDD §11 vs §14): di jaringan pemain BUKAN
+makhluk imut — wujud TANAMAN MURNI tanpa wajah. Bentuk final =
+UNTAIAN DAUN seed 1222 (pixflux 64x32 lebar-pendek — trik kanvas
+memaksa komposisi mendatar; gumpalan daun MEMBUNGKUS garis jaringan,
+ujung menggulung memimpin; view menggambar berpivot DI garis dengan
+rect terpusat). Iterasi penting: bentuk sulur-S tegak (seed 1201)
+sempat dipasang lalu DITOLAK pemilik — "terbaca tentakel berjalan,
+tidak natural"; pelajaran: wujud rambat harus MENYATU dengan garis,
+bukan berdiri di atasnya. Semua kandidat/alasan di
+aset/player/_gen_params/wujud_rambat.json.
+MODEL FINAL 15 Agu (kritik pemilik atas strip untai yang "seperti
+cacing meluncur"): TANAMAN TUMBUH, TIDAK BERPINDAH — arsitektur
+"ujung = avatar, tubuh = jejak":
+- avatar rambat = rambat_ujung 4f, tunas ~10px diiris dari untai
+  seed 1222, berpivot DI garis, sudut 8-arah kontinu lerp_angle
+  (sprite sekecil ini bebas rotasi janggal);
+- tubuh = JEJAK DAUN yang DITANAM Avatar tiap RAMBAT_DAUN_JARAK
+  (avatar.jejak_daun ring RAMBAT_DAUN_MAX, digambar DaunView baru;
+  gumpalan diiris dari untai yang sama, gelap SATU tangga — ujung
+  hidup selalu paling terang, EDV3 §3.1) — ruangan menghijau di
+  jalur yang dilalui, "menyatu dengan ekosistem" pemilik;
+- diam = rambat_ujung_senyap (gelap satu tangga = SENADA gumpalan
+  tertanam -> pemain lenyap ke dedaunan yang ia tanam sendiri);
+- DENYUT TUMBUH di Avatar._rambat (julur-cengkeram sin^0.7,
+  Config.RAMBAT_DENYUT/RAMBAT_DENYUT_DASAR, rata-rata DINORMALKAN
+  tetap AVATAR_RAMBAT — GDD §6.1 aman) = jawaban "meluncur di es".
+Terverifikasi deterministik (blok uji dibuang): rata-rata denyut
+±15% RAMBAT, 67 gumpalan / 108 satuan. Strip untai besar DIHAPUS;
+grup climb imut akun arsip. Penggelapan tangga-palet = resep GRATIS
+(iris_ujung di scratchpad).
+WUJUD AKHIR RAMBAT (putusan pemilik 15 Agu): saat merambat TIDAK ADA
+sprite avatar sama sekali — pemain = pertumbuhan itu sendiri (kepala
+jejak daun DaunView + pendar cahaya = penanda posisi; state
+"rambat_sembunyi" di view sengaja tanpa gambar, jumbai/ujung
+dihapus). TRANSFORMASI DETACH/ATTACH SELESAI (izin boros pemilik,
+2 generasi): attach.png = makhluk meleleh jadi gundukan daun lalu
+pudar (2 frame ekor alfa 70/35%; Avatar menanam gumpalan NYATA di
+titik melebur = serah-terima mulus), detach.png = menyembul liar
+dari dedaunan (frame awal pudar 50%); grup akun ubah_menempel/
+ubah_melepas; durasi 0.25/0.30 = ujung atas rentang CDD §15-16
+(kalau pemilik ingin morph lebih dramatis, angkanya di AvatarView —
+melampaui rentang CDD = keputusan pemilik). Sisa set: belok
+(opsional).
 SPP perlu revisi pemilik (ditulis untuk Master A). Gerbang RK
 Langkah 3 putaran 2 tetap antri setelah karakter berdiri.
 

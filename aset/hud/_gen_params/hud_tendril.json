@@ -1,0 +1,13 @@
+{
+  "alat": "create_ui_asset",
+  "seed": 1101,
+  "ukuran": "384x216",
+  "deskripsi": "dark industrial gunmetal HUD panel with rivets, living lime green vine tendrils creeping along the border, small glowing leaf accents, stealth game interface",
+  "palet_hint": "dark gunmetal grey and lime green",
+  "pieces": [
+    {"id": "panel", "kind": "rounded_rect", "x": 12, "y": 12, "w": 192, "h": 132, "radius": 8},
+    {"id": "bar", "kind": "rounded_rect", "x": 12, "y": 168, "w": 192, "h": 30, "radius": 6}
+  ],
+  "catatan": "diproses proses_hud.gd scratchpad: iris 2 pita + trim alpha + snap palet EDV3 STRUCTURE/METAL/TENDRIL/AMBER; bar_energi_kosong = fill palung (run hijau >= 8 di pita baris palung) diganti 1A2029; palung terukur x7..185 y38..49"
+}
+

@@ -5,10 +5,12 @@ extends Node2D
 # pensiun dari view ini — diarsipkan sebagai calon NPC.
 #
 # Strip yang ada: idle_timur/barat (7f), crawl_timur/barat (9f, bedah
-# v7), lompat/jatuh/darat_pegas (6/6/5f, bahasa pegas). Idle & crawl
-# BERARAH (digambar apa adanya); strip pegas satu arah timur, dicermin
-# `hadap`. MERAMBAT sementara memakai idle (placeholder sampai animasi
-# merambat player dibuat). Belok/detach/attach otomatis nonaktif sampai
+# v7), lompat/jatuh/darat_pegas (6/6/5f, bahasa pegas), rambat_ujung
+# (+senyap) 4f — ujung tunas ~10px untuk moda MERAMBAT: tubuh tanaman
+# adalah JEJAK DAUN yang ditanam Avatar (digambar DaunView), sprite
+# hanya ujung hidup berpivot di garis dengan sudut kontinu. Idle &
+# crawl BERARAH (digambar apa adanya); strip pegas satu arah timur,
+# dicermin `hadap`. Belok/detach/attach otomatis nonaktif sampai
 # strip-nya ada — state machine sudah memagari dengan has().
 # Idle dipakai saat nyaris diam di moda mana pun: organisme harus
 # terlihat hidup justru ketika pemain diam (CDD Rule 8), 8-12 fps.
@@ -25,7 +27,6 @@ var _transisi = ""
 var _moda_lalu = -1
 var _pos_lalu = Vector2()
 var _jarak = 0.0          # jarak tempuh — penggerak frame lokomotasi
-var _miring = 0.0         # condongan ujung ke arah gerak (CDD §5.1/SPP §56)
 var _hadap_lalu = 1.0     # deteksi balik arah → animasi BELOK (spec §9)
 var _putar_t = 0.0        # sisa waktu animasi belok
 var _putar = ""           # "putar_kiri" (kanan→kiri) / "putar_kanan"
@@ -77,7 +78,9 @@ func _process(delta):
 	if avatar.moda != _moda_lalu:
 		if _moda_lalu != -1:
 			_transisi = "detach" if avatar.moda == avatar.LEPAS else "attach"
-			_transisi_t = 0.28 if _transisi == "detach" else 0.20
+			# morph 9f PixelLab: ujung atas rentang CDD §15-16 supaya
+			# transformasinya sempat terbaca
+			_transisi_t = 0.30 if _transisi == "detach" else 0.25
 		_moda_lalu = avatar.moda
 	_transisi_t = max(0.0, _transisi_t - delta)
 
@@ -101,7 +104,8 @@ func _process(delta):
 	# dimajukan oleh JARAK TEMPUH, bukan waktu — tanpa ini tubuh meliuk
 	# lepas sinkron dari perpindahan dan jalannya terbaca "meluncur"
 	# (temuan playtest pemilik proyek).
-	var pindah = _pos_lalu.distance_to(avatar.pos)
+	var gerak = avatar.pos - _pos_lalu
+	var pindah = gerak.length()
 	var bergerak = pindah > delta * 3.0
 	if bergerak:
 		_jarak += pindah
@@ -119,13 +123,9 @@ func _process(delta):
 		_udara_t = 0.0
 	_darat_t = max(0.0, _darat_t - delta)
 
-	# ujung memimpin (permintaan playtest, sesuai ADR §11): saat berjalan
-	# LEPAS, tubuh condong halus ke arah gerak sehingga ujung/daun tampak
-	# melangkah lebih dulu. Kecil (~9°) supaya tidak terbaca mau jatuh;
-	# cermin hadap membuat condongannya otomatis mengikuti arah.
-	var target_miring = 0.16 if (bergerak and avatar.moda == avatar.LEPAS) \
-			else 0.0
-	_miring = lerpf(_miring, target_miring, clamp(delta * 8.0, 0.0, 1.0))
+	# condongan "ujung memimpin" era Master A DICABUT (playtest pemilik:
+	# di karakter 32px crawl jadi terbaca miring) — bahasa gerak sudah
+	# dibawa strip gelombangnya sendiri
 	# prioritas: transisi > belok > darat > udara > gerak > idle
 	var timur = avatar.hadap > 0.0
 	if _transisi_t > 0.0 and _anim.has(_transisi):
@@ -133,13 +133,12 @@ func _process(delta):
 	elif _putar_t > 0.0:
 		_state = _putar
 	elif avatar.moda == avatar.MERAMBAT:
-		# placeholder sampai animasi merambat player dibuat: BERGERAK di
-		# jaringan = crawl (lantai rumah adalah jaringan — tanpa ini
-		# jalan kiri/kanan terlihat diam, temuan playtest pemilik)
-		if bergerak:
-			_state = "crawl_timur" if timur else "crawl_barat"
-		else:
-			_state = "idle_timur" if timur else "idle_barat"
+		# WUJUD AKHIR (putusan pemilik): di jaringan pemain TIDAK punya
+		# sprite sama sekali — ia ADALAH pertumbuhan itu sendiri. Posisi
+		# dibawa kepala jejak daun (DaunView) + pendar cahaya avatar.
+		# Satu-satunya saat wujud terlihat berubah = transisi detach/
+		# attach (morph PixelLab).
+		_state = "rambat_sembunyi"
 	elif _darat_t > 0.0:
 		_state = "darat_pegas"
 	elif not avatar.di_tanah:
@@ -175,7 +174,7 @@ func _draw():
 		var fr
 		if _state == "detach" or _state == "attach":
 			# transisi diputar SEKALI, maju sesuai sisa waktunya
-			var total = 0.28 if _state == "detach" else 0.20
+			var total = 0.30 if _state == "detach" else 0.25
 			var maju = 1.0 - _transisi_t / total
 			fr = int(clamp(maju * a.n, 0.0, a.n - 1.0))
 		elif _state == "putar_kiri" or _state == "putar_kanan":
@@ -217,14 +216,14 @@ func _draw():
 			regang = clamp(abs(avatar.vel.y) / Config.AVATAR_LOMPAT,
 					0.0, 1.0)
 		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
-		draw_set_transform(p, _miring * avatar.hadap,
-				Vector2(cermin * skala.x, skala.y))
+		draw_set_transform(p, 0.0, Vector2(cermin * skala.x, skala.y))
 		draw_texture_rect_region(a.tex,
 				Rect2(Vector2(-16.0 + a.geser, -10.0), Vector2(32.0, 32.0)),
 				Rect2(fr * 32.0, 0.0, 32.0, 32.0))
 		draw_set_transform_matrix(Transform2D())
-	else:
-		# cadangan prosedural bila strip belum ada
+	elif _state != "rambat_sembunyi":
+		# cadangan prosedural bila strip belum ada; "rambat_sembunyi"
+		# SENGAJA tanpa gambar — pemain = pertumbuhan itu sendiri
 		draw_circle(p, 6.0, Color("4F8F32"))
 		draw_circle(p + Vector2(-2.0, -2.0), 3.0, Color("A8D94A"))
 
@@ -245,10 +244,5 @@ func _draw():
 		samar.a = 0.18
 		draw_arc(p, 12.0, 0.0, TAU, 20, samar, 1.0)
 
-	# bar energi (UI minimal GDD §31) — dinaikkan pas di atas sprite 32 px
-	var w = 26.0
-	var atas = p + Vector2(-w * 0.5, -16.0)
-	draw_rect(Rect2(atas, Vector2(w, 4.0)), Color(0.06, 0.12, 0.08, 0.7))
-	var isi = clamp(avatar.energi / avatar.energi_max, 0.0, 1.0)
-	var c = Color("A8D94A") if isi > 0.3 else Color("C25A4A")
-	draw_rect(Rect2(atas, Vector2(w * isi, 4.0)), c)
+	# bar energi lama di atas kepala DICABUT — energi kini bicara lewat
+	# HUD GDD §31 (Hud.gd); dunia menyisakan bahasa cincin & pendar saja

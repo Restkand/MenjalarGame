@@ -29,7 +29,12 @@ var mengisi = false        # P3: sedang di sumber (untuk denyut view)
 var sumber = ""            # "air" / "cahaya" saat mengisi — untuk ikon HUD
 var jejak = []             # P3: jalur sulur yang DITUMBUHKAN avatar —
                            # [{pos, dalam}] digambar JejakView
+var jejak_daun = []        # gumpalan daun DITANAM ujung saat merambat —
+                           # [{pos, sudut, varian, dalam}], DaunView
+var _daun_jarak = 0.0      # akumulator jarak antar tanaman gumpalan
+var _denyut = 0.0          # jam denyut tumbuh (julur-cengkeram)
 var hadap = 1.0            # arah hadap terakhir (dipakai view & belok)
+var bisa_tempel = false    # LEPAS menyentuh jaringan — petunjuk HUD [W]
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 
 # RK Langkah 2 — status deteksi sensor, DIISI main tiap frame sebelum
@@ -65,7 +70,11 @@ func mulai(p):
 	di_tanah = false
 	di_dalam = false
 	mengisi = false
+	bisa_tempel = false
 	jejak = []
+	jejak_daun = []
+	_daun_jarak = 0.0
+	_denyut = 0.0
 	_tempel_jeda = 0.0
 	tahap = 1
 	tahap_baru = 0
@@ -116,9 +125,34 @@ func update(dt, i, world):
 		return
 
 	if moda == MERAMBAT:
+		# ujung MENANAM dedaunan di jalur yang dilaluinya (permintaan
+		# pemilik: merambat menyatu dengan ekosistem — tubuh tanaman =
+		# jejak yang tertinggal, ujung hanyalah tunas kecil yang hidup)
+		var pos_r = pos
 		_rambat(dt, i, world)
+		var d = pos_r.distance_to(pos)
+		if d > 0.0:
+			_daun_jarak += d
+			if _daun_jarak >= Config.RAMBAT_DAUN_JARAK:
+				_daun_jarak -= Config.RAMBAT_DAUN_JARAK
+				jejak_daun.append({"pos": pos,
+						"sudut": (pos - pos_r).angle(),
+						"varian": jejak_daun.size() % 3,
+						"dalam": di_dalam, "layu": 0.0})
 	else:
 		_lepas(dt, i, world)
+
+	# DAUR HIDUP JEJAK (GDD §6.3: jaringan bisa mati; usul pemilik):
+	# melewati batas ring, gumpalan TERTUA tidak dihapus mendadak —
+	# ia MENGERING (hijau -> cokelat -> pudar) lalu rontok. Hanya
+	# beberapa tertua yang layu bersamaan; sisanya menunggu giliran.
+	if jejak_daun.size() > Config.RAMBAT_DAUN_MAX:
+		var lebih = jejak_daun.size() - Config.RAMBAT_DAUN_MAX
+		for j in range(min(lebih, 4)):
+			jejak_daun[j].layu += dt
+		while jejak_daun.size() > 0 \
+				and jejak_daun[0].layu >= Config.RAMBAT_DAUN_LAYU:
+			jejak_daun.pop_front()
 
 
 # F: menanam simpul jaringan di posisi avatar (P2) — checkpoint + titik
@@ -140,6 +174,7 @@ func jangkar(world):
 
 func _rambat(dt, i, world):
 	var arah = i.arah
+	bisa_tempel = false
 	# konsekuensi deteksi (RK 2b): selama sensor waspada, jaringan
 	# MENOLAK memulihkan — ketahuan lalu bersembunyi tidak langsung
 	# mengembalikan hak pulih
@@ -160,9 +195,16 @@ func _rambat(dt, i, world):
 
 	if arah == Vector2.ZERO:
 		return
-	# laju merambat tunggal — sprint era pivot dihapus (bukan kanon);
-	# merambat memang sudah moda tercepat (GDD §6.1)
-	var langkah = arah.normalized() * Config.AVATAR_RAMBAT * dt
+	# DENYUT TUMBUH BERBEBAN (playtest pemilik: masih terasa cepat —
+	# beban ditambah): AVATAR_RAMBAT kini laju PUNCAK juluran; fase
+	# cengkeram melambat dalam tanpa normalisasi, rata-rata efektif
+	# ~72% puncak. Tafsir GDD §6.1: "34" = laju julur maksimum.
+	_denyut += dt
+	var fase_d = fmod(_denyut, Config.RAMBAT_DENYUT) / Config.RAMBAT_DENYUT
+	var dasar = Config.RAMBAT_DENYUT_DASAR
+	var faktor = dasar + (1.0 - dasar) \
+			* pow(max(0.0, sin(fase_d * PI)), 0.7)
+	var langkah = arah.normalized() * Config.AVATAR_RAMBAT * faktor * dt
 	# coba gerak penuh; kalau keluar jaringan, coba per sumbu (menyusur).
 	# Kandidat yang tidak benar-benar bergerak DILEWATI — kandidat sumbu
 	# dengan komponen nol adalah "gerakan nol yang selalu sah" dan diam-diam
@@ -241,24 +283,41 @@ func _lepas(dt, i, world):
 		faktor = max(faktor, Config.KURAS_TERDETEKSI)
 	energi -= Config.AVATAR_KURAS * faktor * dt
 
-	# menempel kembali begitu menyentuh jaringan (setelah jeda lepas)
-	if _tempel_jeda <= 0.0 \
-			and world.jaringan_di(int(round(pos.x)), int(round(pos.y - 2.0))):
+	# menempel jadi DISENGAJA (putusan pemilik: auto-tempel membingungkan
+	# — jalan biasa di lantai rumah tersedot ke moda rambat tanpa
+	# diminta). Tata bahasa tangga klasik: menyentuh jaringan + tekan
+	# ATAS/BAWAH = menempel. bisa_tempel diumumkan ke HUD sebagai
+	# petunjuk tombol kontekstual.
+	bisa_tempel = _tempel_jeda <= 0.0 \
+			and world.jaringan_di(int(round(pos.x)), int(round(pos.y - 2.0)))
+	if bisa_tempel and i.arah.y != 0.0:
 		moda = MERAMBAT
+		bisa_tempel = false
 		vel = Vector2()
 		_melompat = false
 		simpul = pos
+		# gumpalan ditanam TEPAT di titik melebur: akhir animasi attach
+		# (makhluk luruh jadi dedaunan) diserahterimakan ke gumpalan
+		# nyata — tubuh benar-benar "menjadi tanaman di sini"
+		jejak_daun.append({"pos": pos, "sudut": 0.0,
+				"varian": jejak_daun.size() % 3, "dalam": di_dalam,
+				"layu": 0.0})
 		return
 
 	# coyote & buffer: pengampunan waktu khas platformer yang enak
 	_coyote = Config.COYOTE_DETIK if di_tanah else max(0.0, _coyote - dt)
 	_buffer = Config.BUFFER_LOMPAT if i.lompat else max(0.0, _buffer - dt)
 
-	# horizontal: akselerasi menuju target — RUN dasar GDD §7 saat Shift
-	# ditahan (tetap di bawah laju merambat, §6.1)
+	# horizontal: GAS pelan (badan berbobot butuh waktu mencapai laju),
+	# REM lebih cengkeram saat berhenti/berbalik — tanpa pemisahan ini
+	# gerak terasa menggelincir (playtest pemilik). RUN = Shift (GDD §7,
+	# tetap di bawah rambat-puncak §6.1).
 	var laju = Config.AVATAR_LARI if i.lari else Config.AVATAR_JALAN
 	var target = i.arah.x * laju
-	vel.x = move_toward(vel.x, target, Config.AVATAR_ACCEL * dt)
+	var dorong = Config.AVATAR_ACCEL
+	if i.arah.x == 0.0 or (vel.x != 0.0 and signf(target) != signf(vel.x)):
+		dorong = Config.AVATAR_REM
+	vel.x = move_toward(vel.x, target, dorong * dt)
 	# vertikal: gravitasi + lompat (tanah ATAU sisa coyote)
 	vel.y += Config.AVATAR_GRAV * dt
 	if _buffer > 0.0 and (di_tanah or _coyote > 0.0) \

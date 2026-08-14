@@ -34,7 +34,8 @@ func _init(w):
 	for n in ["atlas_beton", "atlas_baja", "latar", "pipa", "pipa_h",
 			"pipa_siku", "katup", "rak_kabel", "kabel", "saluran", "sensor",
 			"retak", "panel_v3", "kotak_sambung", "lampu", "flange",
-			"bracket", "noda_air", "sulur_jaringan"]:
+			"bracket", "noda_air", "sulur_jaringan", "materi_lembap",
+			"materi_retak"]:
 		var jalur = "res://aset/ruang01/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			_tex[n] = load(jalur)
@@ -173,18 +174,30 @@ func _draw():
 	# — NODE kelahiran di jaringan rumah (§6.2: checkpoint/respawn) dan
 	# KEBOCORAN KATUP sebagai sumber air (§16; cincin minum di AvatarView
 	# yang mengabarkan saat menghisap)
-	# RK-2 [A]: rona lumut samar menandai zona LEMBAP (signifier jujur —
-	# di sinilah pertumbuhan diterima; beton menolak)
-	var lumut = Color("285B2B")
-	lumut.a = 0.12
+	# RK-2 [A]: zona material bertekstur SUNGGUHAN (koreksi pemilik:
+	# beda material harus terlihat jelas) — lembap = beton berlumut
+	# basah, retak = beton pecah; keduanya seed 1401/1402 palet EDV3,
+	# diubinkan di zona dengan modulate lembut (cadangan: rona rata)
 	for z in world.ZONA_LEMBAP:
-		draw_rect(Rect2(z.position.x * ppu, z.position.y * ppu,
-				z.size.x * ppu, z.size.y * ppu), lumut)
-	var retak_w = Color("4F8F32")
-	retak_w.a = 0.08
+		var r = Rect2(z.position.x * ppu, z.position.y * ppu,
+				z.size.x * ppu, z.size.y * ppu)
+		if _tex.has("materi_lembap"):
+			draw_texture_rect(_tex.materi_lembap, r, true,
+					Color(1, 1, 1, 0.5))
+		else:
+			var lumut = Color("285B2B")
+			lumut.a = 0.12
+			draw_rect(r, lumut)
 	for z2 in world.ZONA_RETAK:
-		draw_rect(Rect2(z2.position.x * ppu, z2.position.y * ppu,
-				z2.size.x * ppu, z2.size.y * ppu), retak_w)
+		var r2 = Rect2(z2.position.x * ppu, z2.position.y * ppu,
+				z2.size.x * ppu, z2.size.y * ppu)
+		if _tex.has("materi_retak"):
+			draw_texture_rect(_tex.materi_retak, r2, true,
+					Color(1, 1, 1, 0.55))
+		else:
+			var retak_w = Color("4F8F32")
+			retak_w.a = 0.08
+			draw_rect(r2, retak_w)
 
 	var np = world.node_pos * ppu
 	draw_circle(np, 7.0, Color("285B2B"))

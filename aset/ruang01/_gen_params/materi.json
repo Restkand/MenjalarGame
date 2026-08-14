@@ -1,0 +1,8 @@
+{
+  "alat": "create_image_pixflux (resep tekstur-isi EDV3: 64x64 crop tengah 32)",
+  "tekstur": [
+    {"nama": "materi_lembap", "seed": 1401, "deskripsi": "flat repeating texture fill of damp dark concrete overgrown with wet moss patches and dripping water stains, edge-to-edge, no border", "palet_snap": ["0B0E12", "12171D", "1A2029", "232B36", "2E3846", "102016", "19351E", "285B2B", "3E7A32"]},
+    {"nama": "materi_retak", "seed": 1402, "deskripsi": "flat repeating texture fill of old cracked concrete wall, deep dark fissures, crumbling edges, edge-to-edge, no border", "palet_snap": ["0B0E12", "12171D", "1A2029", "232B36", "2E3846", "3D4757", "3A3128", "55452F"]}
+  ],
+  "catatan": "RK-2 [A] naik kelas visual: zona material GDD 12 diubinkan tekstur nyata (Ruang01View, modulate 0.5/0.55) menggantikan rona rata. Catatan riset Mode Map: editor peta PixelLab = aplikasi web berekspor ke template Phaser mereka, BUKAN Godot; create_map_object via MCP hanya menerima base64 inline (jebakan korupsi terdokumentasi) - dipilih jalur pixflux+palet paksa yang terbukti."
+}

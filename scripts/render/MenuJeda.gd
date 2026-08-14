@@ -24,9 +24,12 @@ var papan
 
 class Papan extends Node2D:
 	var font
+	var tex_panel = null
 
 	func _init():
 		font = ThemeDB.fallback_font
+		if ResourceLoader.exists("res://aset/hud/panel.png"):
+			tex_panel = load("res://aset/hud/panel.png")
 
 	func _draw():
 		var layar = get_viewport_rect().size
@@ -35,17 +38,23 @@ class Papan extends Node2D:
 		draw_rect(Rect2(Vector2(), layar), gelap)
 
 		var cx = layar.x * 0.5
-		var y = layar.y * 0.30
-		_teks(cx - 60.0, y, "JEDA", 56, C_TERANG)
-		y += 64.0
-		_teks(cx - 200.0, y, "[ESC] LANJUT", 26, C_TERANG)
-		_teks(cx + 40.0, y, "[R] ULANG RUANGAN", 26, C_TERANG)
-		y += 70.0
-		_teks(cx - 200.0, y, "KENDALI", 20, C_LABEL)
+		# kartu = panel PixelLab yang sama dengan HUD, skala 2x
+		if tex_panel:
+			var pw = tex_panel.get_width() * 2.0
+			var ph = tex_panel.get_height() * 2.0
+			draw_texture_rect(tex_panel,
+					Rect2(cx - pw * 0.5, 130.0, pw, ph), false)
+		var y = 216.0
+		_teks(cx - 64.0, y, "JEDA", 52, C_TERANG)
+		y += 74.0
+		_teks(cx - 216.0, y, "[ESC] LANJUT", 25, C_TERANG)
+		_teks(cx + 30.0, y, "[R] ULANG RUANGAN", 25, C_TERANG)
+		y = 480.0
+		_teks(cx - 216.0, y, "KENDALI", 20, C_LABEL)
 		y += 36.0
 		for baris in KENDALI:
-			_teks(cx - 200.0, y, baris[0], 22, C_TERANG)
-			_teks(cx - 90.0, y, baris[1], 22, C_LABEL)
+			_teks(cx - 216.0, y, baris[0], 22, C_TERANG)
+			_teks(cx - 100.0, y, baris[1], 22, C_LABEL)
 			y += 34.0
 
 	func _teks(x, y, teks, ukuran, warna):

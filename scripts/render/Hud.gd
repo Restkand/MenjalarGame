@@ -33,11 +33,25 @@ var _tempel_lalu = false  # tepi bisa_tempel — bangunkan HUD untuk petunjuk
 var _layu_flash = 0.0     # sisa kedip gelap layu
 
 var _font
+var _tex_panel                 # aset/hud PixelLab (permintaan pemilik):
+var _tex_bar                   # bar penuh (fill hijau generatan)
+var _tex_bar_kosong            # bar palung kosong — fill di-clip energi
+
+# palung bar di tekstur (hasil kalibrasi proses_hud): x7..185, y38..49
+const PALUNG_X = 7.0
+const PALUNG_W = 179.0
+const PALUNG_Y = 38.0
+const PALUNG_H = 12.0
 
 
 func _init(a):
 	avatar = a
 	_font = ThemeDB.fallback_font
+	for info in [["panel", "_tex_panel"], ["bar_energi", "_tex_bar"],
+			["bar_energi_kosong", "_tex_bar_kosong"]]:
+		var jalur = "res://aset/hud/%s.png" % info[0]
+		if ResourceLoader.exists(jalur):
+			set(info[1], load(jalur))
 
 
 func _process(delta):
@@ -75,42 +89,24 @@ func _draw():
 		draw_rect(get_viewport_rect(), gelap)
 
 	var a = _alpha
-	var x = 28.0
-	var y = 30.0
+	var x = 16.0
+	var y = 16.0
 
-	# panel bayang tipis supaya terbaca di atas scene terang mana pun
-	var latar = C_LATAR
-	latar.a = 0.55 * a
-	draw_rect(Rect2(x - 12.0, y - 12.0, 288.0, 196.0), latar)
+	# panel PixelLab (aset/hud, permintaan pemilik); fallback prosedural
+	if _tex_panel:
+		draw_texture(_tex_panel, Vector2(x, y), Color(1, 1, 1, a))
+	else:
+		var latar = C_LATAR
+		latar.a = 0.55 * a
+		draw_rect(Rect2(x, y, 283.0, 143.0), latar)
+	var ix = x + 24.0
 
-	# --- ENERGI: bar 10 sel (mock §31) -------------------------------
-	_label(x, y, "ENERGI", a)
-	var isi = clamp(avatar.energi / avatar.energi_max, 0.0, 1.0)
-	var sel_isi = int(round(isi * 10.0))
-	var warna = C_SEHAT if isi > 0.3 else C_KUNING
-	if avatar.terdeteksi:
-		warna = C_KUNING
-		warna.a = 0.7 + 0.3 * sin(_t * 12.0)   # stres: bar ikut berdenyut
-	for s in range(10):
-		var c = warna if s < sel_isi else C_KOSONG
-		c.a = c.a * a
-		draw_rect(Rect2(x + s * 24.0, y + 8.0, 20.0, 14.0), c)
-	# jaringan menolak memulihkan: bingkai kuning tipis di sekeliling bar
-	if avatar.regen_mati:
-		var kunci = C_KUNING
-		kunci.a = (0.5 + 0.3 * sin(_t * 7.0)) * a
-		draw_rect(Rect2(x - 3.0, y + 5.0, 10.0 * 24.0 + 2.0, 20.0),
-				kunci, false, 2.0)
-
-	# --- MODA ---------------------------------------------------------
-	var y2 = y + 52.0
-	_label(x, y2, "MODA", a)
+	# --- MODA & VISIBILITAS berdampingan di dalam panel ---------------
+	_label(ix, y + 40.0, "MODA", a)
 	var moda_txt = "MERAMBAT" if avatar.moda == avatar.MERAMBAT else "LEPAS"
-	_nilai(x, y2 + 26.0, moda_txt, C_SEHAT, a)
+	_nilai(ix, y + 64.0, moda_txt, C_SEHAT, a)
 
-	# --- VISIBILITAS (tiga state SRD §13 + waspada) -------------------
-	var y3 = y2 + 58.0
-	_label(x, y3, "VISIBILITAS", a)
+	_label(ix + 128.0, y + 40.0, "VISIBILITAS", a)
 	var txt = "TERSEMBUNYI"
 	var c3 = C_REDUP
 	if avatar.terdeteksi:
@@ -124,16 +120,50 @@ func _draw():
 		txt = "TERSAMAR"
 		c3 = C_KUNING
 		c3.a = 0.6
-	_nilai(x, y3 + 26.0, txt, c3, a)
+	_nilai(ix + 128.0, y + 64.0, txt, c3, a)
 
 	# --- petunjuk tombol kontekstual (jawaban "memencet apa?") --------
-	var y4 = y3 + 56.0
 	if avatar.moda == avatar.MERAMBAT:
-		_label(x, y4, "[SPASI] LEPAS   [ESC] JEDA", a)
+		_label(ix, y + 108.0, "[SPASI] LEPAS   [ESC] JEDA", a)
 	elif avatar.bisa_tempel:
-		_label(x, y4, "[W/S] MERAMBAT   [ESC] JEDA", a)
+		_label(ix, y + 108.0, "[W/S] MERAMBAT   [ESC] JEDA", a)
 	else:
-		_label(x, y4, "[ESC] JEDA", a)
+		_label(ix, y + 108.0, "[ESC] JEDA", a)
+
+	# --- ENERGI: bingkai bar PixelLab, fill hijau generatan di-clip ---
+	var by = y + 146.0
+	var isi = clamp(avatar.energi / avatar.energi_max, 0.0, 1.0)
+	if _tex_bar and _tex_bar_kosong:
+		draw_texture(_tex_bar_kosong, Vector2(x, by), Color(1, 1, 1, a))
+		var lebar_src = PALUNG_X + PALUNG_W * isi
+		var mod = Color(1, 1, 1, a)
+		if avatar.terdeteksi:
+			mod = Color(1.0, 0.85, 0.4, (0.7 + 0.3 * sin(_t * 12.0)) * a)
+		elif isi <= 0.3:
+			mod = Color(1.0, 0.7, 0.3, a)   # kuning CDD §7: energi rendah
+		draw_texture_rect_region(_tex_bar,
+				Rect2(x, by, lebar_src, _tex_bar.get_height()),
+				Rect2(0.0, 0.0, lebar_src, _tex_bar.get_height()), mod)
+		# takik 10 segmen (mock §31) di atas palung
+		var takik = C_LATAR
+		takik.a = 0.65 * a
+		for k in range(1, 10):
+			draw_rect(Rect2(x + PALUNG_X + PALUNG_W * k / 10.0,
+					by + PALUNG_Y, 2.0, PALUNG_H), takik)
+		_label(x + 24.0, by + 34.0, "ENERGI", a)
+		# jaringan menolak memulihkan: bingkai kuning di sekitar palung
+		if avatar.regen_mati:
+			var kunci = C_KUNING
+			kunci.a = (0.5 + 0.3 * sin(_t * 7.0)) * a
+			draw_rect(Rect2(x + PALUNG_X - 3.0, by + PALUNG_Y - 3.0,
+					PALUNG_W + 6.0, PALUNG_H + 6.0), kunci, false, 2.0)
+	else:
+		var sel_isi = int(round(isi * 10.0))
+		var warna = C_SEHAT if isi > 0.3 else C_KUNING
+		for s in range(10):
+			var c = warna if s < sel_isi else C_KOSONG
+			c.a = c.a * a
+			draw_rect(Rect2(x + s * 24.0, by, 20.0, 14.0), c)
 
 
 func _label(x, y, teks, a):

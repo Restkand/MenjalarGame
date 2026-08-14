@@ -3,7 +3,7 @@
 **GROW. HIDE. SURVIVE.** Metroidvania 2D pixel art: ujung tumbuh tanaman
 merambat menjadikan sebuah gedung sebagai tubuhnya.
 
-## Sumber kebenaran desain (SEMUA ditulis pemilik proyek) — 7 AKTIF
+## Sumber kebenaran desain (SEMUA ditulis pemilik proyek) — 8 AKTIF
 
 1. **`docs/GDD-TENDRIL.md`** — desain game menyeluruh (45 bagian).
 2. **`docs/SPP-TENDRIL-SPRITE.md`** — prompt pack produksi sprite (63
@@ -44,6 +44,17 @@ merambat menjadikan sebuah gedung sebagai tubuhnya.
    rendah, merah=diburu, ungu=racun, biru-putih=listrik), LIMA tahap,
    proporsi (karakter 16–32 px < manusia 32–48 px), 8 Design Rules
    (§42), north star: "Kecil sebagai individu. Besar sebagai jaringan."
+8. **`docs/SRD-TENDRIL-RUANG00-LAB.md`** — RUANG 00: Lab Botani
+   (kelahiran + tutorial 4 mekanik tanpa teks). Putusan pemilik 15 Agu:
+   dokumen lab-nya (semula kandidat Room 01) dijadikan ruangan PEMBUKA,
+   posisi = ruang tersembunyi bertetangga Room 01 (lorong keluar lab →
+   ruang servis; dari sisi Room 01 tersamar, kandidat: gril ventilasi /
+   ujung koridor drain §19), ukuran diciutkan 60×20 → ±32×14 (GDD §39).
+   Aturan permukaan §5 (kaca mati, baja menolak, basah cepat) sejalan
+   matriks SRD Room 01 §10. Grow light JANGAN ungu (bentrok status
+   racun CDD §7). Prompt di dalamnya = referensi niat pra-EDV3 — tulis
+   ulang lewat EDV3 §4 saat produksi. DIPRODUKSI SETELAH gerbang RK
+   Langkah 3 lolos; amendemen SRD Room 01 §19/§38 menunggu pemilik.
 
 **Dokumen HISTORIS** (alasan desain tersimpan, bercap `> HISTORIS` di
 kepalanya masing-masing — JANGAN dipakai sebagai acuan aktif):

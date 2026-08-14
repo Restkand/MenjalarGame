@@ -13,7 +13,6 @@ const Ruang01Cls     = preload("res://scripts/Ruang01.gd")
 const Ruang01ViewCls = preload("res://scripts/render/Ruang01View.gd")
 const AvatarCls      = preload("res://scripts/Avatar.gd")
 const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
-const JejakViewCls   = preload("res://scripts/render/JejakView.gd")
 const DaunViewCls    = preload("res://scripts/render/DaunView.gd")
 const SensorCls      = preload("res://scripts/Sensor.gd")
 const HudCls         = preload("res://scripts/render/Hud.gd")
@@ -44,7 +43,8 @@ func _ready():
 
 	ruang_view = Ruang01ViewCls.new(world)
 	add_child(ruang_view)
-	add_child(JejakViewCls.new(avatar))
+	# JejakView (garis + bulatan) PENSIUN — tubuh jejak kini sepenuhnya
+	# gumpalan daun DaunView (putusan pemilik)
 	add_child(DaunViewCls.new(avatar))
 	avatar_view = AvatarViewCls.new(avatar)
 	avatar_view.visible = true

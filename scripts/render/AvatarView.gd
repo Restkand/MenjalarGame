@@ -34,6 +34,10 @@ var _putar = ""           # "putar_kiri" (kanan→kiri) / "putar_kanan"
 var _udara_t = 0.0        # lama melayang — penggerak frame LOMPAT (play-once)
 var _darat_t = 0.0        # sisa waktu animasi mendarat (play-once)
 var _sudut_rambat = 0.0   # sudut gerak ujung tunas di jaringan (radian)
+var _state_seb = ""       # deteksi pergantian wujud -> transisi tumbuh
+var _tumbuh_t = 0.0       # sisa waktu transisi mekar
+var _tumbuh_total = 0.2
+var _tumbuh_dari = 1.0    # skala awal mekar
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
 
@@ -168,6 +172,28 @@ func _process(delta):
 	else:
 		_state = "idle_timur" if timur else "idle_barat"
 
+	# TRANSISI TUMBUH (koreksi pemilik: idle -> merambat terlalu patah):
+	# tiap pergantian wujud, sprite baru MEKAR dari kecil — masuk moda
+	# rambat = tunas menyembul dari garis, keluar = makhluk mekar
+	# kembali; antar-wujud rambat (gerak<->senyap) hanya denyut halus.
+	if _state != _state_seb:
+		var rambat_baru = _state.begins_with("rambat")
+		var rambat_lama = _state_seb.begins_with("rambat")
+		if rambat_baru and not rambat_lama:
+			_tumbuh_total = 0.2
+			_tumbuh_t = 0.2
+			_tumbuh_dari = 0.35
+		elif rambat_baru and rambat_lama:
+			_tumbuh_total = 0.12
+			_tumbuh_t = 0.12
+			_tumbuh_dari = 0.8
+		elif rambat_lama:
+			_tumbuh_total = 0.16
+			_tumbuh_t = 0.16
+			_tumbuh_dari = 0.5
+		_state_seb = _state
+	_tumbuh_t = max(0.0, _tumbuh_t - delta)
+
 	queue_redraw()
 
 
@@ -239,6 +265,10 @@ func _draw():
 			regang = clamp(abs(avatar.vel.y) / Config.AVATAR_LOMPAT,
 					0.0, 1.0)
 		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
+		if _tumbuh_t > 0.0:
+			var mekar = _tumbuh_dari + (1.0 - _tumbuh_dari) \
+					* (1.0 - _tumbuh_t / _tumbuh_total)
+			skala *= mekar
 		var rotasi = 0.0
 		# wujud untaian rambat: BERPIVOT DI GARIS (posisi avatar = titik
 		# di garis jaringan) dan rect terpusat — batang untaian (tengah

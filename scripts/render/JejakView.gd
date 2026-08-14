@@ -25,10 +25,10 @@ func _process(_delta):
 func _draw():
 	var ppu = float(Config.PPU)
 	# palet TENDRIL (EDV3 §3.1 "makhluk & pertumbuhannya") — sama dengan
-	# jaringan benih di Ruang01View: sulur yang ditumbuhkan avatar adalah
-	# organisme yang sama, bukan tanaman era Menjalar (utang CDD §7 lunas)
-	var batang = Color("6FBF3E")
-	var daun = Color("A8E85C")
+	# jaringan benih di Ruang01View, DIGELAPKAN searah (playtest pemilik:
+	# vegetasi gelap, hanya ujung hidup yang menyala)
+	var batang = Color("3E7A32")
+	var daun = Color("4F8F32")
 	var sebelum = null
 	for i in range(avatar.jejak.size()):
 		var j = avatar.jejak[i]

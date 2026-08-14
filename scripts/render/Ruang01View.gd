@@ -15,8 +15,11 @@ var sensor_state = 0
 var _state_lalu = -1
 var _tex = {}
 
-const C_JARING = Color("6FBF3E")   # green base §3.1
-const C_DAUN   = Color("A8E85C")   # green highlight
+# DIGELAPKAN (playtest pemilik: vegetasi terlalu terang, kurang horor)
+# — massa tanaman tenggelam ke rona gelap; satu-satunya hijau menyala
+# di layar adalah UJUNG yang hidup (aturan value EDV3 justru menguat)
+const C_JARING = Color("3E7A32")   # green base §3.1, tangga gelap
+const C_DAUN   = Color("4F8F32")   # aksen daun redup
 const C_BAYANG = Color("0B0E12")
 const C_LOGAM  = Color("1B2128")   # rod/balok penopang
 const C_KABEL  = Color("1B2128")
@@ -159,9 +162,9 @@ func _draw():
 	# KEBOCORAN KATUP sebagai sumber air (§16; cincin minum di AvatarView
 	# yang mengabarkan saat menghisap)
 	var np = world.node_pos * ppu
-	draw_circle(np, 7.0, Color("3E7A32"))
-	draw_circle(np, 4.0, Color("6FBF3E"))
-	draw_circle(np + Vector2(-1.0, -1.0), 1.6, Color("A8E85C"))
+	draw_circle(np, 7.0, Color("285B2B"))
+	draw_circle(np, 4.0, Color("3E7A32"))
+	draw_circle(np + Vector2(-1.0, -1.0), 1.6, Color("79B83F"))
 	var ap = world.air_pos * ppu
 	var tetes = Color("8FA3AE")
 	tetes.a = 0.55

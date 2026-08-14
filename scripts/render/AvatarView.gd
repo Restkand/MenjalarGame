@@ -13,6 +13,7 @@ extends Node2D
 # Idle dipakai saat nyaris diam di moda mana pun: organisme harus
 # terlihat hidup justru ketika pemain diam (CDD Rule 8), 8-12 fps.
 const ANIM = ["idle_timur", "idle_barat", "crawl_timur", "crawl_barat",
+		"merambat_timur", "merambat_barat", "rambat_senyap",
 		"lompat_pegas", "jatuh_pegas", "darat_pegas", "putar_kiri",
 		"putar_kanan", "detach", "attach"]
 
@@ -31,6 +32,7 @@ var _putar_t = 0.0        # sisa waktu animasi belok
 var _putar = ""           # "putar_kiri" (kanan→kiri) / "putar_kanan"
 var _udara_t = 0.0        # lama melayang — penggerak frame LOMPAT (play-once)
 var _darat_t = 0.0        # sisa waktu animasi mendarat (play-once)
+var _vertikal = 0         # merambat vertikal: 1 naik / -1 turun / 0 datar
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
 
@@ -101,11 +103,20 @@ func _process(delta):
 	# dimajukan oleh JARAK TEMPUH, bukan waktu — tanpa ini tubuh meliuk
 	# lepas sinkron dari perpindahan dan jalannya terbaca "meluncur"
 	# (temuan playtest pemilik proyek).
-	var pindah = _pos_lalu.distance_to(avatar.pos)
+	var gerak = avatar.pos - _pos_lalu
+	var pindah = gerak.length()
 	var bergerak = pindah > delta * 3.0
 	if bergerak:
 		_jarak += pindah
 	_pos_lalu = avatar.pos
+
+	# merambat vertikal (garis dinding): kepala memimpin arah panjat —
+	# sprite timur diputar 90 derajat (naik = kepala atas; turun = kepala
+	# bawah, selaras Growing Tip Downward Rule OLR)
+	_vertikal = 0
+	if avatar.moda == avatar.MERAMBAT and bergerak \
+			and abs(gerak.y) > abs(gerak.x) * 1.4:
+		_vertikal = 1 if gerak.y < 0.0 else -1
 
 	# udara & pendaratan (OLR §34, setelah crawl lulus playtest): LOMPAT
 	# maju berbasis lama melayang (play-once), DARAT menyala di tepi
@@ -133,11 +144,22 @@ func _process(delta):
 	elif _putar_t > 0.0:
 		_state = _putar
 	elif avatar.moda == avatar.MERAMBAT:
-		# placeholder sampai animasi merambat player dibuat: BERGERAK di
-		# jaringan = crawl (lantai rumah adalah jaringan — tanpa ini
-		# jalan kiri/kanan terlihat diam, temuan playtest pemilik)
+		# WUJUD GANDA (putusan pemilik, membayar CDD §11 vs §14): di
+		# jaringan pemain BUKAN makhluk imut — ia tanaman murni tanpa
+		# wajah. Bergerak = undulasi terang; diam = SENYAP gelap
+		# (kamuflase yang selama ini cuma aturan sensor jadi terlihat).
 		if bergerak:
-			_state = "crawl_timur" if timur else "crawl_barat"
+			if _anim.has("merambat_timur"):
+				# vertikal: selalu strip timur — heading dibawa rotasi
+				if _vertikal != 0:
+					_state = "merambat_timur"
+				else:
+					_state = "merambat_timur" if timur else "merambat_barat"
+			else:
+				# cadangan lama: crawl (kalau strip merambat hilang)
+				_state = "crawl_timur" if timur else "crawl_barat"
+		elif _anim.has("rambat_senyap"):
+			_state = "rambat_senyap"
 		else:
 			_state = "idle_timur" if timur else "idle_barat"
 	elif _darat_t > 0.0:
@@ -191,6 +213,9 @@ func _draw():
 		elif _state == "darat_pegas":
 			# splat mendarat diputar SEKALI, maju sesuai sisa waktunya
 			fr = int(clamp((1.0 - _darat_t / 0.18) * a.n, 0.0, a.n - 1.0))
+		elif _state == "rambat_senyap":
+			# senyap: sisa napas sangat pelan — nyaris benda mati
+			fr = int(_t * 3.0) % a.n
 		elif _state.begins_with("idle"):
 			# idle berbasis waktu, 8 fps — napas pelan (papan: 8-12 fps)
 			fr = int(_t * 8.0) % a.n
@@ -205,7 +230,8 @@ func _draw():
 		# sebelum rotasi, jadi condongan dikalikan hadap supaya selalu
 		# ke depan.
 		var berarah = _state.begins_with("idle") \
-				or _state.begins_with("crawl") or _state.begins_with("putar")
+				or _state.begins_with("crawl") or _state.begins_with("putar") \
+				or _state.begins_with("merambat") or _state == "rambat_senyap"
 		var cermin = 1.0 if berarah else avatar.hadap
 		# SQUASH & STRETCH pegas dari kecepatan (koreksi feel pemilik:
 		# "tidak terasa dia melompat"): di udara badan MEREGANG mengikuti
@@ -217,7 +243,10 @@ func _draw():
 			regang = clamp(abs(avatar.vel.y) / Config.AVATAR_LOMPAT,
 					0.0, 1.0)
 		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
-		draw_set_transform(p, _miring * avatar.hadap,
+		var rotasi = _miring * avatar.hadap
+		if _state.begins_with("merambat") and _vertikal != 0:
+			rotasi = -PI * 0.5 * _vertikal
+		draw_set_transform(p, rotasi,
 				Vector2(cermin * skala.x, skala.y))
 		draw_texture_rect_region(a.tex,
 				Rect2(Vector2(-16.0 + a.geser, -10.0), Vector2(32.0, 32.0)),

@@ -1,0 +1,10 @@
+{
+  "alat": "create_character v3 (2 gen) + animate_character template (2 gen)",
+  "karakter": "Teknisi Ruang Servis - 48px side view (batas atas manusia CDD 32-48; aturan pemilik: pemain moda LEPAS harus terlihat kecil)",
+  "deskripsi": "building maintenance technician, grey worn coverall uniform, yellow hard hat with headlamp, rubber gloves, utility tool belt, holding large garden pruning shears, desaturated gunmetal grey clothing with small amber hazard stripes, tired working man, side view",
+  "animasi": [
+    {"nama": "teknisi_jalan", "template": "walking-6-frames", "arah": "east", "frame": 6},
+    {"nama": "teknisi_diam", "template": "breathing-idle", "arah": "east", "frame": 4}
+  ],
+  "catatan": "aturan identitas pemilik: musuh per ruangan sesuai pekerjanya (Room 01 servis = teknisi). Frame di-trim dan dijajarkan kaki-di-baris-terbawah kanvas 48 (susun_teknisi.gd scratchpad) - PemangkasView menjangkar dasar rect ke kaki. Warna asli dipertahankan (manusia pendatang; hanya organisme yang hijau). Karakter tersimpan di akun PixelLab (ID tidak dicatat, aturan keamanan repo)."
+}

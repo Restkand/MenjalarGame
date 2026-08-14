@@ -80,9 +80,16 @@ func update(dt, avatar, world):
 
 
 func _pangkas(avatar, world):
+	# PAGAR (playtest pemilik: jalur putus di bawah kaki = pemain
+	# terdampar tanpa penjelasan): gunting TIDAK menyentuh apa pun
+	# dalam radius dekat ujung yang hidup — tanaman melawan di dekat
+	# tubuhnya. Pemangkasan hanya memakan jalur yang ditinggalkan.
+	var aman = 10.0
 	# gumpalan jejak dalam jangkauan gunting -> layu paksa (mengering
 	# cepat, sistem daur hidup yang menggugurkan)
 	for g in avatar.jejak_daun:
+		if g.pos.distance_to(avatar.pos) < aman:
+			continue
 		if abs(g.pos.x - pos.x) < 5.0 and pos.y - g.pos.y < 12.0 \
 				and pos.y - g.pos.y > -4.0 and g.layu <= 0.0:
 			g.layu = Config.RAMBAT_DAUN_LAYU * 0.35
@@ -91,7 +98,11 @@ func _pangkas(avatar, world):
 	var py = int(round(pos.y))
 	for dy in range(-12, 1):
 		for dx in range(-4, 5):
-			world.potong_tumbuhan(px + dx, py + dy)
+			var sx = px + dx
+			var sy = py + dy
+			if Vector2(sx, sy).distance_to(avatar.pos) < aman:
+				continue
+			world.potong_tumbuhan(sx, sy)
 
 
 # garis pandang horizontal sederhana di ketinggian mata (grid)

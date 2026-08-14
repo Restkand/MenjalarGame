@@ -45,7 +45,8 @@ func _init(a):
 		if ResourceLoader.exists(jalur):
 			var t = load(jalur)
 			var jml = max(1, t.get_width() / 32)
-			_anim[n] = {"tex": t, "n": jml, "geser": _pusat(t, jml)}
+			_anim[n] = {"tex": t, "n": jml, "geser": _pusat(t, jml),
+					"dasar": _dasar(t, jml)}
 
 
 # Badan karakter tidak di tengah kanvas 32 px (menumpuk di satu sisi) —
@@ -53,6 +54,27 @@ func _init(a):
 # playtest pemilik). Ukur pusat massa horizontal rata-rata seluruh
 # frame strip sekali saat muat; _draw menggeser rect sebesar selisihnya
 # supaya badan selalu berpivot tepat di posisi avatar.
+# Baris isi TERBAWAH strip (rata seluruh frame): kaki sprite harus
+# menapak persis garis pijakan — frame yang menyisakan baris kosong di
+# bawah membuat karakter melayang (temuan playtest pemilik: pijakan
+# player vs teknisi tidak sejajar)
+func _dasar(tex, jml):
+	var img = tex.get_image()
+	img.convert(Image.FORMAT_RGBA8)
+	var terbawah = 0
+	for i in range(jml):
+		for y in range(img.get_height() - 1, -1, -1):
+			var ada = false
+			for x in range(32):
+				if img.get_pixel(i * 32 + x, y).a >= 0.5:
+					ada = true
+					break
+			if ada:
+				terbawah = max(terbawah, y)
+				break
+	return 31 - terbawah   # baris kosong di bawah isi
+
+
 func _pusat(tex, jml):
 	var img = tex.get_image()
 	img.convert(Image.FORMAT_RGBA8)
@@ -232,9 +254,11 @@ func _draw():
 			regang = clamp(abs(avatar.vel.y) / Config.AVATAR_LOMPAT,
 					0.0, 1.0)
 		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
+		# kaki menapak persis: baris kosong bawah strip dikompensasi
 		draw_set_transform(p, 0.0, Vector2(cermin * skala.x, skala.y))
 		draw_texture_rect_region(a.tex,
-				Rect2(Vector2(-16.0 + a.geser, -10.0), Vector2(32.0, 32.0)),
+				Rect2(Vector2(-16.0 + a.geser, -10.0 + a.dasar),
+				Vector2(32.0, 32.0)),
 				Rect2(fr * 32.0, 0.0, 32.0, 32.0))
 		draw_set_transform_matrix(Transform2D())
 	elif _state != "rambat_sembunyi":

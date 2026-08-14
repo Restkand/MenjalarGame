@@ -46,13 +46,14 @@ class Papan extends Node2D:
 			var ph = float(tex_panel.get_height())
 			draw_texture_rect(tex_panel,
 					Rect2(cx - pw * 0.5, py, pw, ph), false)
-			_teks(cx - 58.0, py + 72.0, "JEDA", 44, C_TERANG)
-			_teks(cx - 200.0, py + 122.0, "[ESC] LANJUT", 21, C_TERANG)
-			_teks(cx + 32.0, py + 122.0, "[R] ULANG RUANGAN", 21, C_TERANG)
+			# semua teks HARUS di interior pelat (~cx +- 210)
+			_teks(cx - 54.0, py + 70.0, "JEDA", 42, C_TERANG)
+			_teks(cx - 185.0, py + 118.0, "[ESC] LANJUT", 19, C_TERANG)
+			_teks(cx + 15.0, py + 118.0, "[R] ULANG RUANGAN", 19, C_TERANG)
 		else:
-			_teks(cx - 58.0, py + 60.0, "JEDA", 44, C_TERANG)
-			_teks(cx - 200.0, py + 110.0, "[ESC] LANJUT", 21, C_TERANG)
-			_teks(cx + 32.0, py + 110.0, "[R] ULANG RUANGAN", 21, C_TERANG)
+			_teks(cx - 54.0, py + 60.0, "JEDA", 42, C_TERANG)
+			_teks(cx - 185.0, py + 110.0, "[ESC] LANJUT", 19, C_TERANG)
+			_teks(cx + 15.0, py + 110.0, "[R] ULANG RUANGAN", 19, C_TERANG)
 
 		# KOTAK KENDALI: pelat gelap tenang berbingkai metal, kolom
 		# sejajar — rapi terpisah dari kartu judul

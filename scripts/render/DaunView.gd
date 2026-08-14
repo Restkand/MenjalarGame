@@ -5,10 +5,12 @@ extends Node2D
 # bukan sprite yang ikut berpindah. Gumpalan diiris dari art untai
 # daun yang disetujui pemilik (satu bahasa piksel), digelapkan satu
 # tangga supaya UJUNG yang hidup selalu paling terang (EDV3 §3.1).
-# Redraw hanya saat jumlah gumpalan berubah — murah.
+# Redraw TIAP FRAME (600 quad murah) — pemicu berbasis jumlah dulu
+# membeku begitu ring buffer penuh: jumlah tak berubah lagi padahal
+# isinya berganti, jejak baru tak pernah tampil (temuan playtest
+# pemilik: "jejak merambat hilang lalu baru muncul belakangan").
 
 var avatar
-var _n = -1
 var _tex
 
 
@@ -20,9 +22,7 @@ func _init(a):
 
 
 func _process(_delta):
-	if avatar.jejak_daun.size() != _n:
-		_n = avatar.jejak_daun.size()
-		queue_redraw()
+	queue_redraw()
 
 
 func _draw():

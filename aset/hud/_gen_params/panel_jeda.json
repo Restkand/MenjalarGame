@@ -1,0 +1,8 @@
+{
+  "alat": "create_ui_asset",
+  "seed": 1102,
+  "ukuran": "512x512 (hasil: kit UI multi-pelat)",
+  "deskripsi": "large tall dark gunmetal metal panel with rivets and inner plate, living lime green vine tendrils creeping along the border, small glowing leaf accents, stealth game pause menu plate, spacious empty center",
+  "palet_hint": "dark gunmetal grey and lime green",
+  "catatan": "generator mengembalikan KIT lengkap (kit_jeda.png): header besar + pelat baris + tombol kecil + bar panjang + emblem bundar. panel_jeda.png = irisan pita atas (header 489x159) untuk kartu judul menu jeda; sisa kit tersimpan untuk UI mendatang. Snap palet EDV3 STRUCTURE/METAL/TENDRIL/AMBER (proses_panel_jeda + iris_panel_jeda di scratchpad)."
+}

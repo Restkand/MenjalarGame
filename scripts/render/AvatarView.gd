@@ -169,6 +169,22 @@ func _draw():
 		cincin.a = 0.5 * (1.0 - q)
 		draw_arc(p, 8.0 + q * 30.0, 0.0, TAU, 28, cincin, 3.0)
 
+	# RK-2 [A]: beton menolak tumbuh — kedip kelabu singkat di titik
+	# tumbuh (bahasa dunia; teksnya di HUD)
+	if avatar.tumbuh_tolak > 0.0:
+		var tolak = Color("59636F")
+		tolak.a = 0.7 * (avatar.tumbuh_tolak / 0.5)
+		draw_arc(avatar.pos * float(Config.PPU), 7.0, 0.0, TAU, 16,
+				tolak, 2.0)
+
+	# RK-2 [B]: denyut kelahiran node saat F tertanam
+	if avatar.jangkar_baru > 0.0:
+		var q2 = 1.0 - avatar.jangkar_baru / 0.6
+		var lahir = Color("79B83F")
+		lahir.a = 0.6 * (1.0 - q2)
+		draw_arc(avatar.pos * float(Config.PPU), 4.0 + q2 * 26.0,
+				0.0, TAU, 24, lahir, 3.0)
+
 	if _anim.has(_state):
 		var a = _anim[_state]
 		var fr

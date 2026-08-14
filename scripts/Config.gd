@@ -511,6 +511,7 @@ const ZOOM_AVATAR      = 2.0    # zoom awal kamera-ikut P1
 
 # P2 (docs/13 §4): interior gedung — grid lapis kedua `dalam`
 var JANGKAR_BIAYA = 25.0   # F: menanam simpul jaringan di posisi avatar
+var NODE_AURA     = 12.0   # RK-2 [B]: radius aura regen 2x di sekitar node
 const T_RUANG         = 20  # udara interior
 const T_LANTAI        = 21  # slab lantai — padat
 const T_DINDING_DALAM = 22  # dinding kamar / cangkang — padat

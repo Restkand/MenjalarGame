@@ -67,7 +67,7 @@ func _process(delta):
 	var isi = avatar.energi / avatar.energi_max
 	var nominal = isi > 0.9 and not avatar.terdeteksi and not avatar.curiga \
 			and not avatar.regen_mati and not avatar.mengisi \
-			and _layu_flash <= 0.0
+			and _layu_flash <= 0.0 and avatar.tumbuh_tolak <= 0.0
 	if avatar.moda != _moda_lalu or abs(isi - _energi_lalu) > 0.1 \
 			or (avatar.bisa_tempel and not _tempel_lalu):
 		_tenang = 0.0
@@ -126,7 +126,12 @@ func _draw():
 	_nilai(ix, y + 96.0, txt, c3, a)
 
 	# --- petunjuk tombol kontekstual (jawaban "memencet apa?") --------
-	if avatar.moda == avatar.MERAMBAT:
+	if avatar.tumbuh_tolak > 0.0:
+		# RK-2 [A]: kenapa tidak bisa tumbuh — beton menolak (GDD §12)
+		var kelabu = C_LABEL
+		kelabu.a = 1.0
+		_label(ix, y + 118.0, "BETON MENOLAK TUMBUH", a)
+	elif avatar.moda == avatar.MERAMBAT:
 		_label(ix, y + 118.0, "[SPASI] LEPAS   [ESC] JEDA", a)
 	elif avatar.bisa_tempel:
 		_label(ix, y + 118.0, "[W/S] MERAMBAT   [ESC] JEDA", a)

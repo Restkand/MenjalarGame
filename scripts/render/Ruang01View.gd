@@ -172,10 +172,30 @@ func _draw():
 	# — NODE kelahiran di jaringan rumah (§6.2: checkpoint/respawn) dan
 	# KEBOCORAN KATUP sebagai sumber air (§16; cincin minum di AvatarView
 	# yang mengabarkan saat menghisap)
+	# RK-2 [A]: rona lumut samar menandai zona LEMBAP (signifier jujur —
+	# di sinilah pertumbuhan diterima; beton menolak)
+	var lumut = Color("285B2B")
+	lumut.a = 0.12
+	for z in world.ZONA_LEMBAP:
+		draw_rect(Rect2(z.position.x * ppu, z.position.y * ppu,
+				z.size.x * ppu, z.size.y * ppu), lumut)
+	var retak_w = Color("4F8F32")
+	retak_w.a = 0.08
+	for z2 in world.ZONA_RETAK:
+		draw_rect(Rect2(z2.position.x * ppu, z2.position.y * ppu,
+				z2.size.x * ppu, z2.size.y * ppu), retak_w)
+
 	var np = world.node_pos * ppu
 	draw_circle(np, 7.0, Color("285B2B"))
 	draw_circle(np, 4.0, Color("3E7A32"))
 	draw_circle(np + Vector2(-1.0, -1.0), 1.6, Color("79B83F"))
+
+	# RK-2 [B]: node yang DITANAM pemain (F) — bulb yang sama
+	for nd in world.node_tanam:
+		var pn = nd * ppu
+		draw_circle(pn, 6.0, Color("285B2B"))
+		draw_circle(pn, 3.5, Color("3E7A32"))
+		draw_circle(pn + Vector2(-1.0, -1.0), 1.4, Color("79B83F"))
 	var ap = world.air_pos * ppu
 	var tetes = Color("8FA3AE")
 	tetes.a = 0.55

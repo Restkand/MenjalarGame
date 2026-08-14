@@ -36,6 +36,28 @@ var sensor_pos = Vector2(180.0, 10.0)  # MAINTENANCE SENSOR (§14)
 var air_pos = Vector2(242.0, 64.0)
 var node_pos = Vector2(28.0, 109.0)
 
+# RK-2 [D]: TUJUAN ruangan — bulb dorman di dinding kanan, menyala saat
+# dicapai lewat jaringan (SRD §19: ujung rute = dinding kanan)
+var tujuan_pos = Vector2(244.0, 40.0)
+
+# RK-2 [B]: node yang DITANAM pemain lewat F (GDD §6.2)
+var node_tanam = []
+
+# RK-2 [A] — MATERIAL PERMUKAAN (GDD §12, MVP tiga kelas): BETON=0
+# menolak pertumbuhan; RETAK=1 tumbuh normal; LEMBAP=2 tumbuh murah.
+# Zona dalam SATUAN. Lembap: koridor drain + cerobong + celah masuk +
+# kolom dinding kanan yang dialiri kebocoran katup. Retak: bercak
+# dinding tengah (decal retak).
+const ZONA_LEMBAP = [
+	Rect2i(56, 118, 168, 18),    # koridor drain
+	Rect2i(216, 110, 8, 10),     # cerobong keluar
+	Rect2i(64, 110, 8, 10),      # celah masuk
+	Rect2i(234, 28, 14, 84),     # kolom air dinding kanan
+]
+const ZONA_RETAK = [
+	Rect2i(100, 40, 20, 26),     # bercak retak dinding tengah
+]
+
 
 func _init():
 	build()
@@ -46,6 +68,7 @@ func build():
 	padat_t.fill(0)
 	jaringan = {}
 	jalur_seed = []
+	node_tanam = []
 
 	# cangkang: plafon, dua dinding, dan pita lantai tebal (§4: LOW band)
 	_isi(0, 0, PT_W - 1, 0, 1)            # plafon
@@ -111,6 +134,37 @@ func padat(px, py):
 
 func padat_avatar(px, py, _di_dalam):
 	return padat(px, py)
+
+
+# RK-2 [A]: kelas material di titik satuan (GDD §12)
+func material(px, py):
+	var p = Vector2i(px, py)
+	for z in ZONA_LEMBAP:
+		if z.has_point(p):
+			return 2
+	for z in ZONA_RETAK:
+		if z.has_point(p):
+			return 1
+	return 0
+
+
+func bisa_tumbuh(px, py):
+	return material(px, py) > 0
+
+
+# faktor biaya tumbuh: lembap murah (GDD §12 "material ideal")
+func faktor_tumbuh(px, py):
+	return 0.5 if material(px, py) == 2 else 1.0
+
+
+# RK-2 [B]: aura node — regen lebih cepat di dekat node (rumah/tanaman)
+func dekat_node(p):
+	if p.distance_to(node_pos) <= Config.NODE_AURA:
+		return true
+	for n in node_tanam:
+		if p.distance_to(n) <= Config.NODE_AURA:
+			return true
+	return false
 
 
 func di_gerbang_interior(_px, _py):

@@ -68,9 +68,18 @@ kepalanya masing-masing — JANGAN dipakai sebagai acuan aktif):
 
 **Rencana kerja aktif (BUKAN kanon, dibuang setelah selesai):**
 `docs/RK-TENDRIL-FOKUS-BERIKUTNYA.md` — urutan Opsi A: [0] kebersihan
-dokumen ✓ → [1] utang FEEL (lompat/jatuh/crawl) → [2] SENSOR jadi nyata
-(sumbu kedua) → [3] playtest tiga rute (GERBANG KERAS) → [4] grading
-final art (dengan sensor menyala) → [5] lipat ke kanon, buang RK.
+dokumen ✓ → [1] utang FEEL ✓ → [2] SENSOR ✓ → [3] playtest tiga rute
+(GERBANG) → [4] grading final art → [5] lipat ke kanon, buang RK.
+**`docs/RK2-TENDRIL-LOOP.md` (disahkan 15 Agu, DISISIPKAN sebelum
+Langkah 4/5)**: verdict gerbang putaran 2 = teknis lulus, LOOP bolong
+(4 temuan pemilik = halaman GDD yang belum dibangun). Tahapan: [A]
+material bicara (§12: lembap/retak/beton, beton menolak tumbuh) →
+[B] jangkar berdampak (§6.2: node terlihat + aura regen 2x) → [C]
+musuh pertama PEMANGKAS (§14: KARAKTER BARU — bukan Regu Perawat lama,
+putusan pemilik; kandidat dikurasi dulu; patroli lantai, hanya lihat
+moda LEPAS, memotong pertumbuhan pemain, jaringan benih aman) → [D]
+tujuan ruangan (bulb dorman dinding kanan + kabar HUD). Lalu playtest
+loop → baru Langkah 4/5 RK lama.
 
 Baca kanon aktif sebelum menyentuh mekanik/visual apa pun. 13 dokumen
 era Menjalar sengaja dihapus karena membuat produksi bercabang. Kalau

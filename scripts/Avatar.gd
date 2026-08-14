@@ -35,6 +35,8 @@ var _daun_jarak = 0.0      # akumulator jarak antar tanaman gumpalan
 var _denyut = 0.0          # jam denyut tumbuh (julur-cengkeram)
 var hadap = 1.0            # arah hadap terakhir (dipakai view & belok)
 var bisa_tempel = false    # LEPAS menyentuh jaringan — petunjuk HUD [W]
+var tumbuh_tolak = 0.0     # RK-2 [A]: sisa kedip "beton menolak tumbuh"
+var jangkar_baru = 0.0     # RK-2 [B]: sisa denyut kelahiran node
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 
 # RK Langkah 2 — status deteksi sensor, DIISI main tiap frame sebelum
@@ -111,6 +113,8 @@ func update(dt, i, world):
 	if dt <= 0.0:
 		return
 	_tempel_jeda = max(0.0, _tempel_jeda - dt)
+	tumbuh_tolak = max(0.0, tumbuh_tolak - dt)
+	jangkar_baru = max(0.0, jangkar_baru - dt)
 	if i.arah.x != 0.0:
 		hadap = signf(i.arah.x)
 
@@ -169,6 +173,10 @@ func jangkar(world):
 	simpul = pos
 	simpul_dalam = di_dalam
 	jangkar_n += 1
+	# RK-2 [B] (GDD §6.2): node yang TERLIHAT & TERASA — bulb tertanam
+	# di dunia, denyut kelahiran, dan aura regen 2x di sekitarnya
+	world.node_tanam.append(Vector2(px, py))
+	jangkar_baru = 0.6
 	return true
 
 
@@ -179,7 +187,12 @@ func _rambat(dt, i, world):
 	# MENOLAK memulihkan — ketahuan lalu bersembunyi tidak langsung
 	# mengembalikan hak pulih
 	if not regen_mati:
-		energi = min(energi_max, energi + Config.AVATAR_REGEN * dt)
+		# RK-2 [B]: aura node — pulih 2x di dekat node (GDD §6.2
+		# "regenerasi"); jangkar yang mahal kini terasa gunanya
+		var laju_regen = Config.AVATAR_REGEN
+		if world.dekat_node(pos):
+			laju_regen *= 2.0
+		energi = min(energi_max, energi + laju_regen * dt)
 	simpul = pos
 	simpul_dalam = di_dalam
 
@@ -236,7 +249,13 @@ func _rambat(dt, i, world):
 		cy = int(round(tumbuh_ke.y - 2.0))
 		if world.padat_avatar(cx, cy, di_dalam):
 			return
-	var biaya = langkah.length() * Config.RAMBAT_TUMBUH_BIAYA
+	# RK-2 [A] (GDD §12): BETON MENOLAK pertumbuhan — hanya permukaan
+	# lembap/retak yang menerima. Umpan balik dunia + HUD lewat event.
+	if not world.bisa_tumbuh(cx, cy):
+		tumbuh_tolak = 0.5
+		return
+	var biaya = langkah.length() * Config.RAMBAT_TUMBUH_BIAYA \
+			* world.faktor_tumbuh(cx, cy)
 	if energi <= biaya + 4.0:
 		return   # sisakan napas — jangan layu karena tumbuh
 	energi -= biaya

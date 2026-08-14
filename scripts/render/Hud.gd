@@ -101,12 +101,13 @@ func _draw():
 		draw_rect(Rect2(x, y, 283.0, 143.0), latar)
 	var ix = x + 24.0
 
-	# --- MODA & VISIBILITAS berdampingan di dalam panel ---------------
-	_label(ix, y + 40.0, "MODA", a)
+	# --- MODA lalu VISIBILITAS BERTUMPUK (permintaan pemilik: teks
+	# tidak boleh melewati pelat panel) ---------------------------------
+	_label(ix, y + 32.0, "MODA", a)
 	var moda_txt = "MERAMBAT" if avatar.moda == avatar.MERAMBAT else "LEPAS"
-	_nilai(ix, y + 64.0, moda_txt, C_SEHAT, a)
+	_nilai(ix, y + 52.0, moda_txt, C_SEHAT, a)
 
-	_label(ix + 128.0, y + 40.0, "VISIBILITAS", a)
+	_label(ix, y + 76.0, "VISIBILITAS", a)
 	var txt = "TERSEMBUNYI"
 	var c3 = C_REDUP
 	if avatar.terdeteksi:
@@ -120,15 +121,15 @@ func _draw():
 		txt = "TERSAMAR"
 		c3 = C_KUNING
 		c3.a = 0.6
-	_nilai(ix + 128.0, y + 64.0, txt, c3, a)
+	_nilai(ix, y + 96.0, txt, c3, a)
 
 	# --- petunjuk tombol kontekstual (jawaban "memencet apa?") --------
 	if avatar.moda == avatar.MERAMBAT:
-		_label(ix, y + 108.0, "[SPASI] LEPAS   [ESC] JEDA", a)
+		_label(ix, y + 118.0, "[SPASI] LEPAS   [ESC] JEDA", a)
 	elif avatar.bisa_tempel:
-		_label(ix, y + 108.0, "[W/S] MERAMBAT   [ESC] JEDA", a)
+		_label(ix, y + 118.0, "[W/S] MERAMBAT   [ESC] JEDA", a)
 	else:
-		_label(ix, y + 108.0, "[ESC] JEDA", a)
+		_label(ix, y + 118.0, "[ESC] JEDA", a)
 
 	# --- ENERGI: bingkai bar PixelLab, fill hijau generatan di-clip ---
 	var by = y + 146.0

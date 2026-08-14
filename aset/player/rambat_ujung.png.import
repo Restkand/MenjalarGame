@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dfr17sstxcs5n"
-path="res://.godot/imported/merambat_barat.png-750020340179cc0addde9fcb0a283ddd.ctex"
+uid="uid://bwd08q5tqjq5h"
+path="res://.godot/imported/rambat_ujung.png-7cbdd5378e686e23d6e40bb6b8a8ac6c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://aset/player/merambat_barat.png"
-dest_files=["res://.godot/imported/merambat_barat.png-750020340179cc0addde9fcb0a283ddd.ctex"]
+source_file="res://aset/player/rambat_ujung.png"
+dest_files=["res://.godot/imported/rambat_ujung.png-7cbdd5378e686e23d6e40bb6b8a8ac6c.ctex"]
 
 [params]
 

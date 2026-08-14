@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dt7025ec26tsq"
-path="res://.godot/imported/merambat_timur.png-96110d2571029a43511979f9c56aa521.ctex"
+uid="uid://l425q1fhjosk"
+path="res://.godot/imported/rambat_daun.png-c5178697c1971f768a2991081b86a8d5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://aset/player/merambat_timur.png"
-dest_files=["res://.godot/imported/merambat_timur.png-96110d2571029a43511979f9c56aa521.ctex"]
+source_file="res://aset/player/rambat_daun.png"
+dest_files=["res://.godot/imported/rambat_daun.png-c5178697c1971f768a2991081b86a8d5.ctex"]
 
 [params]
 

@@ -5,17 +5,19 @@ extends Node2D
 # pensiun dari view ini — diarsipkan sebagai calon NPC.
 #
 # Strip yang ada: idle_timur/barat (7f), crawl_timur/barat (9f, bedah
-# v7), lompat/jatuh/darat_pegas (6/6/5f, bahasa pegas). Idle & crawl
-# BERARAH (digambar apa adanya); strip pegas satu arah timur, dicermin
-# `hadap`. MERAMBAT sementara memakai idle (placeholder sampai animasi
-# merambat player dibuat). Belok/detach/attach otomatis nonaktif sampai
+# v7), lompat/jatuh/darat_pegas (6/6/5f, bahasa pegas), rambat_ujung
+# (+senyap) 4f — ujung tunas ~10px untuk moda MERAMBAT: tubuh tanaman
+# adalah JEJAK DAUN yang ditanam Avatar (digambar DaunView), sprite
+# hanya ujung hidup berpivot di garis dengan sudut kontinu. Idle &
+# crawl BERARAH (digambar apa adanya); strip pegas satu arah timur,
+# dicermin `hadap`. Belok/detach/attach otomatis nonaktif sampai
 # strip-nya ada — state machine sudah memagari dengan has().
 # Idle dipakai saat nyaris diam di moda mana pun: organisme harus
 # terlihat hidup justru ketika pemain diam (CDD Rule 8), 8-12 fps.
 const ANIM = ["idle_timur", "idle_barat", "crawl_timur", "crawl_barat",
-		"merambat_timur", "merambat_barat", "rambat_senyap",
-		"lompat_pegas", "jatuh_pegas", "darat_pegas", "putar_kiri",
-		"putar_kanan", "detach", "attach"]
+		"rambat_ujung", "rambat_ujung_senyap", "lompat_pegas",
+		"jatuh_pegas", "darat_pegas", "putar_kiri", "putar_kanan",
+		"detach", "attach"]
 
 var avatar
 var _t = 0.0
@@ -32,8 +34,7 @@ var _putar_t = 0.0        # sisa waktu animasi belok
 var _putar = ""           # "putar_kiri" (kanan→kiri) / "putar_kanan"
 var _udara_t = 0.0        # lama melayang — penggerak frame LOMPAT (play-once)
 var _darat_t = 0.0        # sisa waktu animasi mendarat (play-once)
-var _sudut_rambat = 0.0   # sudut gerak untaian di jaringan (radian)
-var _rambat_timur = true  # strip untaian: timur (ujung kanan) / barat
+var _sudut_rambat = 0.0   # sudut gerak ujung tunas di jaringan (radian)
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
 
@@ -111,20 +112,15 @@ func _process(delta):
 		_jarak += pindah
 	_pos_lalu = avatar.pos
 
-	# untaian rambat 8-ARAH (permintaan pemilik: natural ke mana pun,
-	# seperti tanaman merambat): sudut gambar mengikuti arah gerak di
-	# jaringan secara KONTINU, dihaluskan lerp_angle supaya tikungan
-	# melengkung organik. Kiri-an memakai strip barat (ujung menggulung
-	# tetap memimpin, tidak pernah terbalik). Saat berhenti, sudut
-	# terakhir DIPERTAHANKAN — tanaman diam menghadap arah tumbuhnya.
+	# ujung tunas 8-ARAH (permintaan pemilik: natural ke mana pun):
+	# sudut mengikuti arah gerak KONTINU via lerp_angle — sprite ujung
+	# ~10px nyaris simetris, rotasi tidak pernah janggal; arah terbaca
+	# dari jejak daun yang tertanam, bukan dari sprite yang berputar.
+	# Berhenti = sudut terakhir dipertahankan (tanaman diam menghadap
+	# arah tumbuhnya).
 	if avatar.moda == avatar.MERAMBAT and bergerak and pindah > 0.001:
 		var v = gerak / pindah
-		if abs(v.x) > 0.05:
-			_rambat_timur = v.x > 0.0
-		var target_sudut = atan2(v.y, v.x)
-		if not _rambat_timur:
-			target_sudut = wrapf(target_sudut - PI, -PI, PI)
-		_sudut_rambat = lerp_angle(_sudut_rambat, target_sudut,
+		_sudut_rambat = lerp_angle(_sudut_rambat, atan2(v.y, v.x),
 				clamp(delta * 8.0, 0.0, 1.0))
 
 	# udara & pendaratan (OLR §34, setelah crawl lulus playtest): LOMPAT
@@ -158,15 +154,13 @@ func _process(delta):
 		# wajah. Bergerak = undulasi terang; diam = SENYAP gelap
 		# (kamuflase yang selama ini cuma aturan sensor jadi terlihat).
 		if bergerak:
-			if _anim.has("merambat_timur"):
-				# strip dipilih dari arah gerak; sudut kontinu di gambar
-				_state = "merambat_timur" if _rambat_timur \
-						else "merambat_barat"
+			if _anim.has("rambat_ujung"):
+				_state = "rambat_ujung"
 			else:
-				# cadangan lama: crawl (kalau strip merambat hilang)
+				# cadangan lama: crawl (kalau strip ujung hilang)
 				_state = "crawl_timur" if timur else "crawl_barat"
-		elif _anim.has("rambat_senyap"):
-			_state = "rambat_senyap"
+		elif _anim.has("rambat_ujung_senyap"):
+			_state = "rambat_ujung_senyap"
 		else:
 			_state = "idle_timur" if timur else "idle_barat"
 	elif _darat_t > 0.0:
@@ -220,7 +214,7 @@ func _draw():
 		elif _state == "darat_pegas":
 			# splat mendarat diputar SEKALI, maju sesuai sisa waktunya
 			fr = int(clamp((1.0 - _darat_t / 0.18) * a.n, 0.0, a.n - 1.0))
-		elif _state == "rambat_senyap":
+		elif _state == "rambat_ujung_senyap":
 			# senyap: sisa napas sangat pelan — nyaris benda mati
 			fr = int(_t * 3.0) % a.n
 		elif _state.begins_with("idle"):
@@ -238,10 +232,8 @@ func _draw():
 		# ke depan.
 		var berarah = _state.begins_with("idle") \
 				or _state.begins_with("crawl") or _state.begins_with("putar") \
-				or _state.begins_with("merambat") or _state == "rambat_senyap"
+				or _state.begins_with("rambat")
 		var cermin = 1.0 if berarah else avatar.hadap
-		if _state == "rambat_senyap" and not _rambat_timur:
-			cermin = -1.0   # senyap satu strip: cermin ikut arah terakhir
 		# SQUASH & STRETCH pegas dari kecepatan (koreksi feel pemilik:
 		# "tidak terasa dia melompat"): di udara badan MEREGANG mengikuti
 		# laju vertikal — makin kencang naik/turun makin panjang; saat
@@ -258,8 +250,7 @@ func _draw():
 		# kanvas) jatuh tepat di garis sehingga daunnya membungkus garis,
 		# bukan berdiri di atasnya (koreksi pemilik). Rotasi panjat
 		# vertikal berputar di garis yang sama.
-		var untai = _state.begins_with("merambat") \
-				or _state == "rambat_senyap"
+		var untai = _state.begins_with("rambat")
 		var pivot = p
 		var rect_y = -10.0
 		if untai:

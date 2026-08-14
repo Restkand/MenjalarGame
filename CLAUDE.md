@@ -356,18 +356,26 @@ sempat dipasang lalu DITOLAK pemilik — "terbaca tentakel berjalan,
 tidak natural"; pelajaran: wujud rambat harus MENYATU dengan garis,
 bukan berdiri di atasnya. Semua kandidat/alasan di
 aset/player/_gen_params/wujud_rambat.json.
-Bergerak = merambat_timur/barat 8f undulasi gelombang-kolom
-DETERMINISTIK (nol generasi); diam = rambat_senyap 4f GELAP dua
-tangga palet, napas 3 fps — kamuflase sensor akhirnya TERLIHAT;
-identitas pemain saat merambat murni dari gerak (arah horor
-"membunuh dalam diam" pemilik). Arah gambar 8-ARAH KONTINU
-(permintaan pemilik): sudut mengikuti arah gerak via lerp_angle
-(tikungan melengkung organik), kiri-an pakai strip barat (ujung tak
-pernah terbalik), diam mempertahankan sudut terakhir, semua berpivot
-di garis. Grup animasi "merambat"
-(climb imut) di akun TIDAK terpakai — arsip. Penggelapan
-tangga-palet = resep GRATIS untuk frame apa pun (gelap_rambat/
-susun_untai di scratchpad).
+MODEL FINAL 15 Agu (kritik pemilik atas strip untai yang "seperti
+cacing meluncur"): TANAMAN TUMBUH, TIDAK BERPINDAH — arsitektur
+"ujung = avatar, tubuh = jejak":
+- avatar rambat = rambat_ujung 4f, tunas ~10px diiris dari untai
+  seed 1222, berpivot DI garis, sudut 8-arah kontinu lerp_angle
+  (sprite sekecil ini bebas rotasi janggal);
+- tubuh = JEJAK DAUN yang DITANAM Avatar tiap RAMBAT_DAUN_JARAK
+  (avatar.jejak_daun ring RAMBAT_DAUN_MAX, digambar DaunView baru;
+  gumpalan diiris dari untai yang sama, gelap SATU tangga — ujung
+  hidup selalu paling terang, EDV3 §3.1) — ruangan menghijau di
+  jalur yang dilalui, "menyatu dengan ekosistem" pemilik;
+- diam = rambat_ujung_senyap (gelap satu tangga = SENADA gumpalan
+  tertanam -> pemain lenyap ke dedaunan yang ia tanam sendiri);
+- DENYUT TUMBUH di Avatar._rambat (julur-cengkeram sin^0.7,
+  Config.RAMBAT_DENYUT/RAMBAT_DENYUT_DASAR, rata-rata DINORMALKAN
+  tetap AVATAR_RAMBAT — GDD §6.1 aman) = jawaban "meluncur di es".
+Terverifikasi deterministik (blok uji dibuang): rata-rata denyut
+±15% RAMBAT, 67 gumpalan / 108 satuan. Strip untai besar DIHAPUS;
+grup climb imut akun arsip. Penggelapan tangga-palet = resep GRATIS
+(iris_ujung di scratchpad).
 Sisa set: detach/attach = MOMEN TRANSFORMASI imut<->tanaman (beat
 horor kunci berikutnya) -> belok.
 SPP perlu revisi pemilik (ditulis untuk Master A). Gerbang RK

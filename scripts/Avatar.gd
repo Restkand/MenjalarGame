@@ -29,6 +29,10 @@ var mengisi = false        # P3: sedang di sumber (untuk denyut view)
 var sumber = ""            # "air" / "cahaya" saat mengisi — untuk ikon HUD
 var jejak = []             # P3: jalur sulur yang DITUMBUHKAN avatar —
                            # [{pos, dalam}] digambar JejakView
+var jejak_daun = []        # gumpalan daun DITANAM ujung saat merambat —
+                           # [{pos, sudut, varian, dalam}], DaunView
+var _daun_jarak = 0.0      # akumulator jarak antar tanaman gumpalan
+var _denyut = 0.0          # jam denyut tumbuh (julur-cengkeram)
 var hadap = 1.0            # arah hadap terakhir (dipakai view & belok)
 var bisa_tempel = false    # LEPAS menyentuh jaringan — petunjuk HUD [W]
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
@@ -68,6 +72,9 @@ func mulai(p):
 	mengisi = false
 	bisa_tempel = false
 	jejak = []
+	jejak_daun = []
+	_daun_jarak = 0.0
+	_denyut = 0.0
 	_tempel_jeda = 0.0
 	tahap = 1
 	tahap_baru = 0
@@ -118,7 +125,22 @@ func update(dt, i, world):
 		return
 
 	if moda == MERAMBAT:
+		# ujung MENANAM dedaunan di jalur yang dilaluinya (permintaan
+		# pemilik: merambat menyatu dengan ekosistem — tubuh tanaman =
+		# jejak yang tertinggal, ujung hanyalah tunas kecil yang hidup)
+		var pos_r = pos
 		_rambat(dt, i, world)
+		var d = pos_r.distance_to(pos)
+		if d > 0.0:
+			_daun_jarak += d
+			if _daun_jarak >= Config.RAMBAT_DAUN_JARAK:
+				_daun_jarak -= Config.RAMBAT_DAUN_JARAK
+				jejak_daun.append({"pos": pos,
+						"sudut": (pos - pos_r).angle(),
+						"varian": jejak_daun.size() % 3,
+						"dalam": di_dalam})
+				if jejak_daun.size() > Config.RAMBAT_DAUN_MAX:
+					jejak_daun.pop_front()
 	else:
 		_lepas(dt, i, world)
 
@@ -163,9 +185,18 @@ func _rambat(dt, i, world):
 
 	if arah == Vector2.ZERO:
 		return
-	# laju merambat tunggal — sprint era pivot dihapus (bukan kanon);
-	# merambat memang sudah moda tercepat (GDD §6.1)
-	var langkah = arah.normalized() * Config.AVATAR_RAMBAT * dt
+	# DENYUT TUMBUH (permintaan pemilik: merambat = meraih-mencengkeram,
+	# bukan meluncur di es): laju berdenyut julur cepat -> cengkeram
+	# pelan; dinormalkan supaya rata-rata tetap AVATAR_RAMBAT (GDD §6.1:
+	# merambat tetap moda tercepat). Integral sin^0.7 setengah-siklus
+	# ~0.63 — pembagi normalisasi.
+	_denyut += dt
+	var fase_d = fmod(_denyut, Config.RAMBAT_DENYUT) / Config.RAMBAT_DENYUT
+	var dasar = Config.RAMBAT_DENYUT_DASAR
+	var kurva = pow(max(0.0, sin(fase_d * PI)), 0.7)
+	var faktor = (dasar + (1.0 - dasar) * kurva) \
+			/ (dasar + (1.0 - dasar) * 0.63)
+	var langkah = arah.normalized() * Config.AVATAR_RAMBAT * faktor * dt
 	# coba gerak penuh; kalau keluar jaringan, coba per sumbu (menyusur).
 	# Kandidat yang tidak benar-benar bergerak DILEWATI — kandidat sumbu
 	# dengan komponen nol adalah "gerakan nol yang selalu sah" dan diam-diam

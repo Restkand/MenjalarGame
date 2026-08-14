@@ -99,7 +99,9 @@ func _draw():
 		var latar = C_LATAR
 		latar.a = 0.55 * a
 		draw_rect(Rect2(x, y, 283.0, 143.0), latar)
-	var ix = x + 24.0
+	# padding kiri interior pelat (playtest pemilik: teks terlalu mepet
+	# tepi — bingkai sulur butuh ruang napas)
+	var ix = x + 48.0
 
 	# --- MODA lalu VISIBILITAS BERTUMPUK (permintaan pemilik: teks
 	# tidak boleh melewati pelat panel) ---------------------------------
@@ -151,7 +153,7 @@ func _draw():
 		for k in range(1, 10):
 			draw_rect(Rect2(x + PALUNG_X + PALUNG_W * k / 10.0,
 					by + PALUNG_Y, 2.0, PALUNG_H), takik)
-		_label(x + 24.0, by + 34.0, "ENERGI", a)
+		_label(x + 36.0, by + 34.0, "ENERGI", a)
 		# jaringan menolak memulihkan: bingkai kuning di sekitar palung
 		if avatar.regen_mati:
 			var kunci = C_KUNING

@@ -15,6 +15,8 @@ const AvatarCls      = preload("res://scripts/Avatar.gd")
 const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
 const DaunViewCls    = preload("res://scripts/render/DaunView.gd")
 const SensorCls      = preload("res://scripts/Sensor.gd")
+const PemangkasCls   = preload("res://scripts/Pemangkas.gd")
+const PemangkasViewCls = preload("res://scripts/render/PemangkasView.gd")
 const HudCls         = preload("res://scripts/render/Hud.gd")
 const MenuJedaCls    = preload("res://scripts/render/MenuJeda.gd")
 
@@ -34,6 +36,9 @@ var _lompat_lalu = false   # edge Spasi
 var _jangkar_lalu = false  # edge F
 var _esc_lalu = false      # edge Esc — menu jeda
 var menu_jeda
+var pemangkas              # RK-2 [C]: musuh pertama
+var hud
+var _tujuan_capai = false  # RK-2 [D]: tujuan ruangan sekali-capai
 
 
 func _ready():
@@ -82,10 +87,16 @@ func _ready():
 	sensor = SensorCls.new()
 	sensor.pos = world.sensor_pos
 
+	# RK-2 [C]: SATU Pemangkas berpatroli di lantai tengah terbuka
+	# (x 84-130, sebelum tangga peti) — rute cepat kini berpenjaga
+	pemangkas = PemangkasCls.new(84.0, 130.0)
+	add_child(PemangkasViewCls.new(pemangkas))
+
 	# HUD GDD §31 di CanvasLayer sendiri — tidak ikut kamera/zoom
 	var lapis_hud = CanvasLayer.new()
 	add_child(lapis_hud)
-	lapis_hud.add_child(HudCls.new(avatar))
+	hud = HudCls.new(avatar)
+	lapis_hud.add_child(hud)
 
 	# MENU JEDA: main berjalan TERUS (membaca ESC saat pohon dibekukan);
 	# seluruh logika game di _process dipagari get_tree().paused, dan
@@ -170,6 +181,8 @@ func _process(delta):
 		world.build()
 		avatar.mulai(world.mulai_pos)
 		_waspada = 0.0
+		_tujuan_capai = false
+		ruang_view.tujuan_nyala = false
 
 	# RK Langkah 2-3: siklus pindai jalan dulu, lalu state — TERDETEKSI
 	# menyalakan alarm (pindai terkunci + jaringan menolak memulihkan)
@@ -227,6 +240,14 @@ func _process(delta):
 		_lampu_sensor.texture_scale = 3.0
 
 	avatar.update(delta, i, world)
+	pemangkas.update(delta, avatar, world)
+
+	# RK-2 [D]: mencapai TUJUAN lewat jaringan — bulb menyala + kabar
+	if not _tujuan_capai and avatar.moda == avatar.MERAMBAT \
+			and avatar.pos.distance_to(world.tujuan_pos) < 5.0:
+		_tujuan_capai = true
+		ruang_view.tujuan_nyala = true
+		hud.kabar("RUANGAN DITEMBUS", 4.0)
 
 	# kamera mengejar titik tengah badan; cahaya hijau mengikuti TENDRIL
 	cam.position = (avatar.pos + Vector2(0.0, -Config.AVATAR_TINGGI * 0.5)) \

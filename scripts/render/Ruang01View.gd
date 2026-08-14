@@ -14,6 +14,7 @@ var world
 var sensor_state = 0
 var _state_lalu = -1
 var _tex = {}
+var tujuan_nyala = false   # RK-2 [D]: diset Ruang01Main saat tercapai
 
 # DIGELAPKAN (playtest pemilik: vegetasi terlalu terang, kurang horor)
 # — massa tanaman tenggelam ke rona gelap; satu-satunya hijau menyala
@@ -196,6 +197,18 @@ func _draw():
 		draw_circle(pn, 6.0, Color("285B2B"))
 		draw_circle(pn, 3.5, Color("3E7A32"))
 		draw_circle(pn + Vector2(-1.0, -1.0), 1.4, Color("79B83F"))
+
+	# RK-2 [D]: TUJUAN di dinding kanan — bulb DORMAN (kelabu-amber)
+	# yang MENYALA hijau saat dicapai lewat jaringan (SRD §19)
+	var tp = world.tujuan_pos * ppu
+	if tujuan_nyala:
+		draw_circle(tp, 8.0, Color("285B2B"))
+		draw_circle(tp, 5.0, Color("6FBF3E"))
+		draw_circle(tp + Vector2(-1.5, -1.5), 2.0, Color("D6FF8F"))
+	else:
+		draw_circle(tp, 7.0, Color("232B36"))
+		draw_circle(tp, 4.0, Color("3D4757"))
+		draw_circle(tp + Vector2(-1.0, -1.0), 1.5, Color("8A5A20"))
 	var ap = world.air_pos * ppu
 	var tetes = Color("8FA3AE")
 	tetes.a = 0.55

@@ -31,6 +31,15 @@ var _moda_lalu = -1
 var _energi_lalu = -1.0
 var _tempel_lalu = false  # tepi bisa_tempel — bangunkan HUD untuk petunjuk
 var _layu_flash = 0.0     # sisa kedip gelap layu
+var _kabar = ""           # RK-2 [D]: kabar besar tengah layar
+var _kabar_t = 0.0
+var _kabar_total = 1.0
+
+
+func kabar(teks, detik):
+	_kabar = teks
+	_kabar_t = detik
+	_kabar_total = detik
 
 var _font
 var _tex_panel                 # aset/hud PixelLab (permintaan pemilik):
@@ -62,6 +71,7 @@ func _process(delta):
 		avatar.layu_baru = false
 		_layu_flash = 0.9
 	_layu_flash = max(0.0, _layu_flash - delta)
+	_kabar_t = max(0.0, _kabar_t - delta)
 
 	# §31: penting = ada yang berubah / keadaan tidak nominal
 	var isi = avatar.energi / avatar.energi_max
@@ -87,6 +97,20 @@ func _draw():
 		var gelap = C_LATAR
 		gelap.a = 0.85 * (_layu_flash / 0.9)
 		draw_rect(get_viewport_rect(), gelap)
+
+	# RK-2 [D]: kabar besar tengah-atas layar (memudar di akhir)
+	if _kabar_t > 0.0 and _kabar != "":
+		var lebar_layar = get_viewport_rect().size.x
+		var a_k = clamp(_kabar_t / (_kabar_total * 0.3), 0.0, 1.0)
+		var bayang_k = C_LATAR
+		bayang_k.a = 0.85 * a_k
+		var isi_k = C_SEHAT
+		isi_k.a = a_k
+		var tx = lebar_layar * 0.5 - _kabar.length() * 10.5
+		draw_string(_font, Vector2(tx + 2.0, 122.0), _kabar,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 38, bayang_k)
+		draw_string(_font, Vector2(tx, 120.0), _kabar,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 38, isi_k)
 
 	var a = _alpha
 	var x = 16.0

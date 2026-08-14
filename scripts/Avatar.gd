@@ -260,7 +260,7 @@ func _rambat(dt, i, world):
 		return   # sisakan napas — jangan layu karena tumbuh
 	energi -= biaya
 	pos = tumbuh_ke
-	world.tandai_jaringan(cx, cy)
+	world.tandai_jaringan(cx, cy, true)
 	# tonggak wujud CDD §9 — murni dari total pertumbuhan, tanpa membuka
 	# kemampuan apa pun
 	tumbuh_total += langkah.length()

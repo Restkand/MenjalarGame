@@ -26,6 +26,9 @@ const H      = PT_H * TILE # 144 satuan
 
 var padat_t = PackedByteArray()   # 1 per tile = beton graybox
 var jaringan = {}                 # Vector2i satuan -> 1
+var jaringan_tumbuh = {}          # sel yang DITUMBUHKAN pemain — bisa
+                                  # dipangkas Pemangkas (benih & node
+                                  # jangkar PERMANEN, RK-2 [C])
 var jalur_seed = []               # [Vector2 a, Vector2 b] — digambar view
 var mulai_pos = Vector2(28.0, 111.9)   # di jaringan rumah (§5: START)
 var sensor_pos = Vector2(180.0, 10.0)  # MAINTENANCE SENSOR (§14)
@@ -67,6 +70,7 @@ func build():
 	padat_t.resize(PT_W * PT_H)
 	padat_t.fill(0)
 	jaringan = {}
+	jaringan_tumbuh = {}
 	jalur_seed = []
 	node_tanam = []
 
@@ -171,7 +175,7 @@ func di_gerbang_interior(_px, _py):
 	return false   # Room 01 tidak punya pintu interior (§32)
 
 
-func tandai_jaringan(px, py):
+func tandai_jaringan(px, py, tumbuh = false):
 	for dy in range(-1, 2):
 		var y = py + dy
 		if y < 0 or y >= H:
@@ -180,7 +184,20 @@ func tandai_jaringan(px, py):
 			var x = px + dx
 			if x < 0 or x >= W:
 				continue
-			jaringan[Vector2i(x, y)] = 1
+			var sel = Vector2i(x, y)
+			# sel tumbuhan pemain ditandai TERPISAH — hanya sel yang
+			# belum jadi jaringan (benih/node tak boleh ikut terpangkas)
+			if tumbuh and not jaringan.has(sel):
+				jaringan_tumbuh[sel] = 1
+			jaringan[sel] = 1
+
+
+# RK-2 [C]: Pemangkas memotong sel tumbuhan pemain (benih/node aman)
+func potong_tumbuhan(px, py):
+	var sel = Vector2i(px, py)
+	if jaringan_tumbuh.has(sel):
+		jaringan_tumbuh.erase(sel)
+		jaringan.erase(sel)
 
 
 func jaringan_di(px, py):

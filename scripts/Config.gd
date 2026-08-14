@@ -512,6 +512,13 @@ const ZOOM_AVATAR      = 2.0    # zoom awal kamera-ikut P1
 # P2 (docs/13 §4): interior gedung — grid lapis kedua `dalam`
 var JANGKAR_BIAYA = 25.0   # F: menanam simpul jaringan di posisi avatar
 var NODE_AURA     = 12.0   # RK-2 [B]: radius aura regen 2x di sekitar node
+
+# RK-2 [C] — PEMANGKAS (musuh pertama, GDD §14; MVP tanpa combat)
+var PEMANGKAS_JALAN   = 10.0   # laju patroli
+var PEMANGKAS_KEJAR   = 22.0   # laju mengejar (di bawah lari player 24)
+var PEMANGKAS_PANDANG = 48.0   # jarak pandang horizontal
+var PEMANGKAS_KURAS   = 25.0   # energi hilang saat tertangkap
+var PEMANGKAS_JEDA    = 1.5    # detik jeda di ujung patroli / usai tangkap
 const T_RUANG         = 20  # udara interior
 const T_LANTAI        = 21  # slab lantai — padat
 const T_DINDING_DALAM = 22  # dinding kamar / cangkang — padat

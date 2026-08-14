@@ -279,6 +279,15 @@ perintah pemilik)** — audit lengkap lihat riwayat percakapan/commit:
   anak PAUSABLE, logika _process dipagari paused) sekaligus kartu
   KENDALI. Terverifikasi deterministik (blok uji dibuang).
 
+**Gerbang Langkah 3, putaran 2 — SIAP DIUJI (15 Agu)**: bot
+deterministik membuktikan tiga rute tertempuh pasca paket beban:
+AMAN energi utuh 100 (jaringan penuh, lantai→dinding kiri→plafon→
+dinding kanan), CEPAT sisa 58 (lari+lompat celah+tangga peti sampai
+x≥210), RAHASIA sisa 84 (celah→drain→tempel garis tersembunyi→tumbuh
+naik cerobong, muncul di 216,112). Blok uji dibuang. Yang TIDAK bisa
+diuji bot = inti gerbangnya: apakah memilih rute TERASA keputusan
+(Splinter Cell) — menunggu playtest pemilik.
+
 **Gerbang Langkah 3, putaran 1 (14 Agustus)**: putusan pemilik —
 "memilih rute HARUS terasa seperti keputusan; ini stealth game
 terinspirasi Splinter Cell" → sumbu stealth dipertajam sesuai resep RK

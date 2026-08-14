@@ -138,11 +138,21 @@ func update(dt, i, world):
 				jejak_daun.append({"pos": pos,
 						"sudut": (pos - pos_r).angle(),
 						"varian": jejak_daun.size() % 3,
-						"dalam": di_dalam})
-				if jejak_daun.size() > Config.RAMBAT_DAUN_MAX:
-					jejak_daun.pop_front()
+						"dalam": di_dalam, "layu": 0.0})
 	else:
 		_lepas(dt, i, world)
+
+	# DAUR HIDUP JEJAK (GDD §6.3: jaringan bisa mati; usul pemilik):
+	# melewati batas ring, gumpalan TERTUA tidak dihapus mendadak —
+	# ia MENGERING (hijau -> cokelat -> pudar) lalu rontok. Hanya
+	# beberapa tertua yang layu bersamaan; sisanya menunggu giliran.
+	if jejak_daun.size() > Config.RAMBAT_DAUN_MAX:
+		var lebih = jejak_daun.size() - Config.RAMBAT_DAUN_MAX
+		for j in range(min(lebih, 4)):
+			jejak_daun[j].layu += dt
+		while jejak_daun.size() > 0 \
+				and jejak_daun[0].layu >= Config.RAMBAT_DAUN_LAYU:
+			jejak_daun.pop_front()
 
 
 # F: menanam simpul jaringan di posisi avatar (P2) — checkpoint + titik
@@ -290,7 +300,8 @@ func _lepas(dt, i, world):
 		# (makhluk luruh jadi dedaunan) diserahterimakan ke gumpalan
 		# nyata — tubuh benar-benar "menjadi tanaman di sini"
 		jejak_daun.append({"pos": pos, "sudut": 0.0,
-				"varian": jejak_daun.size() % 3, "dalam": di_dalam})
+				"varian": jejak_daun.size() % 3, "dalam": di_dalam,
+				"layu": 0.0})
 		return
 
 	# coyote & buffer: pengampunan waktu khas platformer yang enak

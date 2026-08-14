@@ -493,6 +493,7 @@ var RAMBAT_DENYUT       = 1.1   # detik satu siklus julur-cengkeram
 var RAMBAT_DENYUT_DASAR = 0.25  # laju terendah saat mencengkeram (0..1)
 var RAMBAT_DAUN_JARAK   = 1.6   # satuan antar gumpalan daun tertanam
 var RAMBAT_DAUN_MAX     = 600   # gumpalan tertanam terbanyak (ring)
+var RAMBAT_DAUN_LAYU    = 2.4   # detik gumpalan tertua mengering-rontok
 var AVATAR_JALAN       = 17.0   # laju horizontal maksimum saat LEPAS
 var AVATAR_ACCEL       = 60.0   # gas: ~0.3 dtk menuju laju penuh
 var AVATAR_REM         = 100.0  # rem: berhenti/berbalik lebih cengkeram

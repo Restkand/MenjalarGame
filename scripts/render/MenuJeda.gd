@@ -12,10 +12,10 @@ const C_TERANG = Color("A8D94A")
 
 const KENDALI = [
 	["WASD",  "bergerak / arah rambat"],
-	["W / S", "menempel ke jaringan (saat menyentuh garis hijau)"],
-	["SPASI", "lompat - dari jaringan: melepaskan diri"],
+	["W / S", "menempel ke garis jaringan"],
+	["SPASI", "lompat / melepaskan diri"],
 	["SHIFT", "lari (moda lepas)"],
-	["F",     "menanam jangkar simpul (mahal)"],
+	["F",     "tanam jangkar simpul (mahal)"],
 	["R",     "ulang ruangan"],
 ]
 
@@ -28,33 +28,49 @@ class Papan extends Node2D:
 
 	func _init():
 		font = ThemeDB.fallback_font
-		if ResourceLoader.exists("res://aset/hud/panel.png"):
-			tex_panel = load("res://aset/hud/panel.png")
+		if ResourceLoader.exists("res://aset/hud/panel_jeda.png"):
+			tex_panel = load("res://aset/hud/panel_jeda.png")
 
 	func _draw():
 		var layar = get_viewport_rect().size
 		var gelap = C_LATAR
 		gelap.a = 0.72
 		draw_rect(Rect2(Vector2(), layar), gelap)
-
 		var cx = layar.x * 0.5
-		# kartu = panel PixelLab yang sama dengan HUD, skala 2x
+
+		# KARTU JUDUL: panel header PixelLab khusus jeda (kit seed 1102)
+		# — judul & aksi DI DALAM pelat, tidak ada teks menembus bingkai
+		var py = 170.0
 		if tex_panel:
-			var pw = tex_panel.get_width() * 2.0
-			var ph = tex_panel.get_height() * 2.0
+			var pw = float(tex_panel.get_width())
+			var ph = float(tex_panel.get_height())
 			draw_texture_rect(tex_panel,
-					Rect2(cx - pw * 0.5, 130.0, pw, ph), false)
-		var y = 216.0
-		_teks(cx - 64.0, y, "JEDA", 52, C_TERANG)
-		y += 74.0
-		_teks(cx - 216.0, y, "[ESC] LANJUT", 25, C_TERANG)
-		_teks(cx + 30.0, y, "[R] ULANG RUANGAN", 25, C_TERANG)
-		y = 480.0
-		_teks(cx - 216.0, y, "KENDALI", 20, C_LABEL)
-		y += 36.0
+					Rect2(cx - pw * 0.5, py, pw, ph), false)
+			_teks(cx - 58.0, py + 72.0, "JEDA", 44, C_TERANG)
+			_teks(cx - 200.0, py + 122.0, "[ESC] LANJUT", 21, C_TERANG)
+			_teks(cx + 32.0, py + 122.0, "[R] ULANG RUANGAN", 21, C_TERANG)
+		else:
+			_teks(cx - 58.0, py + 60.0, "JEDA", 44, C_TERANG)
+			_teks(cx - 200.0, py + 110.0, "[ESC] LANJUT", 21, C_TERANG)
+			_teks(cx + 32.0, py + 110.0, "[R] ULANG RUANGAN", 21, C_TERANG)
+
+		# KOTAK KENDALI: pelat gelap tenang berbingkai metal, kolom
+		# sejajar — rapi terpisah dari kartu judul
+		var kw = 520.0
+		var kx = cx - kw * 0.5
+		var ky = py + 190.0
+		var kh = 64.0 + KENDALI.size() * 34.0
+		var latar_k = C_LATAR
+		latar_k.a = 0.85
+		draw_rect(Rect2(kx, ky, kw, kh), latar_k)
+		var bingkai = Color("59636F")
+		bingkai.a = 0.5
+		draw_rect(Rect2(kx, ky, kw, kh), bingkai, false, 2.0)
+		_teks(kx + 28.0, ky + 38.0, "KENDALI", 18, C_LABEL)
+		var y = ky + 74.0
 		for baris in KENDALI:
-			_teks(cx - 216.0, y, baris[0], 22, C_TERANG)
-			_teks(cx - 100.0, y, baris[1], 22, C_LABEL)
+			_teks(kx + 28.0, y, baris[0], 20, C_TERANG)
+			_teks(kx + 140.0, y, baris[1], 20, C_LABEL)
 			y += 34.0
 
 	func _teks(x, y, teks, ukuran, warna):

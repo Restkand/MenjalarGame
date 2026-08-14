@@ -174,11 +174,13 @@ func _label(x, y, teks, a):
 
 
 func _nilai(x, y, teks, warna, a):
+	# 19 px: "TERSEMBUNYI" harus muat di kolom kanan interior panel
+	# (playtest pemilik: 24 px meluber keluar bingkai)
 	var bayang = C_LATAR
 	bayang.a = 0.8 * a
 	draw_string(_font, Vector2(x + 2.0, y + 2.0), teks,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 24, bayang)
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 19, bayang)
 	var c = warna
 	c.a = c.a * a
 	draw_string(_font, Vector2(x, y), teks,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 24, c)
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 19, c)

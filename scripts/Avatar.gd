@@ -185,17 +185,15 @@ func _rambat(dt, i, world):
 
 	if arah == Vector2.ZERO:
 		return
-	# DENYUT TUMBUH (permintaan pemilik: merambat = meraih-mencengkeram,
-	# bukan meluncur di es): laju berdenyut julur cepat -> cengkeram
-	# pelan; dinormalkan supaya rata-rata tetap AVATAR_RAMBAT (GDD §6.1:
-	# merambat tetap moda tercepat). Integral sin^0.7 setengah-siklus
-	# ~0.63 — pembagi normalisasi.
+	# DENYUT TUMBUH BERBEBAN (playtest pemilik: masih terasa cepat —
+	# beban ditambah): AVATAR_RAMBAT kini laju PUNCAK juluran; fase
+	# cengkeram melambat dalam tanpa normalisasi, rata-rata efektif
+	# ~72% puncak. Tafsir GDD §6.1: "34" = laju julur maksimum.
 	_denyut += dt
 	var fase_d = fmod(_denyut, Config.RAMBAT_DENYUT) / Config.RAMBAT_DENYUT
 	var dasar = Config.RAMBAT_DENYUT_DASAR
-	var kurva = pow(max(0.0, sin(fase_d * PI)), 0.7)
-	var faktor = (dasar + (1.0 - dasar) * kurva) \
-			/ (dasar + (1.0 - dasar) * 0.63)
+	var faktor = dasar + (1.0 - dasar) \
+			* pow(max(0.0, sin(fase_d * PI)), 0.7)
 	var langkah = arah.normalized() * Config.AVATAR_RAMBAT * faktor * dt
 	# coba gerak penuh; kalau keluar jaringan, coba per sumbu (menyusur).
 	# Kandidat yang tidak benar-benar bergerak DILEWATI — kandidat sumbu

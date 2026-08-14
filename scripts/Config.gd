@@ -483,11 +483,10 @@ const C_RETAK     = Color("3A3A36")
 # ---------------------------------------------------------------------------
 # Semua kecepatan/percepatan dalam SATUAN simulasi per detik.
 var AVATAR_RAMBAT      = 34.0   # laju gerak di jaringan (moda MERAMBAT)
-# denyut tumbuh (permintaan pemilik: merambat = meraih-cengkeram, bukan
-# meluncur di es): laju berdenyut menjulur-mencengkeram; rata-rata
-# dinormalkan tetap AVATAR_RAMBAT (GDD §6.1 merambat tetap tercepat)
-var RAMBAT_DENYUT       = 0.9   # detik satu siklus julur-cengkeram
-var RAMBAT_DENYUT_DASAR = 0.32  # laju terendah saat mencengkeram (0..1)
+# denyut tumbuh BERBEBAN (playtest pemilik: AVATAR_RAMBAT = laju PUNCAK
+# juluran; cengkeram melambat dalam, rata-rata efektif ~72% puncak)
+var RAMBAT_DENYUT       = 1.1   # detik satu siklus julur-cengkeram
+var RAMBAT_DENYUT_DASAR = 0.25  # laju terendah saat mencengkeram (0..1)
 var RAMBAT_DAUN_JARAK   = 1.6   # satuan antar gumpalan daun tertanam
 var RAMBAT_DAUN_MAX     = 600   # gumpalan tertanam terbanyak (ring)
 var AVATAR_JALAN       = 24.0   # laju horizontal maksimum saat LEPAS

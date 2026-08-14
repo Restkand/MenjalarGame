@@ -28,7 +28,6 @@ var _transisi = ""
 var _moda_lalu = -1
 var _pos_lalu = Vector2()
 var _jarak = 0.0          # jarak tempuh — penggerak frame lokomotasi
-var _miring = 0.0         # condongan ujung ke arah gerak (CDD §5.1/SPP §56)
 var _hadap_lalu = 1.0     # deteksi balik arah → animasi BELOK (spec §9)
 var _putar_t = 0.0        # sisa waktu animasi belok
 var _putar = ""           # "putar_kiri" (kanan→kiri) / "putar_kanan"
@@ -135,13 +134,9 @@ func _process(delta):
 		_udara_t = 0.0
 	_darat_t = max(0.0, _darat_t - delta)
 
-	# ujung memimpin (permintaan playtest, sesuai ADR §11): saat berjalan
-	# LEPAS, tubuh condong halus ke arah gerak sehingga ujung/daun tampak
-	# melangkah lebih dulu. Kecil (~9°) supaya tidak terbaca mau jatuh;
-	# cermin hadap membuat condongannya otomatis mengikuti arah.
-	var target_miring = 0.16 if (bergerak and avatar.moda == avatar.LEPAS) \
-			else 0.0
-	_miring = lerpf(_miring, target_miring, clamp(delta * 8.0, 0.0, 1.0))
+	# condongan "ujung memimpin" era Master A DICABUT (playtest pemilik:
+	# di karakter 32px crawl jadi terbaca miring) — bahasa gerak sudah
+	# dibawa strip gelombangnya sendiri
 	# prioritas: transisi > belok > darat > udara > gerak > idle
 	var timur = avatar.hadap > 0.0
 	if _transisi_t > 0.0 and _anim.has(_transisi):
@@ -244,7 +239,7 @@ func _draw():
 			regang = clamp(abs(avatar.vel.y) / Config.AVATAR_LOMPAT,
 					0.0, 1.0)
 		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
-		var rotasi = _miring * avatar.hadap
+		var rotasi = 0.0
 		# wujud untaian rambat: BERPIVOT DI GARIS (posisi avatar = titik
 		# di garis jaringan) dan rect terpusat — batang untaian (tengah
 		# kanvas) jatuh tepat di garis sehingga daunnya membungkus garis,

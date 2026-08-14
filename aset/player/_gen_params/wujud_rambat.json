@@ -1,18 +1,22 @@
 {
   "alat": "create_image_pixflux",
   "terpilih": {
-    "seed": 1201,
-    "ukuran": "64x64 -> 32 nearest",
-    "deskripsi": "side view pixel art creature, crawling vine tendril, thick curling stem, growing tip curled like a fern fiddlehead pointing forward, small leaves along the stem, patches of woody brown bark, no face, no eyes, dark outline, black background",
-    "palet_paksa": ["102016", "19351E", "285B2B", "4F8F32", "79B83F", "A8D94A", "5C4433", "7A5C3A", "A87B4E"]
+    "seed": 1222,
+    "ukuran": "64x32 -> 32x16 nearest, dicermin (ujung ke timur), komposit tengah kanvas 32x32",
+    "deskripsi": "horizontal creeping vine covered in dense layered leaves, leafy camouflage strand lying flat, hidden stem, small curled tip at the right end, low wide profile, no face, no eyes, dark outline, black background",
+    "palet_paksa": ["102016", "19351E", "285B2B", "4F8F32", "79B83F", "A8D94A", "5C4433", "7A5C3A", "A87B4E"],
+    "catatan": "UNTAIAN DAUN membungkus garis jaringan - view menggambar berpivot DI garis (rect terpusat) sehingga daun mengelilingi garis, bukan berdiri di atasnya"
   },
   "kandidat_ditolak": [
-    {"seed": 1202, "catatan": "terbaca binatang berkaki, bukan tanaman"},
-    {"seed": 1203, "catatan": "postur tegak gaya ular, kurang memeluk permukaan"},
-    {"seed": 1211, "catatan": "varian duri img2img strength 180 - tidak dipilih"},
-    {"seed": 1212, "catatan": "varian bayang strength 160 - penggelapan tidak keluar dari generator"},
-    {"seed": 1213, "catatan": "varian jerat strength 120 - loop tegak"}
+    {"seed": 1201, "catatan": "sulur-S tegak - DITOLAK pemilik setelah dipasang: terbaca tentakel berjalan, tidak natural"},
+    {"seed": 1202, "catatan": "terbaca binatang berkaki"},
+    {"seed": 1203, "catatan": "postur tegak gaya ular"},
+    {"seed": 1211, "catatan": "varian duri dari 1201"},
+    {"seed": 1212, "catatan": "varian bayang dari 1201 - generator menolak menggelap"},
+    {"seed": 1213, "catatan": "varian jerat dari 1201"},
+    {"seed": 1221, "catatan": "untai ivy - melebur total, gagal keterbacaan avatar"},
+    {"seed": 1223, "catatan": "untai kayu - terbaca kotoran di garis"}
   ],
-  "strip": "merambat_timur/barat 8f + rambat_senyap 4f = undulasi gelombang-kolom DETERMINISTIK (susun_rambat_final.gd scratchpad, nol generasi); senyap = tangga palet turun 2",
-  "catatan": "wujud MERAMBAT = tanaman murni tanpa wajah (putusan pemilik: horor pembunuh senyap; identitas pemain dari gerak saja). Grup animasi 'merambat' (climb imut) di akun TIDAK terpakai - arsip."
+  "strip": "merambat_timur/barat 8f + rambat_senyap 4f (gelap 2 tangga, riak 0.6) = undulasi gelombang-kolom DETERMINISTIK (susun_untai.gd scratchpad, nol generasi)",
+  "catatan": "wujud MERAMBAT = tanaman murni tanpa wajah (putusan pemilik: horor pembunuh senyap; identitas dari gerak). Kanvas lebar-pendek 64x32 = trik memaksa komposisi mendatar."
 }

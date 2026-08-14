@@ -244,12 +244,24 @@ func _draw():
 					0.0, 1.0)
 		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
 		var rotasi = _miring * avatar.hadap
-		if _state.begins_with("merambat") and _vertikal != 0:
-			rotasi = -PI * 0.5 * _vertikal
-		draw_set_transform(p, rotasi,
+		# wujud untaian rambat: BERPIVOT DI GARIS (posisi avatar = titik
+		# di garis jaringan) dan rect terpusat — batang untaian (tengah
+		# kanvas) jatuh tepat di garis sehingga daunnya membungkus garis,
+		# bukan berdiri di atasnya (koreksi pemilik). Rotasi panjat
+		# vertikal berputar di garis yang sama.
+		var untai = _state.begins_with("merambat") \
+				or _state == "rambat_senyap"
+		var pivot = p
+		var rect_y = -10.0
+		if untai:
+			pivot = avatar.pos * float(Config.PPU)
+			rect_y = -16.0
+			if _vertikal != 0:
+				rotasi = -PI * 0.5 * _vertikal
+		draw_set_transform(pivot, rotasi,
 				Vector2(cermin * skala.x, skala.y))
 		draw_texture_rect_region(a.tex,
-				Rect2(Vector2(-16.0 + a.geser, -10.0), Vector2(32.0, 32.0)),
+				Rect2(Vector2(-16.0 + a.geser, rect_y), Vector2(32.0, 32.0)),
 				Rect2(fr * 32.0, 0.0, 32.0, 32.0))
 		draw_set_transform_matrix(Transform2D())
 	else:

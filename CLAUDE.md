@@ -347,18 +347,24 @@ strip pegas dicermin hadap; belok/detach/attach nonaktif otomatis
 dari view.
 MERAMBAT SELESAI 15 Agu sebagai WUJUD GANDA (putusan pemilik —
 membayar sebagian utang CDD §11 vs §14): di jaringan pemain BUKAN
-makhluk imut — wujud TANAMAN MURNI tanpa wajah (pixflux seed 1201,
-sulur-S ujung menggulung, hijau+kayu, palet paksa; kandidat & varian
-horor tercatat di aset/player/_gen_params/wujud_rambat.json).
+makhluk imut — wujud TANAMAN MURNI tanpa wajah. Bentuk final =
+UNTAIAN DAUN seed 1222 (pixflux 64x32 lebar-pendek — trik kanvas
+memaksa komposisi mendatar; gumpalan daun MEMBUNGKUS garis jaringan,
+ujung menggulung memimpin; view menggambar berpivot DI garis dengan
+rect terpusat). Iterasi penting: bentuk sulur-S tegak (seed 1201)
+sempat dipasang lalu DITOLAK pemilik — "terbaca tentakel berjalan,
+tidak natural"; pelajaran: wujud rambat harus MENYATU dengan garis,
+bukan berdiri di atasnya. Semua kandidat/alasan di
+aset/player/_gen_params/wujud_rambat.json.
 Bergerak = merambat_timur/barat 8f undulasi gelombang-kolom
 DETERMINISTIK (nol generasi); diam = rambat_senyap 4f GELAP dua
 tangga palet, napas 3 fps — kamuflase sensor akhirnya TERLIHAT;
 identitas pemain saat merambat murni dari gerak (arah horor
 "membunuh dalam diam" pemilik). Panjat vertikal: strip timur
-dirotasi 90 derajat (naik = kepala atas, turun = kepala bawah, OLR).
-Grup animasi "merambat" (climb imut) di akun TIDAK terpakai — arsip.
-Penggelapan tangga-palet = resep GRATIS untuk frame apa pun
-(gelap_rambat/susun_rambat_final di scratchpad).
+dirotasi 90 derajat berpivot di garis (OLR). Grup animasi "merambat"
+(climb imut) di akun TIDAK terpakai — arsip. Penggelapan
+tangga-palet = resep GRATIS untuk frame apa pun (gelap_rambat/
+susun_untai di scratchpad).
 Sisa set: detach/attach = MOMEN TRANSFORMASI imut<->tanaman (beat
 horor kunci berikutnya) -> belok.
 SPP perlu revisi pemilik (ditulis untuk Master A). Gerbang RK

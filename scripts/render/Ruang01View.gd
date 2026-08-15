@@ -35,10 +35,68 @@ func _init(w):
 			"pipa_siku", "katup", "rak_kabel", "kabel", "saluran", "sensor",
 			"retak", "panel_v3", "kotak_sambung", "lampu", "flange",
 			"bracket", "noda_air", "sulur_jaringan", "materi_lembap",
-			"materi_retak", "tangki_air"]:
+			"materi_retak", "tangki_air", "atlas_lembap", "atlas_retak",
+			"atlas_air"]:
 		var jalur = "res://aset/ruang01/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			_tex[n] = load(jalur)
+
+
+# BLOB WANG zona material: sampel keanggotaan zona di 4 titik sudut
+# tiap ubin 4-satuan, pilih tile transisi dari atlas kunci-sudut
+# (bit = sudut BERISI material) — tepi blob mengikuti seni transisi
+# membulat Varian A. Cadangan bertingkat: tekstur interior rata ->
+# rona polos.
+func _zona_wang(zona, nama_atlas, nama_interior, warna_cadangan, a, ppu):
+	if _tex.has(nama_atlas):
+		var tex = _tex[nama_atlas]
+		var mod = Color(1, 1, 1, a)
+		var sel = {}
+		for z in zona:
+			var x0 = floori(z.position.x / 4.0) - 1
+			var x1 = ceili((z.position.x + z.size.x) / 4.0) + 1
+			var y0 = floori(z.position.y / 4.0) - 1
+			var y1 = ceili((z.position.y + z.size.y) / 4.0) + 1
+			for ty in range(y0, y1):
+				for tx in range(x0, x1):
+					sel[Vector2i(tx, ty)] = true
+		for kunci_sel in sel:
+			var tx = kunci_sel.x
+			var ty = kunci_sel.y
+			var kunci = 0
+			if _dalam_zona(zona, tx * 4, ty * 4):
+				kunci += 1
+			if _dalam_zona(zona, tx * 4 + 4, ty * 4):
+				kunci += 2
+			if _dalam_zona(zona, tx * 4, ty * 4 + 4):
+				kunci += 4
+			if _dalam_zona(zona, tx * 4 + 4, ty * 4 + 4):
+				kunci += 8
+			if kunci == 0:
+				continue
+			draw_texture_rect_region(tex,
+					Rect2(tx * 4 * ppu, ty * 4 * ppu, 4 * ppu, 4 * ppu),
+					Rect2((kunci % 4) * 32, floori(kunci / 4.0) * 32,
+					32, 32), mod)
+		return
+	for z2 in zona:
+		var r = Rect2(z2.position.x * ppu, z2.position.y * ppu,
+				z2.size.x * ppu, z2.size.y * ppu)
+		if nama_interior != "" and _tex.has(nama_interior):
+			draw_texture_rect(_tex[nama_interior], r, true,
+					Color(1, 1, 1, a * 0.6))
+		else:
+			var c = warna_cadangan
+			c.a = 0.12
+			draw_rect(r, c)
+
+
+func _dalam_zona(zona, px, py):
+	var p = Vector2i(px, py)
+	for z in zona:
+		if z.has_point(p):
+			return true
+	return false
 
 
 func _draw():
@@ -179,30 +237,17 @@ func _draw():
 	# — NODE kelahiran di jaringan rumah (§6.2: checkpoint/respawn) dan
 	# KEBOCORAN KATUP sebagai sumber air (§16; cincin minum di AvatarView
 	# yang mengabarkan saat menghisap)
-	# RK-2 [A]: zona material bertekstur SUNGGUHAN (koreksi pemilik:
-	# beda material harus terlihat jelas) — lembap = beton berlumut
-	# basah, retak = beton pecah; keduanya seed 1401/1402 palet EDV3,
-	# diubinkan di zona dengan modulate lembut (cadangan: rona rata)
-	for z in world.ZONA_LEMBAP:
-		var r = Rect2(z.position.x * ppu, z.position.y * ppu,
-				z.size.x * ppu, z.size.y * ppu)
-		if _tex.has("materi_lembap"):
-			draw_texture_rect(_tex.materi_lembap, r, true,
-					Color(1, 1, 1, 0.5))
-		else:
-			var lumut = Color("285B2B")
-			lumut.a = 0.12
-			draw_rect(r, lumut)
-	for z2 in world.ZONA_RETAK:
-		var r2 = Rect2(z2.position.x * ppu, z2.position.y * ppu,
-				z2.size.x * ppu, z2.size.y * ppu)
-		if _tex.has("materi_retak"):
-			draw_texture_rect(_tex.materi_retak, r2, true,
-					Color(1, 1, 1, 0.55))
-		else:
-			var retak_w = Color("4F8F32")
-			retak_w.a = 0.08
-			draw_rect(r2, retak_w)
+	# RK-2 [A] v2 (koreksi pemilik: manfaatkan kelima terrain + kesan
+	# natural): zona material digambar sebagai BLOB WANG — tile transisi
+	# topdown Varian A memberi tepi membulat organik, bukan kotak rata.
+	# Selaras jalur main: lembap/retak = permukaan tumbuh (mekanika
+	# Ruang01.material memakai rect yang SAMA), air = kosmetik lantai.
+	_zona_wang(world.ZONA_LEMBAP, "atlas_lembap", "materi_lembap",
+			Color("285B2B"), 0.85, ppu)
+	_zona_wang(world.ZONA_RETAK, "atlas_retak", "materi_retak",
+			Color("3D4757"), 0.8, ppu)
+	_zona_wang(world.ZONA_AIR, "atlas_air", "", Color("1A2029"),
+			0.9, ppu)
 
 	var np = world.node_pos * ppu
 	draw_circle(np, 7.0, Color("285B2B"))

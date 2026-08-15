@@ -61,6 +61,13 @@ const ZONA_RETAK = [
 	Rect2i(100, 40, 20, 26),     # bercak retak dinding tengah
 ]
 
+# RK-2 [A] visual: GENANGAN AIR (murni kosmetik — bahasa air GDD §12;
+# selaras jalur main: lantai drain + bawah katup bocor)
+const ZONA_AIR = [
+	Rect2i(164, 130, 44, 6),     # genangan dasar koridor drain
+	Rect2i(234, 106, 12, 6),     # genangan di bawah katup bocor
+]
+
 
 func _init():
 	build()

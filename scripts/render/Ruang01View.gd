@@ -36,10 +36,13 @@ func _init(w):
 			"retak", "panel_v3", "kotak_sambung", "lampu", "flange",
 			"bracket", "noda_air", "sulur_jaringan", "materi_lembap",
 			"materi_retak", "tangki_air", "atlas_lembap", "atlas_retak",
-			"atlas_air"]:
+			"atlas_air", "latar_panel", "latar_pipa"]:
 		var jalur = "res://aset/ruang01/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			_tex[n] = load(jalur)
+	# jumbai lumut memakai gumpalan daun player — satu bahasa piksel
+	if ResourceLoader.exists("res://aset/player/rambat_daun.png"):
+		_tex["jumbai"] = load("res://aset/player/rambat_daun.png")
 
 
 # BLOB WANG zona material: sampel keanggotaan zona di 4 titik sudut
@@ -109,6 +112,45 @@ func _draw():
 	if _tex.has("latar"):
 		draw_texture_rect(_tex.latar,
 				Rect2(0, 0, world.W * ppu, world.H * ppu), true)
+
+	# LATAR VARIATIF (koreksi pemilik: latar monoton) — komposisi
+	# bidang besar bertingkat, semua value rendah (D5):
+	# 1) deretan PANEL BETON besar di dinding atas — lebar/tinggi/rona
+	#    dipilih hash per panel, dipisah celah seam gelap
+	if _tex.has("latar_panel"):
+		var px = 20.0
+		var idx = 0
+		while px < world.W - 24.0:
+			var hh = absi((idx * 92821) ^ 68917)
+			var lebar = [28.0, 36.0, 44.0][hh % 3]
+			var tinggi = [30.0, 38.0, 46.0][(hh / 7) % 3]
+			var f = [0.85, 1.0, 1.15][(hh / 31) % 3]
+			draw_texture_rect(_tex.latar_panel,
+					Rect2(px * ppu, 18.0 * ppu, lebar * ppu,
+					tinggi * ppu), true, Color(f, f, f, 0.5))
+			px += lebar + 2.0
+			idx += 1
+	# 2) PITA UTILITAS di belakang jalur pipa — kesan konduit tertanam
+	if _tex.has("latar_pipa"):
+		draw_texture_rect(_tex.latar_pipa,
+				Rect2(16.0 * ppu, 66.0 * ppu,
+				(world.W - 32.0) * ppu, 22.0 * ppu), true,
+				Color(1, 1, 1, 0.4))
+	# 3) SKIRTING gelap di kaki dinding + garis pijakan lantai
+	var kaki = Color("0B0E12")
+	kaki.a = 0.4
+	draw_rect(Rect2(8.0 * ppu, 104.0 * ppu, (world.W - 16.0) * ppu,
+			8.0 * ppu), kaki)
+	# 4) NODA & RETAK tersebar di dinding latar (hash deterministik)
+	for i in range(14):
+		var hn = absi((i * 48611) ^ 26339)
+		var nx = 16.0 + float(hn % 210)
+		var ny = 20.0 + float((hn / 11) % 78)
+		var nama_d = "noda_air" if (hn / 5) % 2 == 0 else "retak"
+		if _tex.has(nama_d):
+			draw_texture_rect(_tex[nama_d],
+					Rect2(nx * ppu, ny * ppu, 4.0 * ppu, 4.0 * ppu),
+					false, Color(1, 1, 1, 0.35))
 
 	# MIDGROUND infrastruktur — tiap pipa berujung flange/siku/bracket
 	# (aturan pipa §6), tiap prop terantai (§19 V2)
@@ -181,6 +223,33 @@ func _draw():
 				mod = Color(f, f, f)
 			draw_texture_rect_region(_tex[nama],
 					Rect2(tx * t, ty * t, t, t), src, mod)
+
+	# GARIS PIJAKAN: strip terang tipis di permukaan atas tiap massa
+	# padat — permukaan yang bisa dipijak/dirambati terbaca seketika
+	# (aturan pijakan >= 2x luminance dinding), sekaligus memecah kotak
+	var pijak = Color("59636F")
+	pijak.a = 0.35
+	for ty in range(world.PT_H):
+		for tx in range(world.PT_W):
+			if world.padat_t[ty * world.PT_W + tx] == 1 \
+					and ty > 0 \
+					and world.padat_t[(ty - 1) * world.PT_W + tx] == 0:
+				draw_rect(Rect2(tx * t, ty * t, t, 3.0), pijak)
+
+	# JUMBAI LUMUT menggantung: sel lembap yang menempel plafon padat
+	# diberi jumbai daun (aset player rambat_daun — satu bahasa piksel)
+	if _tex.has("jumbai"):
+		for s in world.sel_lembap:
+			var hj = absi((s.x * 31727) ^ (s.y * 92003))
+			if hj % 3 != 0:
+				continue
+			if world.padat(s.x * 4 + 2, s.y * 4 - 3):
+				var n_j = max(1, _tex.jumbai.get_width() / 16)
+				draw_texture_rect_region(_tex.jumbai,
+						Rect2(s.x * 4 * ppu, (s.y * 4 - 1) * ppu,
+						2.0 * ppu, 2.0 * ppu),
+						Rect2((hj % n_j) * 16.0, 0.0, 16.0, 16.0),
+						Color(1, 1, 1, 0.8))
 
 	# GROUNDING & CONTACT SHADOW (D8): gradasi occlusion di pertemuan
 	# permukaan-udara, drop shadow massa gantung

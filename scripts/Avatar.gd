@@ -44,6 +44,8 @@ var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 var terdeteksi = false     # kuning: terlihat sensor dalam keadaan terbuka
 var curiga = false         # tersamar di jaringan dalam jangkauan sensor
 var regen_mati = false     # sensor waspada: jaringan menolak memulihkan
+var diburu = false         # merah CDD §7: musuh sedang MENGEJAR (GDD §13)
+var bisa_sergap_musuh = false  # petunjuk HUD: [E] sergap senyap tersedia
 
 # Tahap CDD §9: 1 TUNAS BARU, 2 MUDA, 3 DEWASA, 4 TUA/KAYU. Murni
 # tonggak WUJUD dari tumbuh_total — TIDAK membuka kemampuan (GDD §15 =

@@ -1,0 +1,9 @@
+{
+  "catatan": "Bangkai teknisi tersergap (sergap senyap Phase 5-6). Pixflux 64x32 no_background + palet mini campuran (4 kelabu STRUCTURE, 4 hijau CDD, 2 amber, 1 kulit), crop isi, lebar 40 nearest, snap palet yang sama (proses_tumbang.gd scratchpad). Digambar PemangkasView setelah anim sergapan 0.9 dtk; lumut merambati bangkai bertahap.",
+  "teknisi_tumbang": {
+    "seed": 1704,
+    "size": "64x32",
+    "prompt": "dead maintenance worker in gray coverall lying flat face-up on the ground, body tightly wrapped in green vines and leaves, yellow hard hat fallen beside, side view",
+    "opsi": "no_background, view side, single color outline, basic shading, low detail"
+  }
+}

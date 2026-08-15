@@ -522,6 +522,14 @@ var PEMANGKAS_KEJAR   = 22.0   # laju mengejar (di bawah lari player 24)
 var PEMANGKAS_PANDANG = 48.0   # jarak pandang horizontal
 var PEMANGKAS_KURAS   = 25.0   # energi hilang saat tertangkap
 var PEMANGKAS_JEDA    = 1.5    # detik jeda di ujung patroli / usai tangkap
+
+# Pendalaman Phase 5-6 (putusan pemilik 15 Agu: sampai "membunuh dalam
+# senyap"): DIBURU + penyelidikan + SERGAP SENYAP dari jaringan.
+# GDD §37 dihormati: bukan DPS — sergapan HANYA dari MERAMBAT dan hanya
+# pada musuh yang belum melihat; biomassa = hadiahnya (GDD §16).
+var PEMANGKAS_SELIDIK = 2.4    # detik menyelidik di titik terakhir terlihat
+var SERGAP_JARAK      = 9.0    # jangkauan sergapan dari jaringan
+var SERGAP_PANEN      = 35.0   # energi biomassa hasil sergapan
 const T_RUANG         = 20  # udara interior
 const T_LANTAI        = 21  # slab lantai — padat
 const T_DINDING_DALAM = 22  # dinding kamar / cangkang — padat

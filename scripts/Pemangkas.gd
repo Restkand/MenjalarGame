@@ -13,13 +13,20 @@ extends RefCounted
 # Avatar moda MERAMBAT tidak pernah dilihatnya: bagi manusia, jaringan
 # hanyalah tanaman liar (alasan merambat, GDD §2.3).
 
-const IDLE   = 0
-const PATROL = 1
-const KEJAR  = 2
+const IDLE    = 0
+const PATROL  = 1
+const KEJAR   = 2
+const SELIDIK = 3          # Phase 5 "enemy investigation": memeriksa
+                           # titik terakhir avatar terlihat sebelum
+                           # menyerah kembali berpatroli
 
 var pos = Vector2()
 var arah = 1.0             # hadap: 1 kanan, -1 kiri
 var state = PATROL
+var hidup = true           # false = tersergap; tubuh jadi bangkai
+var mati_t = 0.0           # detik sejak tersergap (penggerak anim view)
+var selidik_pos = 0.0      # x avatar TERAKHIR terlihat (memori kejar)
+var _selidik_t = 0.0
 var _jeda = 0.0            # sisa detik IDLE / cooldown usai menangkap
 var _batas_kiri = 84.0
 var _batas_kanan = 200.0
@@ -31,7 +38,40 @@ func _init(kiri, kanan):
 	pos = Vector2(kiri, 111.9)
 
 
+func reset():
+	pos = Vector2(_batas_kiri, 111.9)
+	arah = 1.0
+	state = PATROL
+	hidup = true
+	mati_t = 0.0
+	_jeda = 0.0
+
+
+# SERGAP SENYAP (GDD §37 "menyerang titik lemah" + arah horor pemilik
+# "membunuh dalam diam"): hanya dari MERAMBAT — tanaman menyerang dari
+# jaringannya — dan hanya pada musuh yang BELUM melihat pemain. Musuh
+# yang sedang memburu tidak bisa disergap: kesabaran dulu, baru taring.
+func bisa_sergap(avatar):
+	return hidup and state != KEJAR and avatar.moda == avatar.MERAMBAT \
+			and avatar.pos.distance_to(pos + Vector2(0.0, -4.0)) \
+			<= Config.SERGAP_JARAK
+
+
+func sergap(avatar):
+	if not bisa_sergap(avatar):
+		return false
+	hidup = false
+	mati_t = 0.0
+	# biomassa terserap jaringan (GDD §16) — membunuh memberi makan
+	avatar.energi = min(avatar.energi_max,
+			avatar.energi + Config.SERGAP_PANEN)
+	return true
+
+
 func update(dt, avatar, world):
+	if not hidup:
+		mati_t += dt
+		return
 	_jeda = max(0.0, _jeda - dt)
 
 	# melihat avatar? hanya moda LEPAS, sejajar lantai, searah hadap,
@@ -47,12 +87,14 @@ func update(dt, avatar, world):
 		IDLE:
 			if lihat:
 				state = KEJAR
+				selidik_pos = avatar.pos.x
 			elif _jeda <= 0.0:
 				arah = -arah
 				state = PATROL
 		PATROL:
 			if lihat:
 				state = KEJAR
+				selidik_pos = avatar.pos.x
 			else:
 				pos.x += arah * Config.PEMANGKAS_JALAN * dt
 				if pos.x <= _batas_kiri or pos.x >= _batas_kanan:
@@ -60,13 +102,14 @@ func update(dt, avatar, world):
 					state = IDLE
 					_jeda = Config.PEMANGKAS_JEDA
 		KEJAR:
-			var d2 = avatar.pos.x - pos.x
+			# memori: selama terlihat, titik terakhir terus diperbarui;
+			# begitu hilang, ia mengejar TITIK itu, bukan pemainnya
+			if lihat:
+				selidik_pos = avatar.pos.x
+			var d2 = selidik_pos - pos.x
 			arah = signf(d2) if abs(d2) > 0.5 else arah
 			pos.x += arah * Config.PEMANGKAS_KEJAR * dt
 			pos.x = clamp(pos.x, _batas_kiri, _batas_kanan)
-			# hilang dari pandangan (naik jaringan / menjauh) -> patroli
-			if not lihat and abs(d2) > Config.PEMANGKAS_PANDANG:
-				state = PATROL
 			# menangkap: kuras besar + terpental (TANPA membunuh)
 			if avatar.moda == avatar.LEPAS \
 					and avatar.pos.distance_to(pos) < 4.0:
@@ -74,6 +117,22 @@ func update(dt, avatar, world):
 				avatar.vel = Vector2(arah * 30.0, -24.0)
 				_jeda = Config.PEMANGKAS_JEDA
 				state = IDLE
+			elif not lihat and (abs(d2) < 2.0 \
+					or pos.x <= _batas_kiri or pos.x >= _batas_kanan):
+				# tiba di titik terakhir dan tidak ada siapa-siapa:
+				# MENYELIDIK dulu (Phase 5), tidak langsung menyerah
+				state = SELIDIK
+				_selidik_t = Config.PEMANGKAS_SELIDIK
+		SELIDIK:
+			if lihat:
+				state = KEJAR
+				selidik_pos = avatar.pos.x
+			else:
+				_selidik_t -= dt
+				# menoleh kiri-kanan mencari — sapuan deterministik
+				arah = 1.0 if int(_selidik_t / 0.8) % 2 == 0 else -1.0
+				if _selidik_t <= 0.0:
+					state = PATROL
 
 	# MEMOTONG pertumbuhan pemain yang dilewati (jaringan benih aman)
 	_pangkas(avatar, world)

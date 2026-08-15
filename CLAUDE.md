@@ -440,15 +440,40 @@ create_tiles_pro varian interior, prop create_map_object (utang 12
 decal).
 
 **LANGKAH 5 SELESAI (15 Agu): RK & RK-2 DIBUANG, lipatan kanon =
-amendemen di ekor SRD Room 01 & EDV3.** Arah berikutnya MENUNGGU
-PUTUSAN PEMILIK; kandidat yang sah menurut kanon: (a) produksi
-RUANG 00 Lab Botani (gerbang Langkah 3 sudah lolos; amendemen SRD
-Room 01 §19/§38 tetap menunggu pemilik), (b) memperdalam Phase 5-6
-stealth/musuh, (c) sisa Phase 3 (node-objek, destruction, fast
-travel). Utang tercatat: revisi SPP (pemilik), wujud sprite per tahap
-CDD, state machine formal CDD §37, belok (opsional), 12 decal +
-varian interior create_tiles_pro. Yang juga masih menunggu mata
-pemilik: tampilan pasca dual-grid (paket 2) belum di-screenshot-kan.
+amendemen di ekor SRD Room 01 & EDV3.** Sesudahnya (15 Agu, urutan
+pemilik): AUDIT GDD menyeluruh — hasil: fondasi patuh, MVP §39
+lengkap; dua temuan DIBAYAR (commit `2be6689`): §6.1 invarian laju
+ditegakkan di RATA-RATA (AVATAR_RAMBAT 27→32, rerata terukur 24.9 >
+lari 24) + UPACARA LAYU GDD §10 (husk daun mengering di titik mati,
+kabar "UJUNG TERPUTUS", bangun di simpul + morph attach; sekalian bug
+laten: gumpalan layu kini menua di mana pun posisi ringnya). Node/
+tujuan kini sprite bulb PixelLab beranimasi (seed 1701/1702/1703:
+bulb + cincin jangkar dua-gelombang + tunas; tumbuh dua tahap +
+napas; bug redraw view per-state-sensor diperbaiki → redraw tiap
+frame).
+
+**PHASE 5-6 PENDALAMAN (putusan pemilik 15 Agu: "sampai kesan
+membunuh musuh")**: DIBURU (merah C25A4A, HUD + cincin avatar) saat
+Pemangkas KEJAR; memori titik-terakhir-terlihat + state SELIDIK
+(sapuan toleh 2.4 dtk, lampu kedip-ganda) sebelum menyerah ke
+patroli — Phase 5 "enemy investigation" lunas; SERGAP SENYAP [E]
+(GDD §37 titik-lemah + §16 biomassa): HANYA dari MERAMBAT pada musuh
+yang belum melihat, jarak ≤ SERGAP_JARAK 9, panen SERGAP_PANEN 35,
+hint HUD merah "[E] SERGAP SENYAP"; anim mati tanpa teks (gemetar
+tenggelam hijau + daun mengerubut 0.9 dtk → bangkai teknisi_tumbang
+seed 1704 40x13 → lumut merambat bertahap); gunting mati saat
+bangkai; pemangkas.reset() di kedua jalur R. Uji deterministik 4
+asersi LOLOS (kejar-tolak-sergap / selidik→patroli / panen 40→75 /
+bangkai diam+gunting mati), blok uji dibuang. BELUM: musuh kedua
+melihat bangkai (eskalasi), respawn teknisi pengganti — bahan
+pendalaman berikutnya.
+
+Arah lain yang masih antri: (a) produksi RUANG 00 Lab Botani
+(amendemen SRD Room 01 §19/§38 menunggu pemilik), (c) sisa Phase 3
+(node-objek, destruction, fast travel). Utang tercatat: revisi SPP
+(pemilik), wujud sprite per tahap CDD, state machine formal CDD §37,
+belok (opsional), 12 decal + varian interior, short climb GDD §7,
+pemisahan peran Pemangkas vs Teknisi §14.6, save §30, audio §32.
 
 **Keadaan teknis yang perlu diketahui sesi berikutnya:**
 

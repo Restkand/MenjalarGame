@@ -297,8 +297,12 @@ func _draw():
 		draw_circle(p + Vector2(-2.0, -2.0), 3.0, Color("A8D94A"))
 
 	# status deteksi (RK Langkah 2, warna kanon CDD §7: kuning =
-	# terdeteksi) — bahasa cincin, bukan UI teks (SRD §12/§23)
-	if avatar.terdeteksi:
+	# terdeteksi, merah = diburu) — bahasa cincin, bukan UI teks
+	if avatar.diburu:
+		var merah = Color("C25A4A")
+		merah.a = 0.75 + 0.25 * sin(_t * 16.0)
+		draw_arc(p, 16.0 + 2.0 * sin(_t * 16.0), 0.0, TAU, 24, merah, 2.5)
+	elif avatar.terdeteksi:
 		var kuning = Color("D89A3C")
 		kuning.a = 0.75 + 0.25 * sin(_t * 14.0)
 		draw_arc(p, 15.0 + 1.5 * sin(_t * 14.0), 0.0, TAU, 24, kuning, 2.0)

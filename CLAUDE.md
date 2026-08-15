@@ -422,6 +422,24 @@ kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga
 rute = GERBANG KERAS → [4] grading final art dengan sensor menyala →
 [5] lipat ke kanon & buang RK.
 
+**RK-2 LULUS SEMENTARA (putusan pemilik 15 Agu) → RK LANGKAH 4
+(grading) BERJALAN.** Paket 1 selesai (commit `68a63ee`): jangkar
+gambar avatar dipindah ke KAKI (baris isi terbawah strip tepat di
+pos.y — sejajar Teknisi yang menapak di pos-nya; squash-stretch kini
+berpivot kaki, meregang ke atas); bayangan kontak D8 di avatar+Teknisi;
+strip Teknisi digrading kelabu (desat+value turun, amber helm dijepit
+63% — manusia kelabu, organisme satu-satunya hijau); zona
+lumut/retak/air diredupkan lewat kenop `gelap` di `_zona_wang`
+(0.72/0.85/0.82) di bawah pita TENDRIL; kedalaman ambien bertangga
+(plafon menggelap 4 pita, drain a0.14); kedip mikro dua lampu
+fluorescent (Ruang01Main `_lampu_ruang`). Pass komposisi latar
+sebelumnya (commit `cfcce7a`): panel beton berirama + pita utilitas
+(seed 1601/1602, latar_panel/latar_pipa) + skirting + 14 noda + garis
+pijakan permukaan atas + jumbai lumut plafon. Sisa amunisi Langkah 4:
+create_tiles_pro varian interior, prop create_map_object (utang 12
+decal), cek pijakan >= 2x luminance dinding, seed 1601/1602 belum
+dicatat di _gen_params.
+
 **Keadaan teknis yang perlu diketahui sesi berikutnya:**
 
 - Animasi avatar: 12 strip di `aset/konsep_tendril/` (idle, merambat,

@@ -147,16 +147,25 @@ func update(dt, i, world):
 		_lepas(dt, i, world)
 
 	# DAUR HIDUP JEJAK (GDD §6.3: jaringan bisa mati; usul pemilik):
-	# melewati batas ring, gumpalan TERTUA tidak dihapus mendadak —
-	# ia MENGERING (hijau -> cokelat -> pudar) lalu rontok. Hanya
-	# beberapa tertua yang layu bersamaan; sisanya menunggu giliran.
+	# gumpalan yang SUDAH mulai layu terus mengering DI MANA PUN
+	# posisinya di ring lalu rontok — dulunya hanya 4 tertua yang
+	# diproses, jadi gumpalan yang dilayukan Pemangkas / upacara mati
+	# macet setengah-kering selamanya (bug laten, audit GDD 15 Agu).
+	var jd = 0
+	while jd < jejak_daun.size():
+		if jejak_daun[jd].layu > 0.0:
+			jejak_daun[jd].layu += dt
+			if jejak_daun[jd].layu >= Config.RAMBAT_DAUN_LAYU:
+				jejak_daun.remove_at(jd)
+				continue
+		jd += 1
+	# melewati batas ring: gumpalan TERTUA mulai mengering, hanya
+	# beberapa bersamaan — sisanya menunggu giliran
 	if jejak_daun.size() > Config.RAMBAT_DAUN_MAX:
 		var lebih = jejak_daun.size() - Config.RAMBAT_DAUN_MAX
 		for j in range(min(lebih, 4)):
-			jejak_daun[j].layu += dt
-		while jejak_daun.size() > 0 \
-				and jejak_daun[0].layu >= Config.RAMBAT_DAUN_LAYU:
-			jejak_daun.pop_front()
+			if jejak_daun[j].layu <= 0.0:
+				jejak_daun[j].layu = 0.001
 
 
 # F: menanam simpul jaringan di posisi avatar (P2) — checkpoint + titik
@@ -209,9 +218,11 @@ func _rambat(dt, i, world):
 	if arah == Vector2.ZERO:
 		return
 	# DENYUT TUMBUH BERBEBAN (playtest pemilik: masih terasa cepat —
-	# beban ditambah): AVATAR_RAMBAT kini laju PUNCAK juluran; fase
+	# beban ditambah): AVATAR_RAMBAT = laju PUNCAK juluran; fase
 	# cengkeram melambat dalam tanpa normalisasi, rata-rata efektif
-	# ~72% puncak. Tafsir GDD §6.1: "34" = laju julur maksimum.
+	# ~79% puncak. Tafsir GDD §6.1 (audit 15 Agu): invarian "merambat
+	# lebih cepat dari LEPAS" ditegakkan di RATA-RATA (±25 > lari 24),
+	# denyut memberi beban tanpa mencuri janji §6.1.
 	_denyut += dt
 	var fase_d = fmod(_denyut, Config.RAMBAT_DENYUT) / Config.RAMBAT_DENYUT
 	var dasar = Config.RAMBAT_DENYUT_DASAR
@@ -375,9 +386,19 @@ func _keluarkan_badan(world):
 
 
 # layu: energi habis di luar jaringan — bangun di simpul terakhir
-# (termasuk kembali ke lapis tempat simpul itu ditanam)
+# (termasuk kembali ke lapis tempat simpul itu ditanam).
+# UPACARA GDD §10 (audit 15 Agu): tubuh MENGERING di tempatnya —
+# gugusan daun yang langsung mulai layu ditinggalkan di titik kematian
+# (kering-cokelat lalu rontok via daur hidup jejak); jaringan tetap
+# hidup; kamera menyusul ke simpul (smoothing); ujung baru menyembul
+# lewat morph attach yang menyala otomatis saat bangun di jaringan.
 func _cek_layu(world):
 	if energi <= 0.0:
+		for ofs in [Vector2(0.0, 0.0), Vector2(-1.3, -0.5),
+				Vector2(1.2, -0.8)]:
+			jejak_daun.append({"pos": pos + ofs, "sudut": 0.0,
+					"varian": jejak_daun.size() % 3, "dalam": di_dalam,
+					"layu": Config.RAMBAT_DAUN_LAYU * 0.15})
 		pos = simpul
 		di_dalam = simpul_dalam
 		vel = Vector2()

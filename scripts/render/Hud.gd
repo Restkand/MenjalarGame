@@ -66,10 +66,13 @@ func _init(a):
 func _process(delta):
 	_t += delta
 
-	# konsumsi event layu (sekali-baca)
+	# konsumsi event layu (sekali-baca) — upacara GDD §10: kedip gelap
+	# + kabar tengah supaya perpindahan ke simpul terbaca sebagai
+	# "bagian tubuh terputus", bukan teleport tanpa sebab
 	if avatar.layu_baru:
 		avatar.layu_baru = false
 		_layu_flash = 0.9
+		kabar("UJUNG TERPUTUS - TUMBUH KEMBALI", 3.0)
 	_layu_flash = max(0.0, _layu_flash - delta)
 	_kabar_t = max(0.0, _kabar_t - delta)
 

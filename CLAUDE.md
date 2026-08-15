@@ -92,8 +92,11 @@ dikerjakan — menunggu urutan dari pemilik proyek):
 - Tahap avatar di kode = 6 (BIJI..LEBAT); CDD §9 = 5 (Tunas Baru, Muda,
   Dewasa, Tua/Kayu, Terinfeksi-ops). Perlu pemetaan ulang nama, wujud
   (tahap 4 = kecokelatan kayu), dan strip tumbuh.
-- Energi 0 saat LEPAS: CDD/papan = "bagian tersebut TERPUTUS" — jejak
-  yang ditumbuhkan sesi lepas itu harusnya mengering, bukan awet.
+- Energi 0 saat LEPAS: LUNAS 15 Agu sebagai UPACARA GDD §10 — tubuh
+  meninggalkan gugusan daun yang mengering-rontok di titik kematian,
+  kabar HUD "UJUNG TERPUTUS", bangun di simpul dengan morph attach.
+  (Rumusan lama "jejak sesi lepas mengering" usang: tumbuh kini hanya
+  terjadi di moda MERAMBAT.)
 - MERAMBAT baru bisa di jaringan; papan juga menuntut "menempel di
   permukaan" tertentu & "masuk celah kecil" (GDD §6.1, §12 material).
 - Wujud saat MERAMBAT vs LEPAS harus berbeda (CDD §11 vs §14) — sekarang

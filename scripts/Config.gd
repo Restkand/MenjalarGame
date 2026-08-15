@@ -487,8 +487,11 @@ const C_RETAK     = Color("3A3A36")
 # jalan < lari < rambat-puncak (GDD §6.1/§7), dan tinggi lompat tetap
 # ±9.2 satuan (anak tangga peti 8 satuan HARUS tetap terlompati —
 # LOMPAT^2 / (2*GRAV)).
-var AVATAR_RAMBAT      = 27.0   # laju PUNCAK juluran di jaringan
-# denyut tumbuh: cengkeram melambat dalam, rata-rata efektif ~72% puncak
+var AVATAR_RAMBAT      = 32.0   # laju PUNCAK juluran di jaringan
+# denyut tumbuh: cengkeram melambat dalam, rata-rata efektif ~79% puncak
+# (±25) — audit GDD 15 Agu: §6.1 ditegakkan di RATA-RATA, bukan puncak:
+# rata-rata rambat HARUS > lari 24; pada puncak 27 rata-ratanya cuma
+# ±21 dan invarian §6.1 diam-diam terlanggar
 var RAMBAT_DENYUT       = 1.1   # detik satu siklus julur-cengkeram
 var RAMBAT_DENYUT_DASAR = 0.25  # laju terendah saat mencengkeram (0..1)
 var RAMBAT_DAUN_JARAK   = 1.6   # satuan antar gumpalan daun tertanam
@@ -539,8 +542,8 @@ const BUFFER_LOMPAT   = 0.12    # lompat ditekan sesaat sebelum mendarat
 const LOMPAT_POTONG   = 0.45    # pengali vel.y saat tombol lompat dilepas dini
 
 # GDD §7 + §9 (perbaikan penyimpangan #2): RUN dasar & biaya bergradasi.
-# LARI sengaja DI BAWAH laju rambat-puncak (27) — §6.1: merambat harus
-# terasa lebih cepat daripada LEPAS. Kuras = AVATAR_KURAS x faktor.
+# LARI sengaja DI BAWAH rata-rata rambat (±25, puncak 32) — §6.1:
+# merambat harus terasa lebih cepat daripada LEPAS. Kuras = KURAS x faktor.
 var AVATAR_LARI  = 24.0    # laju horizontal saat Shift ditahan (LEPAS)
 var KURAS_DIAM   = 0.5     # faktor kuras saat diam           (§9: kecil)
 var KURAS_LARI   = 1.8     # faktor kuras saat berlari        (§9: sedang)

@@ -129,4 +129,21 @@ lower→upper berantai, transisi disebut eksplisit:
   bila Anda memutuskan pindah ke Mode Map penuh, kita jadwalkan
   importer ekspor-Map → Godot sebagai langkah arsitektur tersendiri.
 
-**Seed lolos kurasi:** (belum ada — isi di sini)
+**Hasil kurasi (15 Agu):** pemilik mencoba web sendiri — belum ada
+yang cocok; keluarga terrain lalu digenerate VIA API (masuk akun,
+langsung terpilih di Mode Map web). MASTER terpilih pemilik =
+**Varian A**: `dark concrete floor, drain stains, dusty seams` ↔
+`wet mossy concrete, dark green moss patches` (round, transisi 0.25,
+32px, lineless, basic shading, tanpa enhance). Turunan dirantai dari
+base tile A:
+
+1. lumut → `shallow dark water puddle, faint ripples` (round, 0.5,
+   transisi `wet concrete rim with drips`);
+2. beton → `dark riveted steel deck plate, worn tread pattern`
+   (square, 0.25, transisi `bolted steel edge strip`);
+3. beton → `cracked crumbling concrete, deep dark fissures`
+   (square, 0.25, transisi `hairline cracks spreading`).
+
+Varian B (aged cast concrete, lebih terang & "built") tersimpan di
+akun sebagai cadangan. ID tidak dicatat di repo (aturan keamanan) —
+semua terlihat by-name di akun PixelLab.

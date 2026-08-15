@@ -109,19 +109,53 @@ func _src_interior(nama, h):
 	return pilihan[h % pilihan.size()]
 
 
-# sudut blob berisi material? di dalam zona — dan bila `peluk`, harus
-# DEKAT permukaan padat (lumut tumbuh MENEMPEL dinding/lantai, bukan
-# mengambang di udara koridor — koreksi monoton pemilik)
+# sudut blob berisi material? ANTI-MONOTON v3 (koreksi pemilik: peta
+# web terlihat natural karena blob ORGANIK, zona kita persegi kaku):
+# rect zona dierosi derau deterministik — tepi bergelombang + lubang
+# interior tempat dasar mengintip, sehingga tile transisi Wang bekerja
+# di seluruh tubuh blob seperti di editor Map. `peluk` = harus dekat
+# permukaan padat (lumut menempel, tidak mengambang).
 func _sudut_isi(zona, px, py, peluk):
 	if not _dalam_zona(zona, px, py):
 		return false
-	if not peluk:
-		return true
-	for ofs in [Vector2i(0, 5), Vector2i(0, -5), Vector2i(5, 0),
-			Vector2i(-5, 0), Vector2i(0, 9), Vector2i(9, 0)]:
-		if world.padat(px + ofs.x, py + ofs.y):
-			return true
-	return false
+	if peluk:
+		var dekat = false
+		for ofs in [Vector2i(0, 5), Vector2i(0, -5), Vector2i(5, 0),
+				Vector2i(-5, 0), Vector2i(0, 9), Vector2i(9, 0)]:
+			if world.padat(px + ofs.x, py + ofs.y):
+				dekat = true
+				break
+		if not dekat:
+			return false
+	var n = _derau(px, py)
+	var d = _jarak_tepi(zona, px, py)
+	# tepi bergelombang: makin dekat tepi rect, makin sering kosong
+	if d < 8.0 and n < (1.0 - d / 8.0) * 0.7:
+		return false
+	# lubang interior sesekali — dasar mengintip, transisi hidup di
+	# tengah blob
+	if n > 0.90 and d >= 4.0:
+		return false
+	return true
+
+
+# derau deterministik 0..1 per titik satuan
+func _derau(px, py):
+	var h = absi((px * 374761393) ^ (py * 668265263))
+	return float(h % 1000) / 999.0
+
+
+# jarak titik ke tepi terdekat rect zona yang memuatnya
+func _jarak_tepi(zona, px, py):
+	var terbaik = 0.0
+	for z in zona:
+		if not z.has_point(Vector2i(px, py)):
+			continue
+		var d = min(min(px - z.position.x,
+				z.position.x + z.size.x - px),
+				min(py - z.position.y, z.position.y + z.size.y - py))
+		terbaik = max(terbaik, float(d))
+	return terbaik
 
 
 func _dalam_zona(zona, px, py):

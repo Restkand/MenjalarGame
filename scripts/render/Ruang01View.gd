@@ -74,23 +74,17 @@ func _zona_wang(zona, nama_atlas, nama_interior, warna_cadangan, a, ppu,
 				kunci += 8
 			if kunci == 0:
 				continue
-			# anti-monoton: jitter value + cermin per-tile dari hash
+			# anti-monoton v2: interior memilih 4 varian + jitter value
 			var h = absi((tx * 40503) ^ (ty * 88651))
-			var f = [0.88, 0.94, 1.0][h % 3]
+			var f = [0.88, 0.94, 1.0][(h / 13) % 3]
 			var mod = Color(f, f, f, a)
 			var src = Rect2((kunci % 4) * 32,
 					floori(kunci / 4.0) * 32, 32, 32)
-			if kunci == 15 and (h / 11) % 2 == 0:
-				draw_set_transform(Vector2(tx * 4 * ppu + 2 * ppu,
-						ty * 4 * ppu + 2 * ppu), 0.0, Vector2(-1, 1))
-				draw_texture_rect_region(tex,
-						Rect2(-2 * ppu, -2 * ppu, 4 * ppu, 4 * ppu),
-						src, mod)
-				draw_set_transform_matrix(Transform2D())
-			else:
-				draw_texture_rect_region(tex,
-						Rect2(tx * 4 * ppu, ty * 4 * ppu, 4 * ppu,
-						4 * ppu), src, mod)
+			if kunci == 15:
+				src = _src_interior(nama_atlas, h)
+			draw_texture_rect_region(tex,
+					Rect2(tx * 4 * ppu, ty * 4 * ppu, 4 * ppu,
+					4 * ppu), src, mod)
 		return
 	for z2 in zona:
 		var r = Rect2(z2.position.x * ppu, z2.position.y * ppu,
@@ -102,6 +96,17 @@ func _zona_wang(zona, nama_atlas, nama_interior, warna_cadangan, a, ppu,
 			var c = warna_cadangan
 			c.a = 0.12
 			draw_rect(r, c)
+
+
+# pilih sumber tile interior: asli (kunci-15) atau salah satu dari 3
+# varian sintesis di baris y=128 atlas (bila atlasnya sudah diperluas)
+func _src_interior(nama, h):
+	var pilihan = [Rect2(96, 96, 32, 32)]
+	if _tex.has(nama) and _tex[nama].get_height() >= 160:
+		pilihan.append(Rect2(0, 128, 32, 32))
+		pilihan.append(Rect2(32, 128, 32, 32))
+		pilihan.append(Rect2(64, 128, 32, 32))
+	return pilihan[h % pilihan.size()]
 
 
 # sudut blob berisi material? di dalam zona — dan bila `peluk`, harus
@@ -195,28 +200,18 @@ func _draw():
 			var kunci = _kunci(tx, ty)
 			var src = Rect2((kunci % 4) * 32.0,
 					floori(kunci / 4.0) * 32.0, 32.0, 32.0)
-			# ANTI-MONOTON (playtest pemilik): interior divariasikan
-			# per-TILE — jitter value 4 tingkat + cermin deterministik
-			# dari hash koordinat; tepi/pijakan tetap bersih
+			var mod = Color(1, 1, 1)
+			# ANTI-MONOTON v2 (koreksi pemilik): interior memilih dari
+			# 4 VARIAN TILE (asli + 3 sintesis ber-tepi-identik, baris
+			# y=128 atlas) + jitter value per-sel — pola khas tile tidak
+			# pernah lagi berulang rapat di grid
 			if kunci == 15:
 				var h = absi((tx * 73856093) ^ (ty * 19349663))
-				var f = [0.87, 0.93, 1.0, 0.96][h % 4]
-				if (h / 7) % 2 == 0:
-					draw_set_transform(
-							Vector2(tx * t + t * 0.5, ty * t + t * 0.5),
-							0.0, Vector2(-1.0, 1.0))
-					draw_texture_rect_region(_tex[nama],
-							Rect2(-t * 0.5, -t * 0.5, t, t), src,
-							Color(f, f, f))
-					draw_set_transform_matrix(Transform2D())
-				else:
-					draw_texture_rect_region(_tex[nama],
-							Rect2(tx * t, ty * t, t, t), src,
-							Color(f, f, f))
-			else:
-				draw_texture_rect_region(_tex[nama],
-						Rect2(tx * t, ty * t, t, t), src,
-						Color(1, 1, 1))
+				src = _src_interior(nama, h)
+				var f = [0.90, 0.95, 1.0][(h / 13) % 3]
+				mod = Color(f, f, f)
+			draw_texture_rect_region(_tex[nama],
+					Rect2(tx * t, ty * t, t, t), src, mod)
 
 	# GROUNDING & CONTACT SHADOW (D8): gradasi occlusion di pertemuan
 	# permukaan-udara, drop shadow massa gantung

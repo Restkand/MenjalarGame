@@ -13,9 +13,9 @@
     "opsi": "no_background, black outline, flat shading; 16x16 snap palet ikon (proses_ikon.gd) - pop di atas kepala saat KEJAR. Kurasi pemilik: v1 seed 1705 (badge bundar) DITOLAK - harus simbol polos segaya icon_tanya; img2img strength 80 gagal mengubah bentuk (seed 1707), deskripsi bentuk eksplisit yang berhasil"
   },
   "icon_tanya": {
-    "seed": 1706,
+    "seed": 1709,
     "size": "32x32",
-    "prompt": "bold question mark curiosity icon, thick rounded shape, amber orange with dark outline, game UI pictogram",
-    "opsi": "no_background, black outline, flat shading; 16x16 snap palet ikon - pop di atas kepala saat SELIDIK"
+    "prompt": "question mark punctuation symbol, very thick chunky rounded strokes, amber orange, dark outline, plain bold symbol floating alone",
+    "opsi": "no_background, black outline, flat shading; 16x16 snap palet ikon - pop saat SELIDIK. Kurasi pemilik: v1 seed 1706 terlalu tipis - digemukkan segaya icon_seru; ukuran gambar view dinaikkan 13->18 px"
   }
 }

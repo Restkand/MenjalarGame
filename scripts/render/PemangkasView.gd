@@ -172,7 +172,8 @@ func _draw():
 		elif _icon_t < 0.38:
 			s_i = lerpf(1.3, 1.0, (_icon_t - 0.22) / 0.16)
 		var apung = sin(_t * 3.5) * 1.5 if _icon_t > 0.38 else 0.0
-		var d_i = 13.0 * s_i
+		# 18 px (koreksi pemilik: 13 px kurang terlihat di zoom kamera)
+		var d_i = 18.0 * s_i
 		draw_texture_rect(tex_i,
-				Rect2(p.x - d_i * 0.5, p.y - 34.0 - d_i * 0.5 + apung,
+				Rect2(p.x - d_i * 0.5, p.y - 37.0 - d_i * 0.5 + apung,
 				d_i, d_i), false)

@@ -32,6 +32,11 @@ func _draw():
 	var tex = _tex_jalan if pemangkas.state != pemangkas.IDLE else _tex_diam
 	if tex == null:
 		tex = _tex_jalan
+	# bayangan kontak (D8): teknisi duduk di lantai yang sama dengan dunia
+	draw_set_transform(pemangkas.pos * ppu + Vector2(0.0, 1.0), 0.0,
+			Vector2(1.0, 0.32))
+	draw_circle(Vector2.ZERO, 10.0, Color(0.02, 0.03, 0.04, 0.30))
+	draw_set_transform_matrix(Transform2D())
 	if tex != null:
 		var n = max(1, tex.get_width() / 48)
 		var fr = int(_t * 8.0) % n

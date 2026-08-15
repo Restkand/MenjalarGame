@@ -32,6 +32,7 @@ var _t_sensor = 0.0        # penggerak denyut lampu sensor
 var _pos_diam = Vector2()  # pelacak gerak untuk aturan diam=tersembunyi
 var _grading               # CanvasModulate — bergeser hangat saat alarm
 var _cahaya_avatar         # PointLight2D hijau mengikuti TENDRIL (EDV3 §8)
+var _lampu_ruang = []      # dua lampu fluorescent — kedip mikro grading
 var _lompat_lalu = false   # edge Spasi
 var _jangkar_lalu = false  # edge F
 var _esc_lalu = false      # edge Esc — menu jeda
@@ -77,8 +78,10 @@ func _ready():
 	_grading.color = Color("8FA0B8")
 	add_child(_grading)
 	var tex_lampu = _tex_cahaya()
-	_lampu(tex_lampu, Vector2(272, 70), Color("C9D6DE"), 0.9, 5.0)
-	_lampu(tex_lampu, Vector2(848, 70), Color("C9D6DE"), 0.9, 5.0)
+	_lampu_ruang.append(
+			_lampu(tex_lampu, Vector2(272, 70), Color("C9D6DE"), 0.9, 5.0))
+	_lampu_ruang.append(
+			_lampu(tex_lampu, Vector2(848, 70), Color("C9D6DE"), 0.9, 5.0))
 	_lampu_sensor = _lampu(tex_lampu, Vector2(720, 62), Color("D89A3C"),
 			0.55, 3.0)
 	_cahaya_avatar = _lampu(tex_lampu, avatar.pos * float(Config.PPU),
@@ -238,6 +241,13 @@ func _process(delta):
 	else:
 		_lampu_sensor.energy = 0.55
 		_lampu_sensor.texture_scale = 3.0
+
+	# kedip mikro fluorescent (grading Langkah 4): lampu tua ruang servis
+	# sesekali tersendat sekejap — deterministik dari jam, fase digeser
+	# per lampu supaya keduanya tidak pernah tersendat serempak
+	for li in range(_lampu_ruang.size()):
+		var tik = int((_t_sensor + li * 1.37) * 60.0)
+		_lampu_ruang[li].energy = 0.9 if tik % 211 > 3 else 0.62
 
 	avatar.update(delta, i, world)
 	pemangkas.update(delta, avatar, world)

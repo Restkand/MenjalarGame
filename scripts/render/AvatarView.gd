@@ -254,10 +254,20 @@ func _draw():
 			regang = clamp(abs(avatar.vel.y) / Config.AVATAR_LOMPAT,
 					0.0, 1.0)
 		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
-		# kaki menapak persis: baris kosong bawah strip dikompensasi
-		draw_set_transform(p, 0.0, Vector2(cermin * skala.x, skala.y))
+		# JANGKAR = KAKI (pos avatar), bukan tengah badan: baris isi
+		# terbawah strip jatuh persis di pos.y — sejajar Teknisi yang
+		# juga menapak di pos-nya (playtest pemilik: pijakan tak setara).
+		# Squash-stretch ikut berpivot di kaki: badan meregang ke ATAS,
+		# kaki tidak pernah meninggalkan lantai.
+		var kaki = avatar.pos * ppu
+		# bayangan kontak (D8): mendudukkan karakter ke lantainya
+		if avatar.moda == avatar.LEPAS and avatar.di_tanah:
+			draw_set_transform(kaki + Vector2(0.0, 1.0), 0.0,
+					Vector2(1.0, 0.32))
+			draw_circle(Vector2.ZERO, 7.0, Color(0.02, 0.03, 0.04, 0.30))
+		draw_set_transform(kaki, 0.0, Vector2(cermin * skala.x, skala.y))
 		draw_texture_rect_region(a.tex,
-				Rect2(Vector2(-16.0 + a.geser, -10.0 + a.dasar),
+				Rect2(Vector2(-16.0 + a.geser, -32.0 + a.dasar),
 				Vector2(32.0, 32.0)),
 				Rect2(fr * 32.0, 0.0, 32.0, 32.0))
 		draw_set_transform_matrix(Transform2D())

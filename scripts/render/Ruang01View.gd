@@ -53,7 +53,7 @@ func _init(w):
 # blob Wang dari SEL LUKISAN (dual-grid): tile kandidat = sekitar sel
 # terlukis; sudut tile berisi bila sel di sudut itu terlukis — tepi
 # mengikuti sapuan kuas pelukis, tile transisi Varian A merangkainya
-func _zona_wang(sel, nama_atlas, a, ppu):
+func _zona_wang(sel, nama_atlas, a, ppu, gelap = 1.0):
 	if sel.is_empty() or not _tex.has(nama_atlas):
 		return
 	var tex = _tex[nama_atlas]
@@ -78,7 +78,7 @@ func _zona_wang(sel, nama_atlas, a, ppu):
 			continue
 		# anti-monoton: interior memilih 4 varian + jitter value
 		var h = absi((tx * 40503) ^ (ty * 88651))
-		var f = [0.88, 0.94, 1.0][(h / 13) % 3]
+		var f = [0.88, 0.94, 1.0][(h / 13) % 3] * gelap
 		var mod = Color(f, f, f, a)
 		var src = Rect2((kunci % 4) * 32,
 				floori(kunci / 4.0) * 32, 32, 32)
@@ -318,9 +318,12 @@ func _draw():
 	# blob Wang digambar langsung dari sel kanvas peta_material.png —
 	# bentuk organik sepenuhnya di tangan pelukis; mekanik memakai sel
 	# yang SAMA (Ruang01.material) — mata dan aturan satu sumber.
-	_zona_wang(world.sel_lembap, "atlas_lembap", 0.85, ppu)
-	_zona_wang(world.sel_retak, "atlas_retak", 0.8, ppu)
-	_zona_wang(world.sel_air, "atlas_air", 0.9, ppu)
+	# GRADING Langkah 4: value zona DIJEPIT di bawah pita TENDRIL —
+	# lumut lingkungan harus kalah terang dari makhluk & pertumbuhannya
+	# (aturan EDV3 §3.1: env <= 40%, TENDRIL 60-85% selalu paling terang)
+	_zona_wang(world.sel_lembap, "atlas_lembap", 0.85, ppu, 0.72)
+	_zona_wang(world.sel_retak, "atlas_retak", 0.8, ppu, 0.85)
+	_zona_wang(world.sel_air, "atlas_air", 0.9, ppu, 0.82)
 
 	var np = world.node_pos * ppu
 	draw_circle(np, 7.0, Color("285B2B"))
@@ -376,6 +379,21 @@ func _draw():
 	if _tex.has("sensor"):
 		draw_texture_rect(_tex.sensor, Rect2(s.x - 16.0, 28.0, 32, 32),
 				false)
+
+	# KEDALAMAN AMBIEN (grading Langkah 4): lampu ruang servis menggantung
+	# rendah — makin ke plafon makin gelap, dan koridor drain di bawah
+	# lantai tenggelam dalam bayangan. Bertangga (bukan gradien halus)
+	# supaya tetap bahasa pixel art; digambar SEBELUM node avatar/daun,
+	# jadi TENDRIL & pertumbuhannya tetap paling terang (EDV3 §3.1).
+	var kedalaman = Color("06080B")
+	var pita_a = [0.20, 0.13, 0.07, 0.03]
+	for i in range(4):
+		kedalaman.a = pita_a[i]
+		draw_rect(Rect2(0.0, i * 16.0 * ppu, world.W * ppu, 16.0 * ppu),
+				kedalaman)
+	kedalaman.a = 0.14
+	draw_rect(Rect2(0.0, 116.0 * ppu, world.W * ppu,
+			(world.H - 116.0) * ppu), kedalaman)
 
 
 func _process(_delta):

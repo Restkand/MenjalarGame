@@ -12,6 +12,11 @@
     "prompt": "exclamation point punctuation symbol, one thick vertical bar with a round dot below it, red-orange, dark outline, plain symbol floating alone",
     "opsi": "no_background, black outline, flat shading; 16x16 snap palet ikon (proses_ikon.gd) - pop di atas kepala saat KEJAR. Kurasi pemilik: v1 seed 1705 (badge bundar) DITOLAK - harus simbol polos segaya icon_tanya; img2img strength 80 gagal mengubah bentuk (seed 1707), deskripsi bentuk eksplisit yang berhasil"
   },
+  "teknisi_mati": {
+    "sumber": "animate_character template falling-back-death, arah east, grup akun 'mati_sergap' (7 frame)",
+    "proses": "rakit_mati.gd scratchpad: geser seragam kaki frame-0 ke baris bawah (selaras strip jalan) + grading kelabu identik grading_teknisi",
+    "pakai": "PemangkasView memutar sekali sepanjang sergapan 0.9 dtk, dicermin hadap, rona hijau menguat + daun mengerubut di atasnya"
+  },
   "icon_tanya": {
     "seed": 1709,
     "size": "32x32",

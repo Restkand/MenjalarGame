@@ -47,10 +47,10 @@ func _init(w):
 # (bit = sudut BERISI material) — tepi blob mengikuti seni transisi
 # membulat Varian A. Cadangan bertingkat: tekstur interior rata ->
 # rona polos.
-func _zona_wang(zona, nama_atlas, nama_interior, warna_cadangan, a, ppu):
+func _zona_wang(zona, nama_atlas, nama_interior, warna_cadangan, a, ppu,
+		peluk):
 	if _tex.has(nama_atlas):
 		var tex = _tex[nama_atlas]
-		var mod = Color(1, 1, 1, a)
 		var sel = {}
 		for z in zona:
 			var x0 = floori(z.position.x / 4.0) - 1
@@ -64,20 +64,33 @@ func _zona_wang(zona, nama_atlas, nama_interior, warna_cadangan, a, ppu):
 			var tx = kunci_sel.x
 			var ty = kunci_sel.y
 			var kunci = 0
-			if _dalam_zona(zona, tx * 4, ty * 4):
+			if _sudut_isi(zona, tx * 4, ty * 4, peluk):
 				kunci += 1
-			if _dalam_zona(zona, tx * 4 + 4, ty * 4):
+			if _sudut_isi(zona, tx * 4 + 4, ty * 4, peluk):
 				kunci += 2
-			if _dalam_zona(zona, tx * 4, ty * 4 + 4):
+			if _sudut_isi(zona, tx * 4, ty * 4 + 4, peluk):
 				kunci += 4
-			if _dalam_zona(zona, tx * 4 + 4, ty * 4 + 4):
+			if _sudut_isi(zona, tx * 4 + 4, ty * 4 + 4, peluk):
 				kunci += 8
 			if kunci == 0:
 				continue
-			draw_texture_rect_region(tex,
-					Rect2(tx * 4 * ppu, ty * 4 * ppu, 4 * ppu, 4 * ppu),
-					Rect2((kunci % 4) * 32, floori(kunci / 4.0) * 32,
-					32, 32), mod)
+			# anti-monoton: jitter value + cermin per-tile dari hash
+			var h = absi((tx * 40503) ^ (ty * 88651))
+			var f = [0.88, 0.94, 1.0][h % 3]
+			var mod = Color(f, f, f, a)
+			var src = Rect2((kunci % 4) * 32,
+					floori(kunci / 4.0) * 32, 32, 32)
+			if kunci == 15 and (h / 11) % 2 == 0:
+				draw_set_transform(Vector2(tx * 4 * ppu + 2 * ppu,
+						ty * 4 * ppu + 2 * ppu), 0.0, Vector2(-1, 1))
+				draw_texture_rect_region(tex,
+						Rect2(-2 * ppu, -2 * ppu, 4 * ppu, 4 * ppu),
+						src, mod)
+				draw_set_transform_matrix(Transform2D())
+			else:
+				draw_texture_rect_region(tex,
+						Rect2(tx * 4 * ppu, ty * 4 * ppu, 4 * ppu,
+						4 * ppu), src, mod)
 		return
 	for z2 in zona:
 		var r = Rect2(z2.position.x * ppu, z2.position.y * ppu,
@@ -89,6 +102,21 @@ func _zona_wang(zona, nama_atlas, nama_interior, warna_cadangan, a, ppu):
 			var c = warna_cadangan
 			c.a = 0.12
 			draw_rect(r, c)
+
+
+# sudut blob berisi material? di dalam zona — dan bila `peluk`, harus
+# DEKAT permukaan padat (lumut tumbuh MENEMPEL dinding/lantai, bukan
+# mengambang di udara koridor — koreksi monoton pemilik)
+func _sudut_isi(zona, px, py, peluk):
+	if not _dalam_zona(zona, px, py):
+		return false
+	if not peluk:
+		return true
+	for ofs in [Vector2i(0, 5), Vector2i(0, -5), Vector2i(5, 0),
+			Vector2i(-5, 0), Vector2i(0, 9), Vector2i(9, 0)]:
+		if world.padat(px + ofs.x, py + ofs.y):
+			return true
+	return false
 
 
 func _dalam_zona(zona, px, py):
@@ -165,14 +193,30 @@ func _draw():
 			if not _tex.has(nama):
 				continue
 			var kunci = _kunci(tx, ty)
-			var f = 1.0
+			var src = Rect2((kunci % 4) * 32.0,
+					floori(kunci / 4.0) * 32.0, 32.0, 32.0)
+			# ANTI-MONOTON (playtest pemilik): interior divariasikan
+			# per-TILE — jitter value 4 tingkat + cermin deterministik
+			# dari hash koordinat; tepi/pijakan tetap bersih
 			if kunci == 15:
-				f = [0.95, 1.0, 1.05][(floori(tx / 4.0)
-						+ floori(ty / 3.0) * 3) % 3]
-			draw_texture_rect_region(_tex[nama],
-					Rect2(tx * t, ty * t, t, t),
-					Rect2((kunci % 4) * 32.0, floori(kunci / 4.0) * 32.0,
-							32.0, 32.0), Color(f, f, f))
+				var h = absi((tx * 73856093) ^ (ty * 19349663))
+				var f = [0.87, 0.93, 1.0, 0.96][h % 4]
+				if (h / 7) % 2 == 0:
+					draw_set_transform(
+							Vector2(tx * t + t * 0.5, ty * t + t * 0.5),
+							0.0, Vector2(-1.0, 1.0))
+					draw_texture_rect_region(_tex[nama],
+							Rect2(-t * 0.5, -t * 0.5, t, t), src,
+							Color(f, f, f))
+					draw_set_transform_matrix(Transform2D())
+				else:
+					draw_texture_rect_region(_tex[nama],
+							Rect2(tx * t, ty * t, t, t), src,
+							Color(f, f, f))
+			else:
+				draw_texture_rect_region(_tex[nama],
+						Rect2(tx * t, ty * t, t, t), src,
+						Color(1, 1, 1))
 
 	# GROUNDING & CONTACT SHADOW (D8): gradasi occlusion di pertemuan
 	# permukaan-udara, drop shadow massa gantung
@@ -243,11 +287,11 @@ func _draw():
 	# Selaras jalur main: lembap/retak = permukaan tumbuh (mekanika
 	# Ruang01.material memakai rect yang SAMA), air = kosmetik lantai.
 	_zona_wang(world.ZONA_LEMBAP, "atlas_lembap", "materi_lembap",
-			Color("285B2B"), 0.85, ppu)
+			Color("285B2B"), 0.85, ppu, true)
 	_zona_wang(world.ZONA_RETAK, "atlas_retak", "materi_retak",
-			Color("3D4757"), 0.8, ppu)
+			Color("3D4757"), 0.8, ppu, false)
 	_zona_wang(world.ZONA_AIR, "atlas_air", "", Color("1A2029"),
-			0.9, ppu)
+			0.9, ppu, false)
 
 	var np = world.node_pos * ppu
 	draw_circle(np, 7.0, Color("285B2B"))

@@ -46,27 +46,15 @@ var tujuan_pos = Vector2(244.0, 40.0)
 # RK-2 [B]: node yang DITANAM pemain lewat F (GDD §6.2)
 var node_tanam = []
 
-# RK-2 [A] — MATERIAL PERMUKAAN (GDD §12, MVP tiga kelas): BETON=0
-# menolak pertumbuhan; RETAK=1 tumbuh normal; LEMBAP=2 tumbuh murah.
-# Zona dalam SATUAN. Lembap: koridor drain + cerobong + celah masuk +
-# kolom dinding kanan yang dialiri kebocoran katup. Retak: bercak
-# dinding tengah (decal retak).
-const ZONA_LEMBAP = [
-	Rect2i(56, 118, 168, 18),    # koridor drain
-	Rect2i(216, 110, 8, 10),     # cerobong keluar
-	Rect2i(64, 110, 8, 10),      # celah masuk
-	Rect2i(234, 28, 14, 84),     # kolom air dinding kanan
-]
-const ZONA_RETAK = [
-	Rect2i(100, 40, 20, 26),     # bercak retak dinding tengah
-]
-
-# RK-2 [A] visual: GENANGAN AIR (murni kosmetik — bahasa air GDD §12;
-# selaras jalur main: lantai drain + bawah katup bocor)
-const ZONA_AIR = [
-	Rect2i(164, 130, 44, 6),     # genangan dasar koridor drain
-	Rect2i(234, 106, 12, 6),     # genangan di bawah katup bocor
-]
+# RK-2 [A] v3 — MATERIAL DILUKIS (putusan pemilik: bentuk organik,
+# bukan rect): aset/ruang01/peta_material.png = kanvas 64x36, 1 px =
+# 1 sel 4-satuan. Warna data: #00A000 lembap, #A05000 retak, #0050A0
+# air. SATU sumber kebenaran untuk mekanik DAN visual — pemilik bebas
+# melukis ulang berkasnya di editor gambar mana pun.
+# BETON=0 menolak tumbuh; RETAK=1 normal; LEMBAP=2 murah.
+var sel_lembap = {}
+var sel_retak = {}
+var sel_air = {}
 
 
 func _init():
@@ -106,6 +94,8 @@ func build():
 	_isi(17, 13, 18, 13, 1)               # anak 1: puncak 104
 	_isi(19, 12, 20, 13, 1)               # anak 2: puncak 96
 	_isi(21, 11, 24, 13, 1)               # blok mesin: puncak 88
+
+	_baca_peta_material()
 
 	# --- benih jaringan (§29: node -> node -> node) --------------------
 	# rumah (§5) + rute AMAN: dinding kiri -> plafon -> dinding kanan
@@ -147,14 +137,44 @@ func padat_avatar(px, py, _di_dalam):
 	return padat(px, py)
 
 
-# RK-2 [A]: kelas material di titik satuan (GDD §12)
+# baca kanvas material yang dilukis (fallback: kosong bila hilang)
+func _baca_peta_material():
+	sel_lembap = {}
+	sel_retak = {}
+	sel_air = {}
+	var jalur = ProjectSettings.globalize_path(
+			"res://aset/ruang01/peta_material.png")
+	if not FileAccess.file_exists(jalur):
+		return
+	var img = Image.load_from_file(jalur)
+	img.convert(Image.FORMAT_RGBA8)
+	for y in range(min(36, img.get_height())):
+		for x in range(min(64, img.get_width())):
+			var c = img.get_pixel(x, y)
+			if c.a < 0.5:
+				continue
+			var sel = Vector2i(x, y)
+			if c.g > 0.4 and c.r < 0.3 and c.b < 0.3:
+				sel_lembap[sel] = 1
+			elif c.r > 0.4 and c.b < 0.3:
+				sel_retak[sel] = 1
+			elif c.b > 0.4 and c.r < 0.3:
+				sel_air[sel] = 1
+
+
+# RK-2 [A]: kelas material di titik satuan (GDD §12) — dari kanvas
+# lukisan; toleransi 1 sel tetangga supaya mekanik pemaaf di tepi blob
 func material(px, py):
-	var p = Vector2i(px, py)
-	for z in ZONA_LEMBAP:
-		if z.has_point(p):
+	var sel = Vector2i(floori(px / 4.0), floori(py / 4.0))
+	if sel_lembap.has(sel):
+		return 2
+	if sel_retak.has(sel):
+		return 1
+	for ofs in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1),
+			Vector2i(0, -1)]:
+		if sel_lembap.has(sel + ofs):
 			return 2
-	for z in ZONA_RETAK:
-		if z.has_point(p):
+		if sel_retak.has(sel + ofs):
 			return 1
 	return 0
 

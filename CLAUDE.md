@@ -73,7 +73,14 @@ dokumen ✓ → [1] utang FEEL ✓ → [2] SENSOR ✓ → [3] playtest tiga rute
 **`docs/RK2-TENDRIL-LOOP.md` (disahkan 15 Agu, DISISIPKAN sebelum
 Langkah 4/5)**: verdict gerbang putaran 2 = teknis lulus, LOOP bolong
 (4 temuan pemilik = halaman GDD yang belum dibangun). Tahapan: [A]
-material bicara (§12: lembap/retak/beton, beton menolak tumbuh) →
+material bicara (§12: lembap/retak/beton, beton menolak tumbuh;
+v3 15 Agu: MATERIAL DILUKIS — aset/ruang01/peta_material.png = kanvas
+64x36 (1px = 1 sel 4-satuan; #00A000 lembap #A05000 retak #0050A0
+air), SATU sumber kebenaran mekanik+visual, blob Wang dual-grid dari
+sel lukisan; pemilik bebas melukis ulang PNG-nya di editor apa pun;
+atlas 5 material 128x160 = 16 kunci + 3 varian interior bertepi
+identik anti-monoton; lembar tileset web tersimpan di
+aset/ruang01/tileset_map) →
 [B] jangkar berdampak (§6.2: node terlihat + aura regen 2x) → [C]
 musuh pertama PEMANGKAS (§14: KARAKTER BARU — bukan Regu Perawat lama,
 putusan pemilik; kandidat dikurasi dulu; patroli lantai, hanya lihat

@@ -47,55 +47,45 @@ func _init(w):
 # (bit = sudut BERISI material) — tepi blob mengikuti seni transisi
 # membulat Varian A. Cadangan bertingkat: tekstur interior rata ->
 # rona polos.
-func _zona_wang(zona, nama_atlas, nama_interior, warna_cadangan, a, ppu,
-		peluk):
-	if _tex.has(nama_atlas):
-		var tex = _tex[nama_atlas]
-		var sel = {}
-		for z in zona:
-			var x0 = floori(z.position.x / 4.0) - 1
-			var x1 = ceili((z.position.x + z.size.x) / 4.0) + 1
-			var y0 = floori(z.position.y / 4.0) - 1
-			var y1 = ceili((z.position.y + z.size.y) / 4.0) + 1
-			for ty in range(y0, y1):
-				for tx in range(x0, x1):
-					sel[Vector2i(tx, ty)] = true
-		for kunci_sel in sel:
-			var tx = kunci_sel.x
-			var ty = kunci_sel.y
-			var kunci = 0
-			if _sudut_isi(zona, tx * 4, ty * 4, peluk):
-				kunci += 1
-			if _sudut_isi(zona, tx * 4 + 4, ty * 4, peluk):
-				kunci += 2
-			if _sudut_isi(zona, tx * 4, ty * 4 + 4, peluk):
-				kunci += 4
-			if _sudut_isi(zona, tx * 4 + 4, ty * 4 + 4, peluk):
-				kunci += 8
-			if kunci == 0:
-				continue
-			# anti-monoton v2: interior memilih 4 varian + jitter value
-			var h = absi((tx * 40503) ^ (ty * 88651))
-			var f = [0.88, 0.94, 1.0][(h / 13) % 3]
-			var mod = Color(f, f, f, a)
-			var src = Rect2((kunci % 4) * 32,
-					floori(kunci / 4.0) * 32, 32, 32)
-			if kunci == 15:
-				src = _src_interior(nama_atlas, h)
-			draw_texture_rect_region(tex,
-					Rect2(tx * 4 * ppu, ty * 4 * ppu, 4 * ppu,
-					4 * ppu), src, mod)
+# blob Wang dari SEL LUKISAN (dual-grid): tile kandidat = sekitar sel
+# terlukis; sudut tile berisi bila sel di sudut itu terlukis — tepi
+# mengikuti sapuan kuas pelukis, tile transisi Varian A merangkainya
+func _zona_wang(sel, nama_atlas, a, ppu):
+	if sel.is_empty() or not _tex.has(nama_atlas):
 		return
-	for z2 in zona:
-		var r = Rect2(z2.position.x * ppu, z2.position.y * ppu,
-				z2.size.x * ppu, z2.size.y * ppu)
-		if nama_interior != "" and _tex.has(nama_interior):
-			draw_texture_rect(_tex[nama_interior], r, true,
-					Color(1, 1, 1, a * 0.6))
-		else:
-			var c = warna_cadangan
-			c.a = 0.12
-			draw_rect(r, c)
+	var tex = _tex[nama_atlas]
+	var kandidat = {}
+	for s in sel:
+		for dy in range(-1, 1):
+			for dx in range(-1, 1):
+				kandidat[Vector2i(s.x + dx, s.y + dy)] = true
+	for k in kandidat:
+		var tx = k.x
+		var ty = k.y
+		var kunci = 0
+		if sel.has(Vector2i(tx, ty)):
+			kunci += 1
+		if sel.has(Vector2i(tx + 1, ty)):
+			kunci += 2
+		if sel.has(Vector2i(tx, ty + 1)):
+			kunci += 4
+		if sel.has(Vector2i(tx + 1, ty + 1)):
+			kunci += 8
+		if kunci == 0:
+			continue
+		# anti-monoton: interior memilih 4 varian + jitter value
+		var h = absi((tx * 40503) ^ (ty * 88651))
+		var f = [0.88, 0.94, 1.0][(h / 13) % 3]
+		var mod = Color(f, f, f, a)
+		var src = Rect2((kunci % 4) * 32,
+				floori(kunci / 4.0) * 32, 32, 32)
+		if kunci == 15:
+			src = _src_interior(nama_atlas, h)
+		# dual-grid: tile digambar bergeser +2 satuan (setengah sel)
+		# supaya sudut-sudutnya jatuh di pusat sel yang dilukis
+		draw_texture_rect_region(tex,
+				Rect2((tx * 4 + 2) * ppu, (ty * 4 + 2) * ppu,
+				4 * ppu, 4 * ppu), src, mod)
 
 
 # pilih sumber tile interior: asli (kunci-15) atau salah satu dari 3
@@ -109,61 +99,6 @@ func _src_interior(nama, h):
 	return pilihan[h % pilihan.size()]
 
 
-# sudut blob berisi material? ANTI-MONOTON v3 (koreksi pemilik: peta
-# web terlihat natural karena blob ORGANIK, zona kita persegi kaku):
-# rect zona dierosi derau deterministik — tepi bergelombang + lubang
-# interior tempat dasar mengintip, sehingga tile transisi Wang bekerja
-# di seluruh tubuh blob seperti di editor Map. `peluk` = harus dekat
-# permukaan padat (lumut menempel, tidak mengambang).
-func _sudut_isi(zona, px, py, peluk):
-	if not _dalam_zona(zona, px, py):
-		return false
-	if peluk:
-		var dekat = false
-		for ofs in [Vector2i(0, 5), Vector2i(0, -5), Vector2i(5, 0),
-				Vector2i(-5, 0), Vector2i(0, 9), Vector2i(9, 0)]:
-			if world.padat(px + ofs.x, py + ofs.y):
-				dekat = true
-				break
-		if not dekat:
-			return false
-	var n = _derau(px, py)
-	var d = _jarak_tepi(zona, px, py)
-	# tepi bergelombang: makin dekat tepi rect, makin sering kosong
-	if d < 8.0 and n < (1.0 - d / 8.0) * 0.7:
-		return false
-	# lubang interior sesekali — dasar mengintip, transisi hidup di
-	# tengah blob
-	if n > 0.90 and d >= 4.0:
-		return false
-	return true
-
-
-# derau deterministik 0..1 per titik satuan
-func _derau(px, py):
-	var h = absi((px * 374761393) ^ (py * 668265263))
-	return float(h % 1000) / 999.0
-
-
-# jarak titik ke tepi terdekat rect zona yang memuatnya
-func _jarak_tepi(zona, px, py):
-	var terbaik = 0.0
-	for z in zona:
-		if not z.has_point(Vector2i(px, py)):
-			continue
-		var d = min(min(px - z.position.x,
-				z.position.x + z.size.x - px),
-				min(py - z.position.y, z.position.y + z.size.y - py))
-		terbaik = max(terbaik, float(d))
-	return terbaik
-
-
-func _dalam_zona(zona, px, py):
-	var p = Vector2i(px, py)
-	for z in zona:
-		if z.has_point(p):
-			return true
-	return false
 
 
 func _draw():
@@ -310,17 +245,13 @@ func _draw():
 	# — NODE kelahiran di jaringan rumah (§6.2: checkpoint/respawn) dan
 	# KEBOCORAN KATUP sebagai sumber air (§16; cincin minum di AvatarView
 	# yang mengabarkan saat menghisap)
-	# RK-2 [A] v2 (koreksi pemilik: manfaatkan kelima terrain + kesan
-	# natural): zona material digambar sebagai BLOB WANG — tile transisi
-	# topdown Varian A memberi tepi membulat organik, bukan kotak rata.
-	# Selaras jalur main: lembap/retak = permukaan tumbuh (mekanika
-	# Ruang01.material memakai rect yang SAMA), air = kosmetik lantai.
-	_zona_wang(world.ZONA_LEMBAP, "atlas_lembap", "materi_lembap",
-			Color("285B2B"), 0.85, ppu, true)
-	_zona_wang(world.ZONA_RETAK, "atlas_retak", "materi_retak",
-			Color("3D4757"), 0.8, ppu, false)
-	_zona_wang(world.ZONA_AIR, "atlas_air", "", Color("1A2029"),
-			0.9, ppu, false)
+	# RK-2 [A] v3 (putusan pemilik: material DILUKIS, bukan rect):
+	# blob Wang digambar langsung dari sel kanvas peta_material.png —
+	# bentuk organik sepenuhnya di tangan pelukis; mekanik memakai sel
+	# yang SAMA (Ruang01.material) — mata dan aturan satu sumber.
+	_zona_wang(world.sel_lembap, "atlas_lembap", 0.85, ppu)
+	_zona_wang(world.sel_retak, "atlas_retak", 0.8, ppu)
+	_zona_wang(world.sel_air, "atlas_air", 0.9, ppu)
 
 	var np = world.node_pos * ppu
 	draw_circle(np, 7.0, Color("285B2B"))

@@ -199,16 +199,31 @@ func _draw():
 	draw_rect(Rect2(32, 344, 64, 4), C_LOGAM)
 	draw_rect(Rect2(88, 348, 4, 8), C_LOGAM)
 
-	# STRUKTUR: marching-squares kunci-sudut -> tile Wang dengan trim
-	# bawaan; baja untuk tangga/panggung/birai, beton untuk sisanya
-	for ty in range(world.PT_H):
-		for tx in range(world.PT_W):
-			if world.padat_t[ty * world.PT_W + tx] == 0:
+	# STRUKTUR: DUAL-GRID kunci-sudut — selaras anatomi tile Varian A
+	# (isi tile hidup di SUDUT PADAT, batas material di tengah tile).
+	# Tile digambar BERPUSAT DI TITIK SUDUT grid, kunci dari 4 sel di
+	# sekelilingnya; dengan ini permukaan tergambar TEPAT di garis
+	# tabrakan. Renderer lama (tile sejajar sel) membuat crust melorot
+	# setengah tile ke dalam massa — temuan audit pijakan Langkah 4.
+	for vy in range(world.PT_H + 1):
+		for vx in range(world.PT_W + 1):
+			var kunci = 0
+			var n_padat = 0
+			var n_baja = 0
+			for c in [[vx - 1, vy - 1, 1], [vx, vy - 1, 2],
+					[vx - 1, vy, 4], [vx, vy, 8]]:
+				if _padat(c[0], c[1]):
+					kunci += c[2]
+					n_padat += 1
+					if _baja(c[0], c[1]):
+						n_baja += 1
+			if kunci == 0:
 				continue
-			var nama = "atlas_baja" if _baja(tx, ty) else "atlas_beton"
+			# material tile campuran: mayoritas sel padat di sudut ini
+			var nama = "atlas_baja" if n_baja * 2 >= n_padat \
+					else "atlas_beton"
 			if not _tex.has(nama):
 				continue
-			var kunci = _kunci(tx, ty)
 			var src = Rect2((kunci % 4) * 32.0,
 					floori(kunci / 4.0) * 32.0, 32.0, 32.0)
 			var mod = Color(1, 1, 1)
@@ -217,12 +232,13 @@ func _draw():
 			# y=128 atlas) + jitter value per-sel — pola khas tile tidak
 			# pernah lagi berulang rapat di grid
 			if kunci == 15:
-				var h = absi((tx * 73856093) ^ (ty * 19349663))
+				var h = absi((vx * 73856093) ^ (vy * 19349663))
 				src = _src_interior(nama, h)
 				var f = [0.90, 0.95, 1.0][(h / 13) % 3]
 				mod = Color(f, f, f)
 			draw_texture_rect_region(_tex[nama],
-					Rect2(tx * t, ty * t, t, t), src, mod)
+					Rect2(vx * t - t * 0.5, vy * t - t * 0.5, t, t),
+					src, mod)
 
 	# GARIS PIJAKAN: strip terang tipis di permukaan atas tiap massa
 	# padat — permukaan yang bisa dipijak/dirambati terbaca seketika
@@ -402,21 +418,8 @@ func _process(_delta):
 		queue_redraw()
 
 
-# kunci Wang: sudut = padat hanya bila SELURUH 4 sel di sudut itu padat
-# (marching squares); luar ruangan dihitung padat supaya cangkang menyatu
-func _kunci(tx, ty):
-	var kunci = 0
-	if _padat(tx, ty - 1) and _padat(tx - 1, ty) and _padat(tx - 1, ty - 1):
-		kunci += 1   # NW
-	if _padat(tx, ty - 1) and _padat(tx + 1, ty) and _padat(tx + 1, ty - 1):
-		kunci += 2   # NE
-	if _padat(tx, ty + 1) and _padat(tx - 1, ty) and _padat(tx - 1, ty + 1):
-		kunci += 4   # SW
-	if _padat(tx, ty + 1) and _padat(tx + 1, ty) and _padat(tx + 1, ty + 1):
-		kunci += 8   # SE
-	if kunci == 0:
-		return 15   # massa setebal 1 tile: tanpa sudut interior -> slab penuh
-	return kunci
+# _kunci marching-squares lama DIHAPUS — struktur kini dual-grid murni
+# (kunci dihitung langsung di loop _draw dari 4 sel sekeliling sudut)
 
 
 func _padat(tx, ty):

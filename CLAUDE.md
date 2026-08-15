@@ -435,10 +435,19 @@ lumut/retak/air diredupkan lewat kenop `gelap` di `_zona_wang`
 fluorescent (Ruang01Main `_lampu_ruang`). Pass komposisi latar
 sebelumnya (commit `cfcce7a`): panel beton berirama + pita utilitas
 (seed 1601/1602, latar_panel/latar_pipa) + skirting + 14 noda + garis
-pijakan permukaan atas + jumbai lumut plafon. Sisa amunisi Langkah 4:
+pijakan permukaan atas + jumbai lumut plafon. Paket 2 (commit `cd3e1b8`):
+audit pijakan menemukan RENDERER SALAH GRID — anatomi atlas Varian A =
+dual-grid (isi tile di sudut padat, batas material di TENGAH tile)
+tapi struktur digambar sejajar sel, jadi crust permukaan melorot 4
+satuan ke dalam massa. Pass struktur ditulis ulang dual-grid sejati
+(tile berpusat titik sudut, kunci dari 4 sel sekeliling, material
+campuran mayoritas; _kunci lama dihapus); permukaan kini tergambar
+TEPAT di garis tabrakan. Audit deterministik LOLOS: rasio pijakan/
+latar 3.39x (syarat >=2x; skrip audit_pijakan.gd scratchpad). Seed
+1601/1602 tercatat di _gen_params/latar_variatif.json. Sisa amunisi
+Langkah 4 (OPSIONAL, hasil-menurun — pemilik menyatakan cukup):
 create_tiles_pro varian interior, prop create_map_object (utang 12
-decal), cek pijakan >= 2x luminance dinding, seed 1601/1602 belum
-dicatat di _gen_params.
+decal).
 
 **Keadaan teknis yang perlu diketahui sesi berikutnya:**
 

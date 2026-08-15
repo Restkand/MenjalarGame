@@ -530,6 +530,14 @@ var PEMANGKAS_JEDA    = 1.5    # detik jeda di ujung patroli / usai tangkap
 var PEMANGKAS_SELIDIK = 2.4    # detik menyelidik di titik terakhir terlihat
 var SERGAP_JARAK      = 9.0    # jangkauan sergapan dari jaringan
 var SERGAP_PANEN      = 35.0   # energi biomassa hasil sergapan
+
+# ESKALASI (persetujuan pemilik 15 Agu: membunuh = keputusan berisiko,
+# bukan sekadar hadiah — balancing dijaga kota yang MERESPONS):
+# pengganti datang mencari rekannya, menemukan mayat = ruangan waspada
+var PEMANGKAS_KAGET   = 0.35   # detik membeku kaget saat pertama melihat
+var PENGGANTI_DATANG  = 20.0   # detik sampai teknisi pengganti masuk
+var MAYAT_WASPADA     = 8.0    # detik alarm ruangan saat mayat ditemukan
+var AWAS_PANDANG      = 1.3    # pengali jarak pandang teknisi yang awas
 const T_RUANG         = 20  # udara interior
 const T_LANTAI        = 21  # slab lantai — padat
 const T_DINDING_DALAM = 22  # dinding kamar / cangkang — padat

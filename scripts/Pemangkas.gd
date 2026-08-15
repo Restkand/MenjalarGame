@@ -19,6 +19,9 @@ const KEJAR   = 2
 const SELIDIK = 3          # Phase 5 "enemy investigation": memeriksa
                            # titik terakhir avatar terlihat sebelum
                            # menyerah kembali berpatroli
+const MASUK   = 4          # ESKALASI: pengganti berjalan masuk dari
+                           # kanan MENCARI REKANNYA — fokus ke mayat,
+                           # belum menoleh ke mana-mana
 
 var pos = Vector2()
 var arah = 1.0             # hadap: 1 kanan, -1 kiri
@@ -26,6 +29,10 @@ var state = PATROL
 var hidup = true           # false = tersergap; tubuh jadi bangkai
 var mati_t = 0.0           # detik sejak tersergap (penggerak anim view)
 var selidik_pos = 0.0      # x avatar TERAKHIR terlihat (memori kejar)
+var awas = false           # sudah tahu ada yang salah: pandang melebar
+var kaget = 0.0            # membeku sesaat ketika PERTAMA melihat pemain
+var tiba_mayat = false     # event sekali-baca: pengganti sampai di mayat
+var _masuk_tujuan = 0.0    # x mayat yang dicari saat MASUK
 var _selidik_t = 0.0
 var _jeda = 0.0            # sisa detik IDLE / cooldown usai menangkap
 var _batas_kiri = 84.0
@@ -44,7 +51,24 @@ func reset():
 	state = PATROL
 	hidup = true
 	mati_t = 0.0
+	awas = false
+	kaget = 0.0
+	tiba_mayat = false
 	_jeda = 0.0
+
+
+# ESKALASI: teknisi pengganti masuk dari tepi kanan ruangan, berjalan
+# menuju x mayat rekannya. Ia datang SUDAH AWAS — kota tahu ada yang
+# hilang. (Pemain tetap boleh menyergapnya saat ia lengah berjalan.)
+func masuk(x_mayat):
+	pos = Vector2(250.0, 111.9)
+	arah = -1.0
+	state = MASUK
+	_masuk_tujuan = x_mayat
+	hidup = true
+	mati_t = 0.0
+	awas = true
+	kaget = 0.0
 
 
 # SERGAP SENYAP (GDD §37 "menyerang titik lemah" + arah horor pemilik
@@ -75,11 +99,14 @@ func update(dt, avatar, world):
 	_jeda = max(0.0, _jeda - dt)
 
 	# melihat avatar? hanya moda LEPAS, sejajar lantai, searah hadap,
-	# dalam jarak pandang, tanpa beton menghalangi
+	# dalam jarak pandang, tanpa beton menghalangi. Teknisi yang AWAS
+	# memandang lebih jauh; yang sedang MASUK fokus mencari rekannya.
 	var lihat = false
-	if avatar.moda == avatar.LEPAS and _jeda <= 0.0:
+	var pandang = Config.PEMANGKAS_PANDANG \
+			* (Config.AWAS_PANDANG if awas else 1.0)
+	if avatar.moda == avatar.LEPAS and _jeda <= 0.0 and state != MASUK:
 		var d = avatar.pos - pos
-		if abs(d.y) < 8.0 and abs(d.x) < Config.PEMANGKAS_PANDANG \
+		if abs(d.y) < 8.0 and abs(d.x) < pandang \
 				and signf(d.x) == signf(arah) and _los(world, avatar.pos):
 			lihat = true
 
@@ -88,6 +115,7 @@ func update(dt, avatar, world):
 			if lihat:
 				state = KEJAR
 				selidik_pos = avatar.pos.x
+				kaget = Config.PEMANGKAS_KAGET
 			elif _jeda <= 0.0:
 				arah = -arah
 				state = PATROL
@@ -95,6 +123,7 @@ func update(dt, avatar, world):
 			if lihat:
 				state = KEJAR
 				selidik_pos = avatar.pos.x
+				kaget = Config.PEMANGKAS_KAGET
 			else:
 				pos.x += arah * Config.PEMANGKAS_JALAN * dt
 				if pos.x <= _batas_kiri or pos.x >= _batas_kanan:
@@ -102,6 +131,13 @@ func update(dt, avatar, world):
 					state = IDLE
 					_jeda = Config.PEMANGKAS_JEDA
 		KEJAR:
+			# KAGET (bahasa stealth klasik): sedetak membeku saat sadar —
+			# jendela reaksi jujur untuk pemain sebelum kejaran dimulai
+			if kaget > 0.0:
+				kaget -= dt
+				if lihat:
+					selidik_pos = avatar.pos.x
+				return
 			# memori: selama terlihat, titik terakhir terus diperbarui;
 			# begitu hilang, ia mengejar TITIK itu, bukan pemainnya
 			if lihat:
@@ -127,12 +163,25 @@ func update(dt, avatar, world):
 			if lihat:
 				state = KEJAR
 				selidik_pos = avatar.pos.x
+				kaget = Config.PEMANGKAS_KAGET
 			else:
 				_selidik_t -= dt
 				# menoleh kiri-kanan mencari — sapuan deterministik
 				arah = 1.0 if int(_selidik_t / 0.8) % 2 == 0 else -1.0
 				if _selidik_t <= 0.0:
 					state = PATROL
+		MASUK:
+			# berjalan lurus ke x mayat rekannya (di luar batas patroli
+			# pun); sampai -> event tiba_mayat (main membunyikan alarm
+			# ruangan) lalu MENYELIDIK di sisi mayat
+			var d3 = _masuk_tujuan - pos.x
+			arah = signf(d3) if abs(d3) > 0.5 else arah
+			pos.x += arah * Config.PEMANGKAS_JALAN * 1.4 * dt
+			if abs(d3) < 3.0:
+				pos.x = clamp(pos.x, _batas_kiri, _batas_kanan)
+				tiba_mayat = true
+				state = SELIDIK
+				_selidik_t = Config.PEMANGKAS_SELIDIK * 1.5
 
 	# MEMOTONG pertumbuhan pemain yang dilewati (jaringan benih aman)
 	_pangkas(avatar, world)

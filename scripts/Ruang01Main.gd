@@ -39,6 +39,11 @@ var _sergap_lalu = false   # edge E — sergap senyap (Phase 5-6)
 var _esc_lalu = false      # edge Esc — menu jeda
 var menu_jeda
 var pemangkas              # RK-2 [C]: musuh pertama
+var pemangkas_view
+var mayat = []             # ESKALASI: bangkai tersergap [{pos, t}] —
+                           # array yang SAMA dipegang view (jangan
+                           # di-reassign; clear() saat restart)
+var _pengganti_t = 0.0     # hitung mundur teknisi pengganti masuk
 var hud
 var _tujuan_capai = false  # RK-2 [D]: tujuan ruangan sekali-capai
 
@@ -94,7 +99,9 @@ func _ready():
 	# RK-2 [C]: SATU Pemangkas berpatroli di lantai tengah terbuka
 	# (x 84-130, sebelum tangga peti) — rute cepat kini berpenjaga
 	pemangkas = PemangkasCls.new(84.0, 130.0)
-	add_child(PemangkasViewCls.new(pemangkas))
+	pemangkas_view = PemangkasViewCls.new(pemangkas)
+	pemangkas_view.mayat = mayat
+	add_child(pemangkas_view)
 
 	# HUD GDD §31 di CanvasLayer sendiri — tidak ikut kamera/zoom
 	var lapis_hud = CanvasLayer.new()
@@ -159,6 +166,8 @@ func _process(delta):
 			world.build()
 			avatar.mulai(world.mulai_pos)
 			pemangkas.reset()
+			mayat.clear()
+			_pengganti_t = 0.0
 			_waspada = 0.0
 		return
 
@@ -186,6 +195,8 @@ func _process(delta):
 		world.build()
 		avatar.mulai(world.mulai_pos)
 		pemangkas.reset()
+		mayat.clear()
+		_pengganti_t = 0.0
 		_waspada = 0.0
 		_tujuan_capai = false
 		ruang_view.tujuan_nyala = false
@@ -260,7 +271,23 @@ func _process(delta):
 	if sergap_tahan and not _sergap_lalu and avatar.bisa_sergap_musuh:
 		if pemangkas.sergap(avatar):
 			hud.kabar("BIOMASSA DISERAP", 2.5)
+			# ESKALASI: kota merespons — mayat tercatat, pengganti
+			# dijadwalkan datang mencari rekannya yang hilang
+			mayat.append({"pos": pemangkas.pos, "t": 0.0})
+			_pengganti_t = Config.PENGGANTI_DATANG
 	_sergap_lalu = sergap_tahan
+
+	# jam mayat + kedatangan pengganti + alarm penemuan
+	for m in mayat:
+		m.t += delta
+	if _pengganti_t > 0.0 and not pemangkas.hidup:
+		_pengganti_t -= delta
+		if _pengganti_t <= 0.0 and mayat.size() > 0:
+			pemangkas.masuk(mayat[mayat.size() - 1].pos.x)
+	if pemangkas.tiba_mayat:
+		pemangkas.tiba_mayat = false
+		_waspada = max(_waspada, Config.MAYAT_WASPADA)
+		hud.kabar("MAYAT DITEMUKAN - RUANGAN WASPADA", 3.5)
 
 	avatar.update(delta, i, world)
 	pemangkas.update(delta, avatar, world)

@@ -7,11 +7,17 @@ extends Node2D
 # ancaman dunia (identitas: manusia kelabu, organisme yang hijau).
 
 var pemangkas
+var mayat = []             # dipegang Ruang01Main: bangkai [{pos, t}]
 var _t = 0.0
 var _tex_jalan
 var _tex_diam
 var _tex_tumbang           # bangkai terbalut sulur (sergap senyap)
 var _tex_daun              # gumpalan daun player — sulur pembungkus
+var _tex_seru              # ikon ! — sadar & memburu (PixelLab)
+var _tex_tanya             # ikon ? — curiga & menyelidik (PixelLab)
+var _state_lalu = -1
+var _icon = ""             # "seru" / "tanya" / ""
+var _icon_t = 0.0          # umur ikon — penggerak pop & goyang
 
 
 func _init(p):
@@ -25,10 +31,29 @@ func _init(p):
 		_tex_tumbang = load("res://aset/musuh/teknisi_tumbang.png")
 	if ResourceLoader.exists("res://aset/player/rambat_daun.png"):
 		_tex_daun = load("res://aset/player/rambat_daun.png")
+	if ResourceLoader.exists("res://aset/musuh/icon_seru.png"):
+		_tex_seru = load("res://aset/musuh/icon_seru.png")
+	if ResourceLoader.exists("res://aset/musuh/icon_tanya.png"):
+		_tex_tanya = load("res://aset/musuh/icon_tanya.png")
 
 
 func _process(delta):
 	_t += delta
+	_icon_t += delta
+	# ikon kesadaran mengikuti state: ! saat mulai memburu, ? saat
+	# mulai menyelidik — pop baru tiap kali state-nya BERGANTI
+	if pemangkas.state != _state_lalu:
+		_state_lalu = pemangkas.state
+		if pemangkas.state == pemangkas.KEJAR:
+			_icon = "seru"
+			_icon_t = 0.0
+		elif pemangkas.state == pemangkas.SELIDIK:
+			_icon = "tanya"
+			_icon_t = 0.0
+		else:
+			_icon = ""
+	if not pemangkas.hidup:
+		_icon = ""
 	queue_redraw()
 
 
@@ -37,9 +62,33 @@ func _draw():
 	var kaki = pemangkas.pos * ppu
 	var p = kaki + Vector2(0.0, -24.0)
 
+	# BANGKAI dari daftar (dipegang Ruang01Main — bertahan walau
+	# pengganti sudah datang): tampak setelah anim sergapan 0.9 dtk,
+	# lumut merambatinya bertahap seiring umur
+	for m in mayat:
+		if m.t < 0.9:
+			continue
+		var km = m.pos * ppu
+		if _tex_tumbang != null:
+			var w = float(_tex_tumbang.get_width())
+			var h = float(_tex_tumbang.get_height())
+			draw_texture_rect(_tex_tumbang,
+					Rect2(km.x - w * 0.5, km.y - h, w, h), false)
+		else:
+			draw_rect(Rect2(km + Vector2(-18.0, -8.0),
+					Vector2(36.0, 8.0)), Color("2B333C"))
+		if _tex_daun != null:
+			var n_v2 = max(1, _tex_daun.get_width() / 16)
+			var tumbuh_n = clamp(int((m.t - 0.9) / 1.2), 0, 3)
+			for k in range(tumbuh_n):
+				draw_texture_rect_region(_tex_daun,
+						Rect2(km + Vector2(-14.0 + k * 10.0, -14.0),
+						Vector2(14.0, 14.0)),
+						Rect2((k % n_v2) * 16.0, 0.0, 16.0, 16.0),
+						Color(1, 1, 1, 0.9))
+
 	# SERGAP SENYAP: tubuh terseret sulur (gemetar, tenggelam hijau,
-	# gumpalan daun mengerubut) lalu tinggal BANGKAI terbalut sulur —
-	# "membunuh dalam diam", tanpa teks, tanpa suara
+	# gumpalan daun mengerubut) — "membunuh dalam diam", tanpa teks
 	if not pemangkas.hidup:
 		var q = clamp(pemangkas.mati_t / 0.9, 0.0, 1.0)
 		if q < 1.0:
@@ -64,27 +113,6 @@ func _draw():
 					draw_texture_rect_region(_tex_daun,
 							Rect2(pd - Vector2(8.0, 8.0), Vector2(16.0, 16.0)),
 							Rect2((k % n_v) * 16.0, 0.0, 16.0, 16.0))
-		else:
-			if _tex_tumbang != null:
-				var w = float(_tex_tumbang.get_width())
-				var h = float(_tex_tumbang.get_height())
-				draw_texture_rect(_tex_tumbang,
-						Rect2(kaki.x - w * 0.5, kaki.y - h, w, h), false)
-			else:
-				var bangkai = Color("2B333C")
-				draw_rect(Rect2(kaki + Vector2(-18.0, -8.0),
-						Vector2(36.0, 8.0)), bangkai)
-			# lumut merambati bangkai — pelan, deterministik dari umur
-			if _tex_daun != null:
-				var n_v2 = max(1, _tex_daun.get_width() / 16)
-				var tumbuh_n = clamp(int((pemangkas.mati_t - 0.9) / 1.2),
-						0, 3)
-				for k in range(tumbuh_n):
-					draw_texture_rect_region(_tex_daun,
-							Rect2(kaki + Vector2(-14.0 + k * 10.0, -14.0),
-							Vector2(14.0, 14.0)),
-							Rect2((k % n_v2) * 16.0, 0.0, 16.0, 16.0),
-							Color(1, 1, 1, 0.9))
 		return
 
 	var tex = _tex_jalan if pemangkas.state != pemangkas.IDLE else _tex_diam
@@ -96,11 +124,15 @@ func _draw():
 	draw_circle(Vector2.ZERO, 10.0, Color(0.02, 0.03, 0.04, 0.30))
 	draw_set_transform_matrix(Transform2D())
 	if tex != null:
+		var berdiri = pemangkas.state == pemangkas.IDLE \
+				or pemangkas.state == pemangkas.SELIDIK \
+				or pemangkas.kaget > 0.0
 		var n = max(1, tex.get_width() / 48)
-		var fr = int(_t * 8.0) % n
-		if pemangkas.state == pemangkas.IDLE:
-			fr = int(_t * 3.0) % n
-		draw_set_transform(p, 0.0, Vector2(pemangkas.arah, 1.0))
+		var fr = int(_t * 3.0) % n if berdiri else int(_t * 8.0) % n
+		# KAGET: badan tersentak bergetar sesaat sebelum kejaran mulai
+		var getar = Vector2(sin(_t * 55.0) * 1.8, 0.0) \
+				if pemangkas.kaget > 0.0 else Vector2.ZERO
+		draw_set_transform(p + getar, 0.0, Vector2(pemangkas.arah, 1.0))
 		draw_texture_rect_region(tex,
 				Rect2(Vector2(-24.0, -24.0), Vector2(48.0, 48.0)),
 				Rect2(fr * 48.0, 0.0, 48.0, 48.0))
@@ -124,3 +156,23 @@ func _draw():
 	else:
 		lampu.a = 0.55
 	draw_circle(p + Vector2(pemangkas.arah * 7.0, -18.0), 2.5, lampu)
+
+	# IKON KESADARAN (PixelLab seed 1705/1706): ! merah = sadar &
+	# memburu, ? amber = curiga & menyelidik — pop membesar sekejap
+	# (bahasa stealth klasik) lalu mengambang pelan di atas kepala
+	var tex_i = null
+	if _icon == "seru":
+		tex_i = _tex_seru
+	elif _icon == "tanya":
+		tex_i = _tex_tanya
+	if tex_i != null:
+		var s_i = 1.0
+		if _icon_t < 0.22:
+			s_i = lerpf(0.35, 1.3, _icon_t / 0.22)
+		elif _icon_t < 0.38:
+			s_i = lerpf(1.3, 1.0, (_icon_t - 0.22) / 0.16)
+		var apung = sin(_t * 3.5) * 1.5 if _icon_t > 0.38 else 0.0
+		var d_i = 13.0 * s_i
+		draw_texture_rect(tex_i,
+				Rect2(p.x - d_i * 0.5, p.y - 34.0 - d_i * 0.5 + apung,
+				d_i, d_i), false)

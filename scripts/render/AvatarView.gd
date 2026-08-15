@@ -203,6 +203,13 @@ func _draw():
 		draw_arc(avatar.pos * float(Config.PPU), 7.0, 0.0, TAU, 16,
 				tolak, 2.0)
 
+	# balancing F: simpul butuh jaringan — kedip amber-kelabu di kaki
+	if avatar.jangkar_tolak > 0.0:
+		var tolak_j = Color("8A5A20")
+		tolak_j.a = 0.7 * (avatar.jangkar_tolak / 0.5)
+		draw_arc(avatar.pos * float(Config.PPU), 5.0, 0.0, TAU, 16,
+				tolak_j, 2.0)
+
 	# RK-2 [B]: denyut kelahiran node saat F tertanam — cincin sulur
 	# PixelLab mengembang lalu memudar (koreksi pemilik: radar hijau
 	# prosedural diganti art); busur lama tinggal cadangan

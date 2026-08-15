@@ -464,9 +464,27 @@ tenggelam hijau + daun mengerubut 0.9 dtk → bangkai teknisi_tumbang
 seed 1704 40x13 → lumut merambat bertahap); gunting mati saat
 bangkai; pemangkas.reset() di kedua jalur R. Uji deterministik 4
 asersi LOLOS (kejar-tolak-sergap / selidik→patroli / panen 40→75 /
-bangkai diam+gunting mati), blok uji dibuang. BELUM: musuh kedua
-melihat bangkai (eskalasi), respawn teknisi pengganti — bahan
-pendalaman berikutnya.
+bangkai diam+gunting mati), blok uji dibuang.
+
+**PENDALAMAN LANJUTAN (disetujui pemilik 15 Agu, satu paket):**
+(1) BALANCING F (temuan playtest pemilik: F di sembarang tempat =
+titik isi energi di mana pun, ekonomi runtuh): simpul = ORGAN
+JARINGAN (GDD §6.2) — F hanya sah DI ATAS jaringan yang ada;
+ditolak = jangkar_tolak (cincin amber + HUD "SIMPUL BUTUH
+JARINGAN"). (2) IKON KESADARAN PixelLab: ! merah (seed 1705) pop
+saat KEJAR, ? amber (seed 1706) saat SELIDIK — pop membesar 0.22
+dtk lalu mengambang; KAGET 0.35 dtk (PEMANGKAS_KAGET): teknisi
+membeku bergetar saat pertama melihat = jendela reaksi pemain.
+(3) ESKALASI "membunuh = keputusan berisiko": mayat[] dipegang
+main (bangkai permanen, view gambar dari daftar); PENGGANTI_DATANG
+20 dtk → pemangkas.masuk(x_mayat): teknisi baru masuk dari kanan
+(state MASUK, fokus mencari — tak menoleh, tapi BISA disergap),
+tiba di mayat → event tiba_mayat → alarm ruangan MAYAT_WASPADA 8
+dtk (regen ditolak + grading hangat + sensor terkunci) + kabar
+"MAYAT DITEMUKAN - RUANGAN WASPADA" → SELIDIK 1.5x → patroli
+AWAS permanen (pandang x1.3 AWAS_PANDANG). Rantai berulang tiap
+sergapan. Uji deterministik 3 blok LOLOS (tolak/tanam jangkar,
+kaget beku→kejar, masuk→tiba→selidik→patroli awas), blok dibuang.
 
 Arah lain yang masih antri: (a) produksi RUANG 00 Lab Botani
 (amendemen SRD Room 01 §19/§38 menunggu pemilik), (c) sisa Phase 3

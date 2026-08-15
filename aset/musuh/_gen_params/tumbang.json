@@ -5,5 +5,17 @@
     "size": "64x32",
     "prompt": "dead maintenance worker in gray coverall lying flat face-up on the ground, body tightly wrapped in green vines and leaves, yellow hard hat fallen beside, side view",
     "opsi": "no_background, view side, single color outline, basic shading, low detail"
+  },
+  "icon_seru": {
+    "seed": 1708,
+    "size": "32x32",
+    "prompt": "exclamation point punctuation symbol, one thick vertical bar with a round dot below it, red-orange, dark outline, plain symbol floating alone",
+    "opsi": "no_background, black outline, flat shading; 16x16 snap palet ikon (proses_ikon.gd) - pop di atas kepala saat KEJAR. Kurasi pemilik: v1 seed 1705 (badge bundar) DITOLAK - harus simbol polos segaya icon_tanya; img2img strength 80 gagal mengubah bentuk (seed 1707), deskripsi bentuk eksplisit yang berhasil"
+  },
+  "icon_tanya": {
+    "seed": 1706,
+    "size": "32x32",
+    "prompt": "bold question mark curiosity icon, thick rounded shape, amber orange with dark outline, game UI pictogram",
+    "opsi": "no_background, black outline, flat shading; 16x16 snap palet ikon - pop di atas kepala saat SELIDIK"
   }
 }

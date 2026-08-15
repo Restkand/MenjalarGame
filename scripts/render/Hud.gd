@@ -82,7 +82,8 @@ func _process(delta):
 	var nominal = isi > 0.9 and not avatar.terdeteksi and not avatar.curiga \
 			and not avatar.regen_mati and not avatar.mengisi \
 			and not avatar.diburu and not avatar.bisa_sergap_musuh \
-			and _layu_flash <= 0.0 and avatar.tumbuh_tolak <= 0.0
+			and _layu_flash <= 0.0 and avatar.tumbuh_tolak <= 0.0 \
+			and avatar.jangkar_tolak <= 0.0
 	if avatar.moda != _moda_lalu or abs(isi - _energi_lalu) > 0.1 \
 			or (avatar.bisa_tempel and not _tempel_lalu):
 		_tenang = 0.0
@@ -165,6 +166,9 @@ func _draw():
 		var kelabu = C_LABEL
 		kelabu.a = 1.0
 		_label(ix, y + 118.0, "BETON MENOLAK TUMBUH", a)
+	elif avatar.jangkar_tolak > 0.0:
+		# balancing F: simpul = organ jaringan (GDD §6.2)
+		_label(ix, y + 118.0, "SIMPUL BUTUH JARINGAN", a)
 	elif avatar.bisa_sergap_musuh:
 		# jendela membunuh dalam senyap terbuka — satu-satunya petunjuk
 		# yang digambar dengan warna nilai, bukan label kelabu

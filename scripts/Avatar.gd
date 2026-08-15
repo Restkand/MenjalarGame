@@ -36,6 +36,7 @@ var _denyut = 0.0          # jam denyut tumbuh (julur-cengkeram)
 var hadap = 1.0            # arah hadap terakhir (dipakai view & belok)
 var bisa_tempel = false    # LEPAS menyentuh jaringan — petunjuk HUD [W]
 var tumbuh_tolak = 0.0     # RK-2 [A]: sisa kedip "beton menolak tumbuh"
+var jangkar_tolak = 0.0    # sisa kedip "simpul butuh jaringan" (F ditolak)
 var jangkar_baru = 0.0     # RK-2 [B]: sisa denyut kelahiran node
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 
@@ -116,6 +117,7 @@ func update(dt, i, world):
 		return
 	_tempel_jeda = max(0.0, _tempel_jeda - dt)
 	tumbuh_tolak = max(0.0, tumbuh_tolak - dt)
+	jangkar_tolak = max(0.0, jangkar_tolak - dt)
 	jangkar_baru = max(0.0, jangkar_baru - dt)
 	if i.arah.x != 0.0:
 		hadap = signf(i.arah.x)
@@ -170,14 +172,21 @@ func update(dt, i, world):
 				jejak_daun[j].layu = 0.001
 
 
-# F: menanam simpul jaringan di posisi avatar (P2) — checkpoint + titik
-# pulih di mana pun, termasuk interior. Mahal supaya jadi keputusan.
+# F: menanam simpul di posisi avatar (P2) — checkpoint + aura regen.
+# BALANCING (temuan playtest pemilik 15 Agu: F di sembarang tempat =
+# titik isi energi di mana pun, ekonomi LEPAS runtuh): simpul adalah
+# ORGAN JARINGAN (GDD §6.2), bukan benih portabel — F hanya sah DI
+# ATAS jaringan yang sudah ada. Ingin titik pulih di tempat baru?
+# Tumbuhkan jaringannya dulu lewat material yang menerima.
 func jangkar(world):
+	var px = int(round(pos.x))
+	var py = int(round(pos.y - 2.0))
+	if not world.jaringan_di(px, py):
+		jangkar_tolak = 0.5
+		return false
 	if energi < Config.JANGKAR_BIAYA + 5.0:
 		return false
 	energi -= Config.JANGKAR_BIAYA
-	var px = int(round(pos.x))
-	var py = int(round(pos.y - 2.0))
 	for dy in range(-2, 3):
 		for dx in range(-2, 3):
 			world.tandai_jaringan(px + dx, py + dy)

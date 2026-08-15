@@ -1,0 +1,9 @@
+{
+  "catatan": "Bulb node jaringan (node rumah, node jangkar F, tujuan). Pixflux 64x64 no_background + palet mini hijau CDD §7, crop isi, perkecil nearest 16x16, snap palet. Tiga varian bake (proses_node.gd scratchpad): hidup / dorman (tangga kelabu STRUCTURE + inti amber 8A5A20) / nyala (naik satu tangga + kilau D6FF8F).",
+  "node_bulb": {
+    "seed": 1701,
+    "size": 64,
+    "prompt": "small round plant bulb node, glowing green nodule wrapped in tiny leaves, one curled sprout on top, game checkpoint item",
+    "opsi": "no_background, view side, single color outline, basic shading, low detail"
+  }
+}

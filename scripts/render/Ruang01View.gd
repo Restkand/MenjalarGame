@@ -36,7 +36,8 @@ func _init(w):
 			"retak", "panel_v3", "kotak_sambung", "lampu", "flange",
 			"bracket", "noda_air", "sulur_jaringan", "materi_lembap",
 			"materi_retak", "tangki_air", "atlas_lembap", "atlas_retak",
-			"atlas_air", "latar_panel", "latar_pipa"]:
+			"atlas_air", "latar_panel", "latar_pipa", "node_bulb",
+			"node_bulb_dorman", "node_bulb_nyala"]:
 		var jalur = "res://aset/ruang01/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			_tex[n] = load(jalur)
@@ -341,22 +342,38 @@ func _draw():
 	_zona_wang(world.sel_retak, "atlas_retak", 0.8, ppu, 0.85)
 	_zona_wang(world.sel_air, "atlas_air", 0.9, ppu, 0.82)
 
+	# NODE = sprite bulb PixelLab (seed 1701, 16x16, palet CDD §7) —
+	# lingkaran prosedural pensiun; cadangan hidup bila tekstur hilang
 	var np = world.node_pos * ppu
-	draw_circle(np, 7.0, Color("285B2B"))
-	draw_circle(np, 4.0, Color("3E7A32"))
-	draw_circle(np + Vector2(-1.0, -1.0), 1.6, Color("79B83F"))
+	if _tex.has("node_bulb"):
+		draw_texture_rect(_tex.node_bulb,
+				Rect2(np.x - 8.0, np.y - 8.0, 16.0, 16.0), false)
+	else:
+		draw_circle(np, 7.0, Color("285B2B"))
+		draw_circle(np, 4.0, Color("3E7A32"))
+		draw_circle(np + Vector2(-1.0, -1.0), 1.6, Color("79B83F"))
 
 	# RK-2 [B]: node yang DITANAM pemain (F) — bulb yang sama
 	for nd in world.node_tanam:
 		var pn = nd * ppu
-		draw_circle(pn, 6.0, Color("285B2B"))
-		draw_circle(pn, 3.5, Color("3E7A32"))
-		draw_circle(pn + Vector2(-1.0, -1.0), 1.4, Color("79B83F"))
+		if _tex.has("node_bulb"):
+			draw_texture_rect(_tex.node_bulb,
+					Rect2(pn.x - 8.0, pn.y - 8.0, 16.0, 16.0), false)
+		else:
+			draw_circle(pn, 6.0, Color("285B2B"))
+			draw_circle(pn, 3.5, Color("3E7A32"))
+			draw_circle(pn + Vector2(-1.0, -1.0), 1.4, Color("79B83F"))
 
 	# RK-2 [D]: TUJUAN di dinding kanan — bulb DORMAN (kelabu-amber)
-	# yang MENYALA hijau saat dicapai lewat jaringan (SRD §19)
+	# yang MENYALA hijau saat dicapai lewat jaringan (SRD §19); tujuan
+	# sedikit lebih besar dari node biasa = penanda tengara
 	var tp = world.tujuan_pos * ppu
-	if tujuan_nyala:
+	var nama_tujuan = "node_bulb_nyala" if tujuan_nyala \
+			else "node_bulb_dorman"
+	if _tex.has(nama_tujuan):
+		draw_texture_rect(_tex[nama_tujuan],
+				Rect2(tp.x - 10.0, tp.y - 10.0, 20.0, 20.0), false)
+	elif tujuan_nyala:
 		draw_circle(tp, 8.0, Color("285B2B"))
 		draw_circle(tp, 5.0, Color("6FBF3E"))
 		draw_circle(tp + Vector2(-1.5, -1.5), 2.0, Color("D6FF8F"))

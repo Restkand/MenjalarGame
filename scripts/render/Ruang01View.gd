@@ -12,9 +12,10 @@ var world
 # 3 terdeteksi (siklus pindai SRD §14 — jendela aman vs bahaya HARUS
 # terbaca dari kerucutnya)
 var sensor_state = 0
-var _state_lalu = -1
 var _tex = {}
 var tujuan_nyala = false   # RK-2 [D]: diset Ruang01Main saat tercapai
+var _umur_tanam = {}       # node F -> detik sejak tanam (animasi tumbuh)
+var _t = 0.0               # jam view — napas bulb & efek halus lain
 
 # DIGELAPKAN (playtest pemilik: vegetasi terlalu terang, kurang horor)
 # — massa tanaman tenggelam ke rona gelap; satu-satunya hijau menyala
@@ -37,7 +38,7 @@ func _init(w):
 			"bracket", "noda_air", "sulur_jaringan", "materi_lembap",
 			"materi_retak", "tangki_air", "atlas_lembap", "atlas_retak",
 			"atlas_air", "latar_panel", "latar_pipa", "node_bulb",
-			"node_bulb_dorman", "node_bulb_nyala"]:
+			"node_bulb_dorman", "node_bulb_nyala", "node_tunas"]:
 		var jalur = "res://aset/ruang01/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			_tex[n] = load(jalur)
@@ -344,24 +345,45 @@ func _draw():
 
 	# NODE = sprite bulb PixelLab (seed 1701, 16x16, palet CDD §7) —
 	# lingkaran prosedural pensiun; cadangan hidup bila tekstur hilang
+	# node rumah: napas halus — organisme terlihat hidup justru saat
+	# diam (CDD Rule 8)
 	var np = world.node_pos * ppu
 	if _tex.has("node_bulb"):
+		var wr = 16.0 * (1.0 + 0.04 * sin(_t * 2.0))
 		draw_texture_rect(_tex.node_bulb,
-				Rect2(np.x - 8.0, np.y - 8.0, 16.0, 16.0), false)
+				Rect2(np.x - wr * 0.5, np.y + 8.0 - wr, wr, wr), false)
 	else:
 		draw_circle(np, 7.0, Color("285B2B"))
 		draw_circle(np, 4.0, Color("3E7A32"))
 		draw_circle(np + Vector2(-1.0, -1.0), 1.6, Color("79B83F"))
 
-	# RK-2 [B]: node yang DITANAM pemain (F) — bulb yang sama
+	# RK-2 [B]: node yang DITANAM pemain (F) — ANIMASI TUMBUH dua tahap
+	# (koreksi pemilik: jangan muncul tiba-tiba): tunas kecil menyembul
+	# dari titik tanam, lalu membesar jadi bulb dengan pantulan pegas,
+	# lalu bernapas halus seperti node rumah
 	for nd in world.node_tanam:
 		var pn = nd * ppu
-		if _tex.has("node_bulb"):
-			draw_texture_rect(_tex.node_bulb,
-					Rect2(pn.x - 8.0, pn.y - 8.0, 16.0, 16.0), false)
+		var u = _umur_tanam.get(nd, 9.9)
+		var mulai_bulb = 0.35 if _tex.has("node_tunas") else 0.0
+		if u < mulai_bulb:
+			var st = 0.5 + 0.5 * (u / mulai_bulb)
+			var wt = 12.0 * st
+			draw_texture_rect(_tex.node_tunas,
+					Rect2(pn.x - wt * 0.5, pn.y + 8.0 - wt, wt, wt), false)
+			continue
+		var s = 1.0
+		if u < 0.8:
+			var q = clamp((u - mulai_bulb) / (0.8 - mulai_bulb), 0.0, 1.0)
+			s = q * 1.25 if q < 0.8 else 1.25 - (q - 0.8) * 1.25
 		else:
-			draw_circle(pn, 6.0, Color("285B2B"))
-			draw_circle(pn, 3.5, Color("3E7A32"))
+			s = 1.0 + 0.04 * sin(_t * 2.5 + float(nd.x) * 0.7)
+		if _tex.has("node_bulb"):
+			var w = 16.0 * s
+			draw_texture_rect(_tex.node_bulb,
+					Rect2(pn.x - w * 0.5, pn.y + 8.0 - w, w, w), false)
+		else:
+			draw_circle(pn, 6.0 * s, Color("285B2B"))
+			draw_circle(pn, 3.5 * s, Color("3E7A32"))
 			draw_circle(pn + Vector2(-1.0, -1.0), 1.4, Color("79B83F"))
 
 	# RK-2 [D]: TUJUAN di dinding kanan — bulb DORMAN (kelabu-amber)
@@ -371,8 +393,11 @@ func _draw():
 	var nama_tujuan = "node_bulb_nyala" if tujuan_nyala \
 			else "node_bulb_dorman"
 	if _tex.has(nama_tujuan):
+		# dorman = diam membeku; menyala = ikut bernapas (bangun hidup)
+		var wu = 20.0 * (1.0 + 0.05 * sin(_t * 2.5)) if tujuan_nyala \
+				else 20.0
 		draw_texture_rect(_tex[nama_tujuan],
-				Rect2(tp.x - 10.0, tp.y - 10.0, 20.0, 20.0), false)
+				Rect2(tp.x - wu * 0.5, tp.y - wu * 0.5, wu, wu), false)
 	elif tujuan_nyala:
 		draw_circle(tp, 8.0, Color("285B2B"))
 		draw_circle(tp, 5.0, Color("6FBF3E"))
@@ -429,10 +454,22 @@ func _draw():
 			(world.H - 116.0) * ppu), kedalaman)
 
 
-func _process(_delta):
-	if sensor_state != _state_lalu:
-		_state_lalu = sensor_state
-		queue_redraw()
+func _process(delta):
+	# BUG playtest pemilik (bulb F "telat muncul"): view lama hanya
+	# menggambar ulang saat state sensor berganti, jadi node tertanam /
+	# tujuan menyala baru tampak di pergantian siklus berikutnya.
+	# Kini menggambar ulang tiap frame (DaunView sudah begitu) — dan
+	# umur tanam dipelihara untuk ANIMASI TUMBUH bulb.
+	_t += delta
+	for nd in world.node_tanam:
+		if not _umur_tanam.has(nd):
+			_umur_tanam[nd] = 0.0
+		else:
+			_umur_tanam[nd] += delta
+	for k in _umur_tanam.keys():
+		if not world.node_tanam.has(k):
+			_umur_tanam.erase(k)   # restart R: dunia dibangun ulang
+	queue_redraw()
 
 
 # _kunci marching-squares lama DIHAPUS — struktur kini dual-grid murni

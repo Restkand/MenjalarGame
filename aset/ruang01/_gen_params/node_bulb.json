@@ -5,5 +5,17 @@
     "size": 64,
     "prompt": "small round plant bulb node, glowing green nodule wrapped in tiny leaves, one curled sprout on top, game checkpoint item",
     "opsi": "no_background, view side, single color outline, basic shading, low detail"
+  },
+  "node_tunas": {
+    "seed": 1703,
+    "size": 64,
+    "prompt": "same plant reduced to a tiny young sprout: one small curled stem with two baby leaves poking from the ground, no bulb yet",
+    "opsi": "img2img dari node_bulb mentah strength 90; fase 1 animasi tumbuh node F (proses_tunas.gd)"
+  },
+  "cincin_jangkar": {
+    "seed": 1702,
+    "size": 64,
+    "prompt": "circular green energy pulse ring made of tiny leaves and vine wisps, viewed head-on, hollow transparent center, glowing edges",
+    "opsi": "no_background, lineless, basic shading, low detail; 32x32 di aset/player (proses_cincin.gd); dianimasikan view: dua gelombang mengembang-memudar"
   }
 }

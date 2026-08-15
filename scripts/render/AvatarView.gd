@@ -34,6 +34,7 @@ var _udara_t = 0.0        # lama melayang — penggerak frame LOMPAT (play-once)
 var _darat_t = 0.0        # sisa waktu animasi mendarat (play-once)
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
+var _tex_cincin           # cincin sulur jangkar (efek F)
 
 
 func _init(a):
@@ -47,6 +48,9 @@ func _init(a):
 			var jml = max(1, t.get_width() / 32)
 			_anim[n] = {"tex": t, "n": jml, "geser": _pusat(t, jml),
 					"dasar": _dasar(t, jml)}
+	# cincin jangkar PixelLab (seed 1702) — efek F, bukan strip anim
+	if ResourceLoader.exists("res://aset/player/cincin_jangkar.png"):
+		_tex_cincin = load("res://aset/player/cincin_jangkar.png")
 
 
 # Badan karakter tidak di tengah kanvas 32 px (menumpuk di satu sisi) —
@@ -199,13 +203,28 @@ func _draw():
 		draw_arc(avatar.pos * float(Config.PPU), 7.0, 0.0, TAU, 16,
 				tolak, 2.0)
 
-	# RK-2 [B]: denyut kelahiran node saat F tertanam
+	# RK-2 [B]: denyut kelahiran node saat F tertanam — cincin sulur
+	# PixelLab mengembang lalu memudar (koreksi pemilik: radar hijau
+	# prosedural diganti art); busur lama tinggal cadangan
 	if avatar.jangkar_baru > 0.0:
 		var q2 = 1.0 - avatar.jangkar_baru / 0.6
-		var lahir = Color("79B83F")
-		lahir.a = 0.6 * (1.0 - q2)
-		draw_arc(avatar.pos * float(Config.PPU), 4.0 + q2 * 26.0,
-				0.0, TAU, 24, lahir, 3.0)
+		var pj = avatar.pos * float(Config.PPU)
+		if _tex_cincin != null:
+			var d = 14.0 + q2 * 50.0
+			draw_texture_rect(_tex_cincin,
+					Rect2(pj.x - d * 0.5, pj.y - d * 0.5, d, d),
+					false, Color(1, 1, 1, 1.0 - q2 * q2))
+			# gema kedua menyusul di dalam — bahasa denyut radar
+			var q3 = clamp(q2 * 1.6 - 0.45, 0.0, 1.0)
+			if q3 > 0.0:
+				var d2 = 10.0 + q3 * 40.0
+				draw_texture_rect(_tex_cincin,
+						Rect2(pj.x - d2 * 0.5, pj.y - d2 * 0.5, d2, d2),
+						false, Color(1, 1, 1, 0.55 * (1.0 - q3)))
+		else:
+			var lahir = Color("79B83F")
+			lahir.a = 0.6 * (1.0 - q2)
+			draw_arc(pj, 4.0 + q2 * 26.0, 0.0, TAU, 24, lahir, 3.0)
 
 	if _anim.has(_state):
 		var a = _anim[_state]

@@ -12,6 +12,7 @@ var _t = 0.0
 var _tex_jalan
 var _tex_diam
 var _tex_tumbang           # bangkai terbalut sulur (sergap senyap)
+var _tex_mati              # strip roboh falling-back-death (48px/frame)
 var _tex_daun              # gumpalan daun player — sulur pembungkus
 var _tex_seru              # ikon ! — sadar & memburu (PixelLab)
 var _tex_tanya             # ikon ? — curiga & menyelidik (PixelLab)
@@ -29,6 +30,8 @@ func _init(p):
 		_tex_diam = load("res://aset/musuh/teknisi_diam.png")
 	if ResourceLoader.exists("res://aset/musuh/teknisi_tumbang.png"):
 		_tex_tumbang = load("res://aset/musuh/teknisi_tumbang.png")
+	if ResourceLoader.exists("res://aset/musuh/teknisi_mati.png"):
+		_tex_mati = load("res://aset/musuh/teknisi_mati.png")
 	if ResourceLoader.exists("res://aset/player/rambat_daun.png"):
 		_tex_daun = load("res://aset/player/rambat_daun.png")
 	if ResourceLoader.exists("res://aset/musuh/icon_seru.png"):
@@ -92,17 +95,29 @@ func _draw():
 	if not pemangkas.hidup:
 		var q = clamp(pemangkas.mati_t / 0.9, 0.0, 1.0)
 		if q < 1.0:
-			var tex_m = _tex_diam if _tex_diam != null else _tex_jalan
-			var goyang = sin(pemangkas.mati_t * 42.0) * 2.5 * (1.0 - q)
 			var hijau = Color(1, 1, 1).lerp(Color(0.45, 0.75, 0.4), q)
-			hijau.a = 1.0 - q * 0.35
-			if tex_m != null:
-				draw_set_transform(p + Vector2(goyang, q * 12.0), 0.0,
-						Vector2(pemangkas.arah, 1.0 - q * 0.4))
-				draw_texture_rect_region(tex_m,
+			hijau.a = 1.0 - q * 0.25
+			if _tex_mati != null:
+				# STRIP ROBOH (falling-back-death, koreksi pemilik:
+				# kematian harus terbaca): diputar sekali sepanjang
+				# sergapan, dicermin hadap, makin hijau ditelan jaringan
+				var n_m = max(1, _tex_mati.get_width() / 48)
+				var fr_m = int(clamp(q * n_m, 0.0, n_m - 1.0))
+				draw_set_transform(p, 0.0, Vector2(pemangkas.arah, 1.0))
+				draw_texture_rect_region(_tex_mati,
 						Rect2(Vector2(-24.0, -24.0), Vector2(48.0, 48.0)),
-						Rect2(0.0, 0.0, 48.0, 48.0), hijau)
+						Rect2(fr_m * 48.0, 0.0, 48.0, 48.0), hijau)
 				draw_set_transform_matrix(Transform2D())
+			else:
+				var tex_m = _tex_diam if _tex_diam != null else _tex_jalan
+				var goyang = sin(pemangkas.mati_t * 42.0) * 2.5 * (1.0 - q)
+				if tex_m != null:
+					draw_set_transform(p + Vector2(goyang, q * 12.0), 0.0,
+							Vector2(pemangkas.arah, 1.0 - q * 0.4))
+					draw_texture_rect_region(tex_m,
+							Rect2(Vector2(-24.0, -24.0), Vector2(48.0, 48.0)),
+							Rect2(0.0, 0.0, 48.0, 48.0), hijau)
+					draw_set_transform_matrix(Transform2D())
 			if _tex_daun != null:
 				var n_v = max(1, _tex_daun.get_width() / 16)
 				for k in range(6):

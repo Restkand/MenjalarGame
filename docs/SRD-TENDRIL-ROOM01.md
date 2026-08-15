@@ -1059,3 +1059,60 @@ Semua room berikutnya harus berasal dari bahasa desain Room 01.
 > Energi adalah waktu hidup.
 >
 > Dan gedung adalah ekosistem yang harus dipelajarinya.
+
+---
+
+# AMENDEMEN PENUTUPAN RK (15 Agustus 2026)
+
+> Dilipat dari rencana kerja RK/RK-2 sesuai RK Langkah 5 (rencana
+> disahkan pemilik proyek; RK dibuang setelah lipatan ini). Semua angka
+> terverifikasi playtest pemilik + uji deterministik. Kenop hidup di
+> `Config.gd`.
+
+## A. Sensor perawatan (§13–§14) — angka & konsekuensi terpasang
+
+- Siklus pindai: IDLE 3.0 dtk (kerucut redup, TIDAK mendeteksi) ↔
+  SCAN 2.2 dtk (deteksi aktif). Kenop: `SENSOR_JEDA` / `SENSOR_PINDAI`.
+- Kerucut di grid: setengah-lebar dasar 4.0 + 0.38 per satuan turun,
+  berhenti y=118; garis pandang raycast grid — beton memutus (bayangan
+  tangga & koridor drain = tempat sembunyi sungguhan).
+- Tiga state: AMAN / CURIGA (di jaringan & bergerak) / TERDETEKSI
+  (terbuka). DIAM di jaringan dalam kerucut = AMAN penuh (GDD §13
+  literal: kesabaran adalah senjata).
+- Konsekuensi TERDETEKSI: kuras ×2.5 (`KURAS_TERDETEKSI`) + jaringan
+  MENOLAK memulihkan + alarm 4 dtk (`SENSOR_WASPADA`) mengunci sensor
+  terus memindai + grading ruangan bergeser hangat (8FA0B8 → A6987F)
+  lalu pulih.
+
+## B. Material bicara (GDD §12) — MATERIAL DILUKIS
+
+- `aset/ruang01/peta_material.png` (64×36, 1 px = 1 sel 4-satuan) =
+  SATU sumber kebenaran mekanik + visual. Warna data: #00A000 lembap
+  (tumbuh ×0.5), #A05000 retak (normal), #0050A0 air; BETON = menolak
+  tumbuh (alasan hidup moda LEPAS). Pemilik bebas melukis ulang
+  berkasnya di editor gambar apa pun.
+
+## C. Jangkar berdampak (GDD §6.2)
+
+- F menanam node TERLIHAT (bulb keluarga node rumah) + denyut
+  kelahiran; aura regen ×2 radius 12 (`NODE_AURA`); harga tetap
+  `JANGKAR_BIAYA` 25 — dampak terasa membuat harga jadi keputusan.
+
+## D. Musuh pertama: PEMANGKAS (GDD §14; MVP satu, tanpa combat)
+
+- ATURAN IDENTITAS (putusan pemilik): tiap musuh berciri SESUAI
+  RUANGANNYA — Room 01 = ruang servis, maka TEKNISI perawatan gedung.
+- ATURAN SKALA (putusan pemilik): manusia 48 px (1.5× sprite player)
+  supaya pemain moda LEPAS terlihat KECIL; kalau kurang dramatis,
+  pembesaran ruangan = keputusan terpisah (seluruh layout ikut).
+- Hanya melihat moda LEPAS sejajar lantai (LoS grid); MERAMBAT tidak
+  pernah dilihatnya — alasan merambat. Tertangkap = kuras 25 +
+  terpental, TANPA membunuh instan.
+- Memotong gumpalan jejak & sel jaringan TUMBUHAN pemain yang
+  dilewatinya (jaringan benih & node PERMANEN; radius aman 10 di
+  sekitar avatar — jalur di bawah kaki tidak pernah putus mendadak).
+
+## E. Tujuan ruangan (§19, GDD §34)
+
+- Bulb dorman di dinding kanan (244,40) menyala + kabar HUD "RUANGAN
+  DITEMBUS" saat dicapai lewat jaringan; alasan-kembali = katup air.

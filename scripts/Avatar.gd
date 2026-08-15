@@ -35,6 +35,9 @@ var _daun_jarak = 0.0      # akumulator jarak antar tanaman gumpalan
 var _denyut = 0.0          # jam denyut tumbuh (julur-cengkeram)
 var hadap = 1.0            # arah hadap terakhir (dipakai view & belok)
 var bisa_tempel = false    # LEPAS menyentuh jaringan — petunjuk HUD [W]
+var tumbuh_tolak = 0.0     # RK-2 [A]: sisa kedip "beton menolak tumbuh"
+var jangkar_tolak = 0.0    # sisa kedip "simpul butuh jaringan" (F ditolak)
+var jangkar_baru = 0.0     # RK-2 [B]: sisa denyut kelahiran node
 var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 
 # RK Langkah 2 — status deteksi sensor, DIISI main tiap frame sebelum
@@ -42,6 +45,8 @@ var _tempel_jeda = 0.0     # cooldown menempel setelah lepas
 var terdeteksi = false     # kuning: terlihat sensor dalam keadaan terbuka
 var curiga = false         # tersamar di jaringan dalam jangkauan sensor
 var regen_mati = false     # sensor waspada: jaringan menolak memulihkan
+var diburu = false         # merah CDD §7: musuh sedang MENGEJAR (GDD §13)
+var bisa_sergap_musuh = false  # petunjuk HUD: [E] sergap senyap tersedia
 
 # Tahap CDD §9: 1 TUNAS BARU, 2 MUDA, 3 DEWASA, 4 TUA/KAYU. Murni
 # tonggak WUJUD dari tumbuh_total — TIDAK membuka kemampuan (GDD §15 =
@@ -111,6 +116,9 @@ func update(dt, i, world):
 	if dt <= 0.0:
 		return
 	_tempel_jeda = max(0.0, _tempel_jeda - dt)
+	tumbuh_tolak = max(0.0, tumbuh_tolak - dt)
+	jangkar_tolak = max(0.0, jangkar_tolak - dt)
+	jangkar_baru = max(0.0, jangkar_baru - dt)
 	if i.arah.x != 0.0:
 		hadap = signf(i.arah.x)
 
@@ -143,32 +151,52 @@ func update(dt, i, world):
 		_lepas(dt, i, world)
 
 	# DAUR HIDUP JEJAK (GDD §6.3: jaringan bisa mati; usul pemilik):
-	# melewati batas ring, gumpalan TERTUA tidak dihapus mendadak —
-	# ia MENGERING (hijau -> cokelat -> pudar) lalu rontok. Hanya
-	# beberapa tertua yang layu bersamaan; sisanya menunggu giliran.
+	# gumpalan yang SUDAH mulai layu terus mengering DI MANA PUN
+	# posisinya di ring lalu rontok — dulunya hanya 4 tertua yang
+	# diproses, jadi gumpalan yang dilayukan Pemangkas / upacara mati
+	# macet setengah-kering selamanya (bug laten, audit GDD 15 Agu).
+	var jd = 0
+	while jd < jejak_daun.size():
+		if jejak_daun[jd].layu > 0.0:
+			jejak_daun[jd].layu += dt
+			if jejak_daun[jd].layu >= Config.RAMBAT_DAUN_LAYU:
+				jejak_daun.remove_at(jd)
+				continue
+		jd += 1
+	# melewati batas ring: gumpalan TERTUA mulai mengering, hanya
+	# beberapa bersamaan — sisanya menunggu giliran
 	if jejak_daun.size() > Config.RAMBAT_DAUN_MAX:
 		var lebih = jejak_daun.size() - Config.RAMBAT_DAUN_MAX
 		for j in range(min(lebih, 4)):
-			jejak_daun[j].layu += dt
-		while jejak_daun.size() > 0 \
-				and jejak_daun[0].layu >= Config.RAMBAT_DAUN_LAYU:
-			jejak_daun.pop_front()
+			if jejak_daun[j].layu <= 0.0:
+				jejak_daun[j].layu = 0.001
 
 
-# F: menanam simpul jaringan di posisi avatar (P2) — checkpoint + titik
-# pulih di mana pun, termasuk interior. Mahal supaya jadi keputusan.
+# F: menanam simpul di posisi avatar (P2) — checkpoint + aura regen.
+# BALANCING (temuan playtest pemilik 15 Agu: F di sembarang tempat =
+# titik isi energi di mana pun, ekonomi LEPAS runtuh): simpul adalah
+# ORGAN JARINGAN (GDD §6.2), bukan benih portabel — F hanya sah DI
+# ATAS jaringan yang sudah ada. Ingin titik pulih di tempat baru?
+# Tumbuhkan jaringannya dulu lewat material yang menerima.
 func jangkar(world):
+	var px = int(round(pos.x))
+	var py = int(round(pos.y - 2.0))
+	if not world.jaringan_di(px, py):
+		jangkar_tolak = 0.5
+		return false
 	if energi < Config.JANGKAR_BIAYA + 5.0:
 		return false
 	energi -= Config.JANGKAR_BIAYA
-	var px = int(round(pos.x))
-	var py = int(round(pos.y - 2.0))
 	for dy in range(-2, 3):
 		for dx in range(-2, 3):
 			world.tandai_jaringan(px + dx, py + dy)
 	simpul = pos
 	simpul_dalam = di_dalam
 	jangkar_n += 1
+	# RK-2 [B] (GDD §6.2): node yang TERLIHAT & TERASA — bulb tertanam
+	# di dunia, denyut kelahiran, dan aura regen 2x di sekitarnya
+	world.node_tanam.append(Vector2(px, py))
+	jangkar_baru = 0.6
 	return true
 
 
@@ -179,7 +207,12 @@ func _rambat(dt, i, world):
 	# MENOLAK memulihkan — ketahuan lalu bersembunyi tidak langsung
 	# mengembalikan hak pulih
 	if not regen_mati:
-		energi = min(energi_max, energi + Config.AVATAR_REGEN * dt)
+		# RK-2 [B]: aura node — pulih 2x di dekat node (GDD §6.2
+		# "regenerasi"); jangkar yang mahal kini terasa gunanya
+		var laju_regen = Config.AVATAR_REGEN
+		if world.dekat_node(pos):
+			laju_regen *= 2.0
+		energi = min(energi_max, energi + laju_regen * dt)
 	simpul = pos
 	simpul_dalam = di_dalam
 
@@ -196,9 +229,11 @@ func _rambat(dt, i, world):
 	if arah == Vector2.ZERO:
 		return
 	# DENYUT TUMBUH BERBEBAN (playtest pemilik: masih terasa cepat —
-	# beban ditambah): AVATAR_RAMBAT kini laju PUNCAK juluran; fase
+	# beban ditambah): AVATAR_RAMBAT = laju PUNCAK juluran; fase
 	# cengkeram melambat dalam tanpa normalisasi, rata-rata efektif
-	# ~72% puncak. Tafsir GDD §6.1: "34" = laju julur maksimum.
+	# ~79% puncak. Tafsir GDD §6.1 (audit 15 Agu): invarian "merambat
+	# lebih cepat dari LEPAS" ditegakkan di RATA-RATA (±25 > lari 24),
+	# denyut memberi beban tanpa mencuri janji §6.1.
 	_denyut += dt
 	var fase_d = fmod(_denyut, Config.RAMBAT_DENYUT) / Config.RAMBAT_DENYUT
 	var dasar = Config.RAMBAT_DENYUT_DASAR
@@ -236,12 +271,18 @@ func _rambat(dt, i, world):
 		cy = int(round(tumbuh_ke.y - 2.0))
 		if world.padat_avatar(cx, cy, di_dalam):
 			return
-	var biaya = langkah.length() * Config.RAMBAT_TUMBUH_BIAYA
+	# RK-2 [A] (GDD §12): BETON MENOLAK pertumbuhan — hanya permukaan
+	# lembap/retak yang menerima. Umpan balik dunia + HUD lewat event.
+	if not world.bisa_tumbuh(cx, cy):
+		tumbuh_tolak = 0.5
+		return
+	var biaya = langkah.length() * Config.RAMBAT_TUMBUH_BIAYA \
+			* world.faktor_tumbuh(cx, cy)
 	if energi <= biaya + 4.0:
 		return   # sisakan napas — jangan layu karena tumbuh
 	energi -= biaya
 	pos = tumbuh_ke
-	world.tandai_jaringan(cx, cy)
+	world.tandai_jaringan(cx, cy, true)
 	# tonggak wujud CDD §9 — murni dari total pertumbuhan, tanpa membuka
 	# kemampuan apa pun
 	tumbuh_total += langkah.length()
@@ -356,9 +397,19 @@ func _keluarkan_badan(world):
 
 
 # layu: energi habis di luar jaringan — bangun di simpul terakhir
-# (termasuk kembali ke lapis tempat simpul itu ditanam)
+# (termasuk kembali ke lapis tempat simpul itu ditanam).
+# UPACARA GDD §10 (audit 15 Agu): tubuh MENGERING di tempatnya —
+# gugusan daun yang langsung mulai layu ditinggalkan di titik kematian
+# (kering-cokelat lalu rontok via daur hidup jejak); jaringan tetap
+# hidup; kamera menyusul ke simpul (smoothing); ujung baru menyembul
+# lewat morph attach yang menyala otomatis saat bangun di jaringan.
 func _cek_layu(world):
 	if energi <= 0.0:
+		for ofs in [Vector2(0.0, 0.0), Vector2(-1.3, -0.5),
+				Vector2(1.2, -0.8)]:
+			jejak_daun.append({"pos": pos + ofs, "sudut": 0.0,
+					"varian": jejak_daun.size() % 3, "dalam": di_dalam,
+					"layu": Config.RAMBAT_DAUN_LAYU * 0.15})
 		pos = simpul
 		di_dalam = simpul_dalam
 		vel = Vector2()

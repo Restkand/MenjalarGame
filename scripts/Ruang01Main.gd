@@ -15,6 +15,8 @@ const AvatarCls      = preload("res://scripts/Avatar.gd")
 const AvatarViewCls  = preload("res://scripts/render/AvatarView.gd")
 const DaunViewCls    = preload("res://scripts/render/DaunView.gd")
 const SensorCls      = preload("res://scripts/Sensor.gd")
+const PemangkasCls   = preload("res://scripts/Pemangkas.gd")
+const PemangkasViewCls = preload("res://scripts/render/PemangkasView.gd")
 const HudCls         = preload("res://scripts/render/Hud.gd")
 const MenuJedaCls    = preload("res://scripts/render/MenuJeda.gd")
 
@@ -30,10 +32,20 @@ var _t_sensor = 0.0        # penggerak denyut lampu sensor
 var _pos_diam = Vector2()  # pelacak gerak untuk aturan diam=tersembunyi
 var _grading               # CanvasModulate — bergeser hangat saat alarm
 var _cahaya_avatar         # PointLight2D hijau mengikuti TENDRIL (EDV3 §8)
+var _lampu_ruang = []      # dua lampu fluorescent — kedip mikro grading
 var _lompat_lalu = false   # edge Spasi
 var _jangkar_lalu = false  # edge F
+var _sergap_lalu = false   # edge E — sergap senyap (Phase 5-6)
 var _esc_lalu = false      # edge Esc — menu jeda
 var menu_jeda
+var pemangkas              # RK-2 [C]: musuh pertama
+var pemangkas_view
+var mayat = []             # ESKALASI: bangkai tersergap [{pos, t}] —
+                           # array yang SAMA dipegang view (jangan
+                           # di-reassign; clear() saat restart)
+var _pengganti_t = 0.0     # hitung mundur teknisi pengganti masuk
+var hud
+var _tujuan_capai = false  # RK-2 [D]: tujuan ruangan sekali-capai
 
 
 func _ready():
@@ -72,8 +84,10 @@ func _ready():
 	_grading.color = Color("8FA0B8")
 	add_child(_grading)
 	var tex_lampu = _tex_cahaya()
-	_lampu(tex_lampu, Vector2(272, 70), Color("C9D6DE"), 0.9, 5.0)
-	_lampu(tex_lampu, Vector2(848, 70), Color("C9D6DE"), 0.9, 5.0)
+	_lampu_ruang.append(
+			_lampu(tex_lampu, Vector2(272, 70), Color("C9D6DE"), 0.9, 5.0))
+	_lampu_ruang.append(
+			_lampu(tex_lampu, Vector2(848, 70), Color("C9D6DE"), 0.9, 5.0))
 	_lampu_sensor = _lampu(tex_lampu, Vector2(720, 62), Color("D89A3C"),
 			0.55, 3.0)
 	_cahaya_avatar = _lampu(tex_lampu, avatar.pos * float(Config.PPU),
@@ -82,10 +96,18 @@ func _ready():
 	sensor = SensorCls.new()
 	sensor.pos = world.sensor_pos
 
+	# RK-2 [C]: SATU Pemangkas berpatroli di lantai tengah terbuka
+	# (x 84-130, sebelum tangga peti) — rute cepat kini berpenjaga
+	pemangkas = PemangkasCls.new(84.0, 130.0)
+	pemangkas_view = PemangkasViewCls.new(pemangkas)
+	pemangkas_view.mayat = mayat
+	add_child(pemangkas_view)
+
 	# HUD GDD §31 di CanvasLayer sendiri — tidak ikut kamera/zoom
 	var lapis_hud = CanvasLayer.new()
 	add_child(lapis_hud)
-	lapis_hud.add_child(HudCls.new(avatar))
+	hud = HudCls.new(avatar)
+	lapis_hud.add_child(hud)
 
 	# MENU JEDA: main berjalan TERUS (membaca ESC saat pohon dibekukan);
 	# seluruh logika game di _process dipagari get_tree().paused, dan
@@ -143,6 +165,9 @@ func _process(delta):
 			menu_jeda.buka(false)
 			world.build()
 			avatar.mulai(world.mulai_pos)
+			pemangkas.reset()
+			mayat.clear()
+			_pengganti_t = 0.0
 			_waspada = 0.0
 		return
 
@@ -169,7 +194,12 @@ func _process(delta):
 	if Input.is_physical_key_pressed(KEY_R):
 		world.build()
 		avatar.mulai(world.mulai_pos)
+		pemangkas.reset()
+		mayat.clear()
+		_pengganti_t = 0.0
 		_waspada = 0.0
+		_tujuan_capai = false
+		ruang_view.tujuan_nyala = false
 
 	# RK Langkah 2-3: siklus pindai jalan dulu, lalu state — TERDETEKSI
 	# menyalakan alarm (pindai terkunci + jaringan menolak memulihkan)
@@ -226,7 +256,48 @@ func _process(delta):
 		_lampu_sensor.energy = 0.55
 		_lampu_sensor.texture_scale = 3.0
 
+	# kedip mikro fluorescent (grading Langkah 4): lampu tua ruang servis
+	# sesekali tersendat sekejap — deterministik dari jam, fase digeser
+	# per lampu supaya keduanya tidak pernah tersendat serempak
+	for li in range(_lampu_ruang.size()):
+		var tik = int((_t_sensor + li * 1.37) * 60.0)
+		_lampu_ruang[li].energy = 0.9 if tik % 211 > 3 else 0.62
+
+	# Phase 5-6: DIBURU (merah CDD §7) saat musuh mengejar, dan SERGAP
+	# SENYAP [E] — hanya dari jaringan, hanya pada yang belum melihat
+	avatar.diburu = pemangkas.hidup and pemangkas.state == pemangkas.KEJAR
+	avatar.bisa_sergap_musuh = pemangkas.bisa_sergap(avatar)
+	var sergap_tahan = Input.is_physical_key_pressed(KEY_E)
+	if sergap_tahan and not _sergap_lalu and avatar.bisa_sergap_musuh:
+		if pemangkas.sergap(avatar):
+			hud.kabar("BIOMASSA DISERAP", 2.5)
+			# ESKALASI: kota merespons — mayat tercatat, pengganti
+			# dijadwalkan datang mencari rekannya yang hilang
+			mayat.append({"pos": pemangkas.pos, "t": 0.0})
+			_pengganti_t = Config.PENGGANTI_DATANG
+	_sergap_lalu = sergap_tahan
+
+	# jam mayat + kedatangan pengganti + alarm penemuan
+	for m in mayat:
+		m.t += delta
+	if _pengganti_t > 0.0 and not pemangkas.hidup:
+		_pengganti_t -= delta
+		if _pengganti_t <= 0.0 and mayat.size() > 0:
+			pemangkas.masuk(mayat[mayat.size() - 1].pos.x)
+	if pemangkas.tiba_mayat:
+		pemangkas.tiba_mayat = false
+		_waspada = max(_waspada, Config.MAYAT_WASPADA)
+		hud.kabar("MAYAT DITEMUKAN - RUANGAN WASPADA", 3.5)
+
 	avatar.update(delta, i, world)
+	pemangkas.update(delta, avatar, world)
+
+	# RK-2 [D]: mencapai TUJUAN lewat jaringan — bulb menyala + kabar
+	if not _tujuan_capai and avatar.moda == avatar.MERAMBAT \
+			and avatar.pos.distance_to(world.tujuan_pos) < 5.0:
+		_tujuan_capai = true
+		ruang_view.tujuan_nyala = true
+		hud.kabar("RUANGAN DITEMBUS", 4.0)
 
 	# kamera mengejar titik tengah badan; cahaya hijau mengikuti TENDRIL
 	cam.position = (avatar.pos + Vector2(0.0, -Config.AVATAR_TINGGI * 0.5)) \

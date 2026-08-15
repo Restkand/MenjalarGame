@@ -26,6 +26,9 @@ const H      = PT_H * TILE # 144 satuan
 
 var padat_t = PackedByteArray()   # 1 per tile = beton graybox
 var jaringan = {}                 # Vector2i satuan -> 1
+var jaringan_tumbuh = {}          # sel yang DITUMBUHKAN pemain — bisa
+                                  # dipangkas Pemangkas (benih & node
+                                  # jangkar PERMANEN, RK-2 [C])
 var jalur_seed = []               # [Vector2 a, Vector2 b] — digambar view
 var mulai_pos = Vector2(28.0, 111.9)   # di jaringan rumah (§5: START)
 var sensor_pos = Vector2(180.0, 10.0)  # MAINTENANCE SENSOR (§14)
@@ -36,6 +39,23 @@ var sensor_pos = Vector2(180.0, 10.0)  # MAINTENANCE SENSOR (§14)
 var air_pos = Vector2(242.0, 64.0)
 var node_pos = Vector2(28.0, 109.0)
 
+# RK-2 [D]: TUJUAN ruangan — bulb dorman di dinding kanan, menyala saat
+# dicapai lewat jaringan (SRD §19: ujung rute = dinding kanan)
+var tujuan_pos = Vector2(244.0, 40.0)
+
+# RK-2 [B]: node yang DITANAM pemain lewat F (GDD §6.2)
+var node_tanam = []
+
+# RK-2 [A] v3 — MATERIAL DILUKIS (putusan pemilik: bentuk organik,
+# bukan rect): aset/ruang01/peta_material.png = kanvas 64x36, 1 px =
+# 1 sel 4-satuan. Warna data: #00A000 lembap, #A05000 retak, #0050A0
+# air. SATU sumber kebenaran untuk mekanik DAN visual — pemilik bebas
+# melukis ulang berkasnya di editor gambar mana pun.
+# BETON=0 menolak tumbuh; RETAK=1 normal; LEMBAP=2 murah.
+var sel_lembap = {}
+var sel_retak = {}
+var sel_air = {}
+
 
 func _init():
 	build()
@@ -45,7 +65,9 @@ func build():
 	padat_t.resize(PT_W * PT_H)
 	padat_t.fill(0)
 	jaringan = {}
+	jaringan_tumbuh = {}
 	jalur_seed = []
+	node_tanam = []
 
 	# cangkang: plafon, dua dinding, dan pita lantai tebal (§4: LOW band)
 	_isi(0, 0, PT_W - 1, 0, 1)            # plafon
@@ -72,6 +94,8 @@ func build():
 	_isi(17, 13, 18, 13, 1)               # anak 1: puncak 104
 	_isi(19, 12, 20, 13, 1)               # anak 2: puncak 96
 	_isi(21, 11, 24, 13, 1)               # blok mesin: puncak 88
+
+	_baca_peta_material()
 
 	# --- benih jaringan (§29: node -> node -> node) --------------------
 	# rumah (§5) + rute AMAN: dinding kiri -> plafon -> dinding kanan
@@ -113,11 +137,72 @@ func padat_avatar(px, py, _di_dalam):
 	return padat(px, py)
 
 
+# baca kanvas material yang dilukis (fallback: kosong bila hilang)
+func _baca_peta_material():
+	sel_lembap = {}
+	sel_retak = {}
+	sel_air = {}
+	var jalur = ProjectSettings.globalize_path(
+			"res://aset/ruang01/peta_material.png")
+	if not FileAccess.file_exists(jalur):
+		return
+	var img = Image.load_from_file(jalur)
+	img.convert(Image.FORMAT_RGBA8)
+	for y in range(min(36, img.get_height())):
+		for x in range(min(64, img.get_width())):
+			var c = img.get_pixel(x, y)
+			if c.a < 0.5:
+				continue
+			var sel = Vector2i(x, y)
+			if c.g > 0.4 and c.r < 0.3 and c.b < 0.3:
+				sel_lembap[sel] = 1
+			elif c.r > 0.4 and c.b < 0.3:
+				sel_retak[sel] = 1
+			elif c.b > 0.4 and c.r < 0.3:
+				sel_air[sel] = 1
+
+
+# RK-2 [A]: kelas material di titik satuan (GDD §12) — dari kanvas
+# lukisan; toleransi 1 sel tetangga supaya mekanik pemaaf di tepi blob
+func material(px, py):
+	var sel = Vector2i(floori(px / 4.0), floori(py / 4.0))
+	if sel_lembap.has(sel):
+		return 2
+	if sel_retak.has(sel):
+		return 1
+	for ofs in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1),
+			Vector2i(0, -1)]:
+		if sel_lembap.has(sel + ofs):
+			return 2
+		if sel_retak.has(sel + ofs):
+			return 1
+	return 0
+
+
+func bisa_tumbuh(px, py):
+	return material(px, py) > 0
+
+
+# faktor biaya tumbuh: lembap murah (GDD §12 "material ideal")
+func faktor_tumbuh(px, py):
+	return 0.5 if material(px, py) == 2 else 1.0
+
+
+# RK-2 [B]: aura node — regen lebih cepat di dekat node (rumah/tanaman)
+func dekat_node(p):
+	if p.distance_to(node_pos) <= Config.NODE_AURA:
+		return true
+	for n in node_tanam:
+		if p.distance_to(n) <= Config.NODE_AURA:
+			return true
+	return false
+
+
 func di_gerbang_interior(_px, _py):
 	return false   # Room 01 tidak punya pintu interior (§32)
 
 
-func tandai_jaringan(px, py):
+func tandai_jaringan(px, py, tumbuh = false):
 	for dy in range(-1, 2):
 		var y = py + dy
 		if y < 0 or y >= H:
@@ -126,7 +211,20 @@ func tandai_jaringan(px, py):
 			var x = px + dx
 			if x < 0 or x >= W:
 				continue
-			jaringan[Vector2i(x, y)] = 1
+			var sel = Vector2i(x, y)
+			# sel tumbuhan pemain ditandai TERPISAH — hanya sel yang
+			# belum jadi jaringan (benih/node tak boleh ikut terpangkas)
+			if tumbuh and not jaringan.has(sel):
+				jaringan_tumbuh[sel] = 1
+			jaringan[sel] = 1
+
+
+# RK-2 [C]: Pemangkas memotong sel tumbuhan pemain (benih/node aman)
+func potong_tumbuhan(px, py):
+	var sel = Vector2i(px, py)
+	if jaringan_tumbuh.has(sel):
+		jaringan_tumbuh.erase(sel)
+		jaringan.erase(sel)
 
 
 func jaringan_di(px, py):

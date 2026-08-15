@@ -66,11 +66,18 @@ kepalanya masing-masing — JANGAN dipakai sebagai acuan aktif):
 - `docs/EDV2-TENDRIL-ARSITEKTUR-MODULAR.md` — ditimpa operasional oleh
   EDV3 (prinsipnya dirangkum EDV3 §12).
 
-**Rencana kerja aktif (BUKAN kanon, dibuang setelah selesai):**
-`docs/RK-TENDRIL-FOKUS-BERIKUTNYA.md` — urutan Opsi A: [0] kebersihan
-dokumen ✓ → [1] utang FEEL (lompat/jatuh/crawl) → [2] SENSOR jadi nyata
-(sumbu kedua) → [3] playtest tiga rute (GERBANG KERAS) → [4] grading
-final art (dengan sensor menyala) → [5] lipat ke kanon, buang RK.
+**Rencana kerja RK & RK-2: SELESAI & DIBUANG (15 Agustus 2026).**
+Seluruh urutan tuntas ([0] kebersihan dokumen → [1] utang FEEL →
+[2] sensor → [3] gerbang tiga rute → sisipan RK-2 loop A-D: material
+dilukis / jangkar / Pemangkas / tujuan → [4] grading → [5] lipat
+kanon). Yang terbukti dilipat sebagai blok **AMENDEMEN PENUTUPAN RK**
+di ekor `docs/SRD-TENDRIL-ROOM01.md` (angka sensor & konsekuensi,
+MATERIAL DILUKIS peta_material.png, jangkar beraura, aturan
+identitas+skala PEMANGKAS/Teknisi, tujuan ruangan) dan ekor
+`docs/EDV3-TENDRIL-SPEK-EKSEKUSI.md` (gate QA ke-7 "grading dinilai
+dengan sensor menyala", aturan pijakan ≥2× luminance dinding —
+menggantikan bacaan ambigu "env ≤40%"). Detail implementasi hidup di
+bagian status di bawah + riwayat git.
 
 Baca kanon aktif sebelum menyentuh mekanik/visual apa pun. 13 dokumen
 era Menjalar sengaja dihapus karena membuat produksi bercabang. Kalau
@@ -85,8 +92,11 @@ dikerjakan — menunggu urutan dari pemilik proyek):
 - Tahap avatar di kode = 6 (BIJI..LEBAT); CDD §9 = 5 (Tunas Baru, Muda,
   Dewasa, Tua/Kayu, Terinfeksi-ops). Perlu pemetaan ulang nama, wujud
   (tahap 4 = kecokelatan kayu), dan strip tumbuh.
-- Energi 0 saat LEPAS: CDD/papan = "bagian tersebut TERPUTUS" — jejak
-  yang ditumbuhkan sesi lepas itu harusnya mengering, bukan awet.
+- Energi 0 saat LEPAS: LUNAS 15 Agu sebagai UPACARA GDD §10 — tubuh
+  meninggalkan gugusan daun yang mengering-rontok di titik kematian,
+  kabar HUD "UJUNG TERPUTUS", bangun di simpul dengan morph attach.
+  (Rumusan lama "jejak sesi lepas mengering" usang: tumbuh kini hanya
+  terjadi di moda MERAMBAT.)
 - MERAMBAT baru bisa di jaringan; papan juga menuntut "menempel di
   permukaan" tertentu & "masuk celah kecil" (GDD §6.1, §12 material).
 - Wujud saat MERAMBAT vs LEPAS harus berbeda (CDD §11 vs §14) — sekarang
@@ -196,10 +206,11 @@ per-frame layar. Room 01: 15 asersi tata letak pernah dipakai di sini
 
 ## Langkah berikutnya
 
-**Dikemudikan `docs/RK-TENDRIL-FOKUS-BERIKUTNYA.md` (Opsi A).**
-Langkah 0 (kebersihan dokumen) SELESAI 14 Agustus: kanon aktif 11 → 7,
-empat dokumen bercap HISTORIS, bagian ini dikompres (sejarah pass demi
-pass Room 01 hidup di dokumen historis + riwayat git).
+**RK (Opsi A) + RK-2 TUNTAS 15 Agustus — bagian di bawah ini murni
+catatan status per langkah.** Langkah 0 (kebersihan dokumen) SELESAI
+14 Agustus: kanon aktif 11 → 7 (kini 8 dengan SRD Ruang 00), empat
+dokumen bercap HISTORIS, bagian ini dikompres (sejarah pass demi pass
+Room 01 hidup di dokumen historis + riwayat git).
 
 **Langkah 1 (utang FEEL) DIKERJAKAN 14 Agustus — menunggu mata pemilik:**
 
@@ -278,6 +289,15 @@ perintah pemilik)** — audit lengkap lihat riwayat percakapan/commit:
   `render/MenuJeda.gd` (ESC buka/tutup, R ulang; main process ALWAYS +
   anak PAUSABLE, logika _process dipagari paused) sekaligus kartu
   KENDALI. Terverifikasi deterministik (blok uji dibuang).
+
+**Gerbang Langkah 3, putaran 2 — SIAP DIUJI (15 Agu)**: bot
+deterministik membuktikan tiga rute tertempuh pasca paket beban:
+AMAN energi utuh 100 (jaringan penuh, lantai→dinding kiri→plafon→
+dinding kanan), CEPAT sisa 58 (lari+lompat celah+tangga peti sampai
+x≥210), RAHASIA sisa 84 (celah→drain→tempel garis tersembunyi→tumbuh
+naik cerobong, muncul di 216,112). Blok uji dibuang. Yang TIDAK bisa
+diuji bot = inti gerbangnya: apakah memilih rute TERASA keputusan
+(Splinter Cell) — menunggu playtest pemilik.
 
 **Gerbang Langkah 3, putaran 1 (14 Agustus)**: putusan pemilik —
 "memilih rute HARUS terasa seperti keputusan; ini stealth game
@@ -392,10 +412,86 @@ melampaui rentang CDD = keputusan pemilik). Sisa set: belok
 SPP perlu revisi pemilik (ditulis untuk Master A). Gerbang RK
 Langkah 3 putaran 2 tetap antri setelah karakter berdiri.
 
-Sesudahnya sesuai RK: [2] sensor jadi nyata (tiga state SRD §13, warna
-kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga
-rute = GERBANG KERAS → [4] grading final art dengan sensor menyala →
-[5] lipat ke kanon & buang RK.
+**RK-2 LULUS SEMENTARA (putusan pemilik 15 Agu) → RK LANGKAH 4
+(grading) BERJALAN.** Paket 1 selesai (commit `68a63ee`): jangkar
+gambar avatar dipindah ke KAKI (baris isi terbawah strip tepat di
+pos.y — sejajar Teknisi yang menapak di pos-nya; squash-stretch kini
+berpivot kaki, meregang ke atas); bayangan kontak D8 di avatar+Teknisi;
+strip Teknisi digrading kelabu (desat+value turun, amber helm dijepit
+63% — manusia kelabu, organisme satu-satunya hijau); zona
+lumut/retak/air diredupkan lewat kenop `gelap` di `_zona_wang`
+(0.72/0.85/0.82) di bawah pita TENDRIL; kedalaman ambien bertangga
+(plafon menggelap 4 pita, drain a0.14); kedip mikro dua lampu
+fluorescent (Ruang01Main `_lampu_ruang`). Pass komposisi latar
+sebelumnya (commit `cfcce7a`): panel beton berirama + pita utilitas
+(seed 1601/1602, latar_panel/latar_pipa) + skirting + 14 noda + garis
+pijakan permukaan atas + jumbai lumut plafon. Paket 2 (commit `cd3e1b8`):
+audit pijakan menemukan RENDERER SALAH GRID — anatomi atlas Varian A =
+dual-grid (isi tile di sudut padat, batas material di TENGAH tile)
+tapi struktur digambar sejajar sel, jadi crust permukaan melorot 4
+satuan ke dalam massa. Pass struktur ditulis ulang dual-grid sejati
+(tile berpusat titik sudut, kunci dari 4 sel sekeliling, material
+campuran mayoritas; _kunci lama dihapus); permukaan kini tergambar
+TEPAT di garis tabrakan. Audit deterministik LOLOS: rasio pijakan/
+latar 3.39x (syarat >=2x; skrip audit_pijakan.gd scratchpad). Seed
+1601/1602 tercatat di _gen_params/latar_variatif.json. Sisa amunisi
+Langkah 4 (OPSIONAL, hasil-menurun — pemilik menyatakan cukup):
+create_tiles_pro varian interior, prop create_map_object (utang 12
+decal).
+
+**LANGKAH 5 SELESAI (15 Agu): RK & RK-2 DIBUANG, lipatan kanon =
+amendemen di ekor SRD Room 01 & EDV3.** Sesudahnya (15 Agu, urutan
+pemilik): AUDIT GDD menyeluruh — hasil: fondasi patuh, MVP §39
+lengkap; dua temuan DIBAYAR (commit `2be6689`): §6.1 invarian laju
+ditegakkan di RATA-RATA (AVATAR_RAMBAT 27→32, rerata terukur 24.9 >
+lari 24) + UPACARA LAYU GDD §10 (husk daun mengering di titik mati,
+kabar "UJUNG TERPUTUS", bangun di simpul + morph attach; sekalian bug
+laten: gumpalan layu kini menua di mana pun posisi ringnya). Node/
+tujuan kini sprite bulb PixelLab beranimasi (seed 1701/1702/1703:
+bulb + cincin jangkar dua-gelombang + tunas; tumbuh dua tahap +
+napas; bug redraw view per-state-sensor diperbaiki → redraw tiap
+frame).
+
+**PHASE 5-6 PENDALAMAN (putusan pemilik 15 Agu: "sampai kesan
+membunuh musuh")**: DIBURU (merah C25A4A, HUD + cincin avatar) saat
+Pemangkas KEJAR; memori titik-terakhir-terlihat + state SELIDIK
+(sapuan toleh 2.4 dtk, lampu kedip-ganda) sebelum menyerah ke
+patroli — Phase 5 "enemy investigation" lunas; SERGAP SENYAP [E]
+(GDD §37 titik-lemah + §16 biomassa): HANYA dari MERAMBAT pada musuh
+yang belum melihat, jarak ≤ SERGAP_JARAK 9, panen SERGAP_PANEN 35,
+hint HUD merah "[E] SERGAP SENYAP"; anim mati tanpa teks (gemetar
+tenggelam hijau + daun mengerubut 0.9 dtk → bangkai teknisi_tumbang
+seed 1704 40x13 → lumut merambat bertahap); gunting mati saat
+bangkai; pemangkas.reset() di kedua jalur R. Uji deterministik 4
+asersi LOLOS (kejar-tolak-sergap / selidik→patroli / panen 40→75 /
+bangkai diam+gunting mati), blok uji dibuang.
+
+**PENDALAMAN LANJUTAN (disetujui pemilik 15 Agu, satu paket):**
+(1) BALANCING F (temuan playtest pemilik: F di sembarang tempat =
+titik isi energi di mana pun, ekonomi runtuh): simpul = ORGAN
+JARINGAN (GDD §6.2) — F hanya sah DI ATAS jaringan yang ada;
+ditolak = jangkar_tolak (cincin amber + HUD "SIMPUL BUTUH
+JARINGAN"). (2) IKON KESADARAN PixelLab: ! merah (seed 1705) pop
+saat KEJAR, ? amber (seed 1706) saat SELIDIK — pop membesar 0.22
+dtk lalu mengambang; KAGET 0.35 dtk (PEMANGKAS_KAGET): teknisi
+membeku bergetar saat pertama melihat = jendela reaksi pemain.
+(3) ESKALASI "membunuh = keputusan berisiko": mayat[] dipegang
+main (bangkai permanen, view gambar dari daftar); PENGGANTI_DATANG
+20 dtk → pemangkas.masuk(x_mayat): teknisi baru masuk dari kanan
+(state MASUK, fokus mencari — tak menoleh, tapi BISA disergap),
+tiba di mayat → event tiba_mayat → alarm ruangan MAYAT_WASPADA 8
+dtk (regen ditolak + grading hangat + sensor terkunci) + kabar
+"MAYAT DITEMUKAN - RUANGAN WASPADA" → SELIDIK 1.5x → patroli
+AWAS permanen (pandang x1.3 AWAS_PANDANG). Rantai berulang tiap
+sergapan. Uji deterministik 3 blok LOLOS (tolak/tanam jangkar,
+kaget beku→kejar, masuk→tiba→selidik→patroli awas), blok dibuang.
+
+Arah lain yang masih antri: (a) produksi RUANG 00 Lab Botani
+(amendemen SRD Room 01 §19/§38 menunggu pemilik), (c) sisa Phase 3
+(node-objek, destruction, fast travel). Utang tercatat: revisi SPP
+(pemilik), wujud sprite per tahap CDD, state machine formal CDD §37,
+belok (opsional), 12 decal + varian interior, short climb GDD §7,
+pemisahan peran Pemangkas vs Teknisi §14.6, save §30, audio §32.
 
 **Keadaan teknis yang perlu diketahui sesi berikutnya:**
 

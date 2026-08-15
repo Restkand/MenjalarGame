@@ -21,6 +21,7 @@ const C_LABEL   = Color("59636F")
 const C_SEHAT   = Color("A8D94A")
 const C_REDUP   = Color("4F8F32")
 const C_KUNING  = Color("D89A3C")
+const C_MERAH   = Color("C25A4A")   # CDD §7: merah = DIBURU
 const C_KOSONG  = Color("232B36")
 
 var avatar
@@ -31,6 +32,15 @@ var _moda_lalu = -1
 var _energi_lalu = -1.0
 var _tempel_lalu = false  # tepi bisa_tempel — bangunkan HUD untuk petunjuk
 var _layu_flash = 0.0     # sisa kedip gelap layu
+var _kabar = ""           # RK-2 [D]: kabar besar tengah layar
+var _kabar_t = 0.0
+var _kabar_total = 1.0
+
+
+func kabar(teks, detik):
+	_kabar = teks
+	_kabar_t = detik
+	_kabar_total = detik
 
 var _font
 var _tex_panel                 # aset/hud PixelLab (permintaan pemilik):
@@ -57,17 +67,23 @@ func _init(a):
 func _process(delta):
 	_t += delta
 
-	# konsumsi event layu (sekali-baca)
+	# konsumsi event layu (sekali-baca) — upacara GDD §10: kedip gelap
+	# + kabar tengah supaya perpindahan ke simpul terbaca sebagai
+	# "bagian tubuh terputus", bukan teleport tanpa sebab
 	if avatar.layu_baru:
 		avatar.layu_baru = false
 		_layu_flash = 0.9
+		kabar("UJUNG TERPUTUS - TUMBUH KEMBALI", 3.0)
 	_layu_flash = max(0.0, _layu_flash - delta)
+	_kabar_t = max(0.0, _kabar_t - delta)
 
 	# §31: penting = ada yang berubah / keadaan tidak nominal
 	var isi = avatar.energi / avatar.energi_max
 	var nominal = isi > 0.9 and not avatar.terdeteksi and not avatar.curiga \
 			and not avatar.regen_mati and not avatar.mengisi \
-			and _layu_flash <= 0.0
+			and not avatar.diburu and not avatar.bisa_sergap_musuh \
+			and _layu_flash <= 0.0 and avatar.tumbuh_tolak <= 0.0 \
+			and avatar.jangkar_tolak <= 0.0
 	if avatar.moda != _moda_lalu or abs(isi - _energi_lalu) > 0.1 \
 			or (avatar.bisa_tempel and not _tempel_lalu):
 		_tenang = 0.0
@@ -87,6 +103,20 @@ func _draw():
 		var gelap = C_LATAR
 		gelap.a = 0.85 * (_layu_flash / 0.9)
 		draw_rect(get_viewport_rect(), gelap)
+
+	# RK-2 [D]: kabar besar tengah-atas layar (memudar di akhir)
+	if _kabar_t > 0.0 and _kabar != "":
+		var lebar_layar = get_viewport_rect().size.x
+		var a_k = clamp(_kabar_t / (_kabar_total * 0.3), 0.0, 1.0)
+		var bayang_k = C_LATAR
+		bayang_k.a = 0.85 * a_k
+		var isi_k = C_SEHAT
+		isi_k.a = a_k
+		var tx = lebar_layar * 0.5 - _kabar.length() * 10.5
+		draw_string(_font, Vector2(tx + 2.0, 122.0), _kabar,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 38, bayang_k)
+		draw_string(_font, Vector2(tx, 120.0), _kabar,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 38, isi_k)
 
 	var a = _alpha
 	var x = 16.0
@@ -112,7 +142,12 @@ func _draw():
 	_label(ix, y + 76.0, "VISIBILITAS", a)
 	var txt = "TERSEMBUNYI"
 	var c3 = C_REDUP
-	if avatar.terdeteksi:
+	if avatar.diburu:
+		# GDD §13 DIBURU: musuh tahu posisi — merah kanon, berdenyut keras
+		txt = "DIBURU"
+		c3 = C_MERAH
+		c3.a = 0.7 + 0.3 * sin(_t * 14.0)
+	elif avatar.terdeteksi:
 		txt = "TERDETEKSI"
 		c3 = C_KUNING
 		c3.a = 0.7 + 0.3 * sin(_t * 12.0)
@@ -126,7 +161,19 @@ func _draw():
 	_nilai(ix, y + 96.0, txt, c3, a)
 
 	# --- petunjuk tombol kontekstual (jawaban "memencet apa?") --------
-	if avatar.moda == avatar.MERAMBAT:
+	if avatar.tumbuh_tolak > 0.0:
+		# RK-2 [A]: kenapa tidak bisa tumbuh — beton menolak (GDD §12)
+		var kelabu = C_LABEL
+		kelabu.a = 1.0
+		_label(ix, y + 118.0, "BETON MENOLAK TUMBUH", a)
+	elif avatar.jangkar_tolak > 0.0:
+		# balancing F: simpul = organ jaringan (GDD §6.2)
+		_label(ix, y + 118.0, "SIMPUL BUTUH JARINGAN", a)
+	elif avatar.bisa_sergap_musuh:
+		# jendela membunuh dalam senyap terbuka — satu-satunya petunjuk
+		# yang digambar dengan warna nilai, bukan label kelabu
+		_nilai(ix, y + 118.0, "[E] SERGAP SENYAP", C_MERAH, a)
+	elif avatar.moda == avatar.MERAMBAT:
 		_label(ix, y + 118.0, "[SPASI] LEPAS   [ESC] JEDA", a)
 	elif avatar.bisa_tempel:
 		_label(ix, y + 118.0, "[W/S] MERAMBAT   [ESC] JEDA", a)

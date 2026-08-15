@@ -34,6 +34,7 @@ var _udara_t = 0.0        # lama melayang — penggerak frame LOMPAT (play-once)
 var _darat_t = 0.0        # sisa waktu animasi mendarat (play-once)
 var _meta_t = 0.0         # kilau metamorfosis (sistem tahap lama tetap hidup)
 var _tahap_lalu = 1
+var _tex_cincin           # cincin sulur jangkar (efek F)
 
 
 func _init(a):
@@ -45,7 +46,11 @@ func _init(a):
 		if ResourceLoader.exists(jalur):
 			var t = load(jalur)
 			var jml = max(1, t.get_width() / 32)
-			_anim[n] = {"tex": t, "n": jml, "geser": _pusat(t, jml)}
+			_anim[n] = {"tex": t, "n": jml, "geser": _pusat(t, jml),
+					"dasar": _dasar(t, jml)}
+	# cincin jangkar PixelLab (seed 1702) — efek F, bukan strip anim
+	if ResourceLoader.exists("res://aset/player/cincin_jangkar.png"):
+		_tex_cincin = load("res://aset/player/cincin_jangkar.png")
 
 
 # Badan karakter tidak di tengah kanvas 32 px (menumpuk di satu sisi) —
@@ -53,6 +58,27 @@ func _init(a):
 # playtest pemilik). Ukur pusat massa horizontal rata-rata seluruh
 # frame strip sekali saat muat; _draw menggeser rect sebesar selisihnya
 # supaya badan selalu berpivot tepat di posisi avatar.
+# Baris isi TERBAWAH strip (rata seluruh frame): kaki sprite harus
+# menapak persis garis pijakan — frame yang menyisakan baris kosong di
+# bawah membuat karakter melayang (temuan playtest pemilik: pijakan
+# player vs teknisi tidak sejajar)
+func _dasar(tex, jml):
+	var img = tex.get_image()
+	img.convert(Image.FORMAT_RGBA8)
+	var terbawah = 0
+	for i in range(jml):
+		for y in range(img.get_height() - 1, -1, -1):
+			var ada = false
+			for x in range(32):
+				if img.get_pixel(i * 32 + x, y).a >= 0.5:
+					ada = true
+					break
+			if ada:
+				terbawah = max(terbawah, y)
+				break
+	return 31 - terbawah   # baris kosong di bawah isi
+
+
 func _pusat(tex, jml):
 	var img = tex.get_image()
 	img.convert(Image.FORMAT_RGBA8)
@@ -169,6 +195,44 @@ func _draw():
 		cincin.a = 0.5 * (1.0 - q)
 		draw_arc(p, 8.0 + q * 30.0, 0.0, TAU, 28, cincin, 3.0)
 
+	# RK-2 [A]: beton menolak tumbuh — kedip kelabu singkat di titik
+	# tumbuh (bahasa dunia; teksnya di HUD)
+	if avatar.tumbuh_tolak > 0.0:
+		var tolak = Color("59636F")
+		tolak.a = 0.7 * (avatar.tumbuh_tolak / 0.5)
+		draw_arc(avatar.pos * float(Config.PPU), 7.0, 0.0, TAU, 16,
+				tolak, 2.0)
+
+	# balancing F: simpul butuh jaringan — kedip amber-kelabu di kaki
+	if avatar.jangkar_tolak > 0.0:
+		var tolak_j = Color("8A5A20")
+		tolak_j.a = 0.7 * (avatar.jangkar_tolak / 0.5)
+		draw_arc(avatar.pos * float(Config.PPU), 5.0, 0.0, TAU, 16,
+				tolak_j, 2.0)
+
+	# RK-2 [B]: denyut kelahiran node saat F tertanam — cincin sulur
+	# PixelLab mengembang lalu memudar (koreksi pemilik: radar hijau
+	# prosedural diganti art); busur lama tinggal cadangan
+	if avatar.jangkar_baru > 0.0:
+		var q2 = 1.0 - avatar.jangkar_baru / 0.6
+		var pj = avatar.pos * float(Config.PPU)
+		if _tex_cincin != null:
+			var d = 14.0 + q2 * 50.0
+			draw_texture_rect(_tex_cincin,
+					Rect2(pj.x - d * 0.5, pj.y - d * 0.5, d, d),
+					false, Color(1, 1, 1, 1.0 - q2 * q2))
+			# gema kedua menyusul di dalam — bahasa denyut radar
+			var q3 = clamp(q2 * 1.6 - 0.45, 0.0, 1.0)
+			if q3 > 0.0:
+				var d2 = 10.0 + q3 * 40.0
+				draw_texture_rect(_tex_cincin,
+						Rect2(pj.x - d2 * 0.5, pj.y - d2 * 0.5, d2, d2),
+						false, Color(1, 1, 1, 0.55 * (1.0 - q3)))
+		else:
+			var lahir = Color("79B83F")
+			lahir.a = 0.6 * (1.0 - q2)
+			draw_arc(pj, 4.0 + q2 * 26.0, 0.0, TAU, 24, lahir, 3.0)
+
 	if _anim.has(_state):
 		var a = _anim[_state]
 		var fr
@@ -216,9 +280,21 @@ func _draw():
 			regang = clamp(abs(avatar.vel.y) / Config.AVATAR_LOMPAT,
 					0.0, 1.0)
 		var skala = Vector2(1.0 - 0.12 * regang, 1.0 + 0.18 * regang)
-		draw_set_transform(p, 0.0, Vector2(cermin * skala.x, skala.y))
+		# JANGKAR = KAKI (pos avatar), bukan tengah badan: baris isi
+		# terbawah strip jatuh persis di pos.y — sejajar Teknisi yang
+		# juga menapak di pos-nya (playtest pemilik: pijakan tak setara).
+		# Squash-stretch ikut berpivot di kaki: badan meregang ke ATAS,
+		# kaki tidak pernah meninggalkan lantai.
+		var kaki = avatar.pos * ppu
+		# bayangan kontak (D8): mendudukkan karakter ke lantainya
+		if avatar.moda == avatar.LEPAS and avatar.di_tanah:
+			draw_set_transform(kaki + Vector2(0.0, 1.0), 0.0,
+					Vector2(1.0, 0.32))
+			draw_circle(Vector2.ZERO, 7.0, Color(0.02, 0.03, 0.04, 0.30))
+		draw_set_transform(kaki, 0.0, Vector2(cermin * skala.x, skala.y))
 		draw_texture_rect_region(a.tex,
-				Rect2(Vector2(-16.0 + a.geser, -10.0), Vector2(32.0, 32.0)),
+				Rect2(Vector2(-16.0 + a.geser, -32.0 + a.dasar),
+				Vector2(32.0, 32.0)),
 				Rect2(fr * 32.0, 0.0, 32.0, 32.0))
 		draw_set_transform_matrix(Transform2D())
 	elif _state != "rambat_sembunyi":
@@ -228,8 +304,12 @@ func _draw():
 		draw_circle(p + Vector2(-2.0, -2.0), 3.0, Color("A8D94A"))
 
 	# status deteksi (RK Langkah 2, warna kanon CDD §7: kuning =
-	# terdeteksi) — bahasa cincin, bukan UI teks (SRD §12/§23)
-	if avatar.terdeteksi:
+	# terdeteksi, merah = diburu) — bahasa cincin, bukan UI teks
+	if avatar.diburu:
+		var merah = Color("C25A4A")
+		merah.a = 0.75 + 0.25 * sin(_t * 16.0)
+		draw_arc(p, 16.0 + 2.0 * sin(_t * 16.0), 0.0, TAU, 24, merah, 2.5)
+	elif avatar.terdeteksi:
 		var kuning = Color("D89A3C")
 		kuning.a = 0.75 + 0.25 * sin(_t * 14.0)
 		draw_arc(p, 15.0 + 1.5 * sin(_t * 14.0), 0.0, TAU, 24, kuning, 2.0)

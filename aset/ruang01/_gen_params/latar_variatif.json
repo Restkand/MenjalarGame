@@ -1,0 +1,13 @@
+{
+  "catatan": "Tekstur latar variatif Room 01 (pass komposisi, RK Langkah 4). Pixflux 64x64, crop tengah 48x48, snap ke 4 warna STRUCTURE tergelap (0B0E12/12171D/1A2029/232B36) - D5: latar tidak boleh mengalahkan siluet. Skrip: proses_latar.gd (scratchpad).",
+  "latar_panel": {
+    "seed": 1601,
+    "size": 64,
+    "prompt": "dark concrete wall with large recessed rectangular panels, flat repeating texture fill edge-to-edge, no border"
+  },
+  "latar_pipa": {
+    "seed": 1602,
+    "size": 64,
+    "prompt": "dark industrial wall with faint pipe shadows, cable conduits, small vents, flat repeating texture fill edge-to-edge, no border"
+  }
+}

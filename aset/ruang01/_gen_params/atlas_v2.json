@@ -1,0 +1,21 @@
+{
+  "alat": "create_sidescroller_tileset (berantai) + panen interior create_topdown_tileset",
+  "latar": "pemilik menilai tileset lama kurang memuaskan; rasa acuan = terrain 'Varian A' yang dikurasi pemilik di eksperimen Mode Map web (15 Agu)",
+  "atlas_beton": {
+    "seed": 1501,
+    "lower": "dark weathered concrete, hairline cracks, faint water streaks, dusty seams",
+    "transition": "pale dust edge, chipped worn highlights (0.25)",
+    "palet_snap": ["1A2029", "232B36", "2E3846", "3D4757", "3A3128", "55452F"]
+  },
+  "atlas_baja": {
+    "seed": 1502,
+    "dirantai_dari": "base tile beton 1501",
+    "lower": "dark riveted steel plating, worn scratched seams, industrial machine housing",
+    "transition": "scratched bright metal edge strip (0.25)",
+    "palet_snap": ["1A2029", "232B36", "2E3846", "3D4757", "1B2128", "2B333C", "414B57", "59636F"]
+  },
+  "materi_lembap_v2": "interior tile all-upper dari terrain topdown 'wet mossy concrete' keluarga Varian A (menggantikan pixflux 1401) - bahasa visual identik dengan editor Map web pemilik",
+  "materi_retak_v2": "interior tile all-upper dari terrain topdown 'cracked crumbling concrete' keluarga Varian A (menggantikan pixflux 1402)",
+  "perakitan": "rakit_atlas.gd scratchpad: pemetaan CORNERS metadata -> kunci sudut renderer (NW1+NE2+SW4+SE8, 'lower'=PADAT), snap palet per kelas; lembar diambil dari endpoint /image (kini = spritesheet 128x128 asli, bukan pratinjau dekoratif - jebakan lama sudah diperbaiki PixelLab)",
+  "catatan": "keluarga topdown Varian A (beton-lumut-air-baja-retak) tetap utuh di akun untuk fitur Map web"
+}

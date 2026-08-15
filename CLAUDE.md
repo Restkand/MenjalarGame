@@ -66,27 +66,18 @@ kepalanya masing-masing — JANGAN dipakai sebagai acuan aktif):
 - `docs/EDV2-TENDRIL-ARSITEKTUR-MODULAR.md` — ditimpa operasional oleh
   EDV3 (prinsipnya dirangkum EDV3 §12).
 
-**Rencana kerja aktif (BUKAN kanon, dibuang setelah selesai):**
-`docs/RK-TENDRIL-FOKUS-BERIKUTNYA.md` — urutan Opsi A: [0] kebersihan
-dokumen ✓ → [1] utang FEEL ✓ → [2] SENSOR ✓ → [3] playtest tiga rute
-(GERBANG) → [4] grading final art → [5] lipat ke kanon, buang RK.
-**`docs/RK2-TENDRIL-LOOP.md` (disahkan 15 Agu, DISISIPKAN sebelum
-Langkah 4/5)**: verdict gerbang putaran 2 = teknis lulus, LOOP bolong
-(4 temuan pemilik = halaman GDD yang belum dibangun). Tahapan: [A]
-material bicara (§12: lembap/retak/beton, beton menolak tumbuh;
-v3 15 Agu: MATERIAL DILUKIS — aset/ruang01/peta_material.png = kanvas
-64x36 (1px = 1 sel 4-satuan; #00A000 lembap #A05000 retak #0050A0
-air), SATU sumber kebenaran mekanik+visual, blob Wang dual-grid dari
-sel lukisan; pemilik bebas melukis ulang PNG-nya di editor apa pun;
-atlas 5 material 128x160 = 16 kunci + 3 varian interior bertepi
-identik anti-monoton; lembar tileset web tersimpan di
-aset/ruang01/tileset_map) →
-[B] jangkar berdampak (§6.2: node terlihat + aura regen 2x) → [C]
-musuh pertama PEMANGKAS (§14: KARAKTER BARU — bukan Regu Perawat lama,
-putusan pemilik; kandidat dikurasi dulu; patroli lantai, hanya lihat
-moda LEPAS, memotong pertumbuhan pemain, jaringan benih aman) → [D]
-tujuan ruangan (bulb dorman dinding kanan + kabar HUD). Lalu playtest
-loop → baru Langkah 4/5 RK lama.
+**Rencana kerja RK & RK-2: SELESAI & DIBUANG (15 Agustus 2026).**
+Seluruh urutan tuntas ([0] kebersihan dokumen → [1] utang FEEL →
+[2] sensor → [3] gerbang tiga rute → sisipan RK-2 loop A-D: material
+dilukis / jangkar / Pemangkas / tujuan → [4] grading → [5] lipat
+kanon). Yang terbukti dilipat sebagai blok **AMENDEMEN PENUTUPAN RK**
+di ekor `docs/SRD-TENDRIL-ROOM01.md` (angka sensor & konsekuensi,
+MATERIAL DILUKIS peta_material.png, jangkar beraura, aturan
+identitas+skala PEMANGKAS/Teknisi, tujuan ruangan) dan ekor
+`docs/EDV3-TENDRIL-SPEK-EKSEKUSI.md` (gate QA ke-7 "grading dinilai
+dengan sensor menyala", aturan pijakan ≥2× luminance dinding —
+menggantikan bacaan ambigu "env ≤40%"). Detail implementasi hidup di
+bagian status di bawah + riwayat git.
 
 Baca kanon aktif sebelum menyentuh mekanik/visual apa pun. 13 dokumen
 era Menjalar sengaja dihapus karena membuat produksi bercabang. Kalau
@@ -212,10 +203,11 @@ per-frame layar. Room 01: 15 asersi tata letak pernah dipakai di sini
 
 ## Langkah berikutnya
 
-**Dikemudikan `docs/RK-TENDRIL-FOKUS-BERIKUTNYA.md` (Opsi A).**
-Langkah 0 (kebersihan dokumen) SELESAI 14 Agustus: kanon aktif 11 → 7,
-empat dokumen bercap HISTORIS, bagian ini dikompres (sejarah pass demi
-pass Room 01 hidup di dokumen historis + riwayat git).
+**RK (Opsi A) + RK-2 TUNTAS 15 Agustus — bagian di bawah ini murni
+catatan status per langkah.** Langkah 0 (kebersihan dokumen) SELESAI
+14 Agustus: kanon aktif 11 → 7 (kini 8 dengan SRD Ruang 00), empat
+dokumen bercap HISTORIS, bagian ini dikompres (sejarah pass demi pass
+Room 01 hidup di dokumen historis + riwayat git).
 
 **Langkah 1 (utang FEEL) DIKERJAKAN 14 Agustus — menunggu mata pemilik:**
 
@@ -417,11 +409,6 @@ melampaui rentang CDD = keputusan pemilik). Sisa set: belok
 SPP perlu revisi pemilik (ditulis untuk Master A). Gerbang RK
 Langkah 3 putaran 2 tetap antri setelah karakter berdiri.
 
-Sesudahnya sesuai RK: [2] sensor jadi nyata (tiga state SRD §13, warna
-kuning CDD §7, konsekuensi termurah, TANPA musuh) → [3] playtest tiga
-rute = GERBANG KERAS → [4] grading final art dengan sensor menyala →
-[5] lipat ke kanon & buang RK.
-
 **RK-2 LULUS SEMENTARA (putusan pemilik 15 Agu) → RK LANGKAH 4
 (grading) BERJALAN.** Paket 1 selesai (commit `68a63ee`): jangkar
 gambar avatar dipindah ke KAKI (baris isi terbawah strip tepat di
@@ -448,6 +435,17 @@ latar 3.39x (syarat >=2x; skrip audit_pijakan.gd scratchpad). Seed
 Langkah 4 (OPSIONAL, hasil-menurun — pemilik menyatakan cukup):
 create_tiles_pro varian interior, prop create_map_object (utang 12
 decal).
+
+**LANGKAH 5 SELESAI (15 Agu): RK & RK-2 DIBUANG, lipatan kanon =
+amendemen di ekor SRD Room 01 & EDV3.** Arah berikutnya MENUNGGU
+PUTUSAN PEMILIK; kandidat yang sah menurut kanon: (a) produksi
+RUANG 00 Lab Botani (gerbang Langkah 3 sudah lolos; amendemen SRD
+Room 01 §19/§38 tetap menunggu pemilik), (b) memperdalam Phase 5-6
+stealth/musuh, (c) sisa Phase 3 (node-objek, destruction, fast
+travel). Utang tercatat: revisi SPP (pemilik), wujud sprite per tahap
+CDD, state machine formal CDD §37, belok (opsional), 12 decal +
+varian interior create_tiles_pro. Yang juga masih menunggu mata
+pemilik: tampilan pasca dual-grid (paket 2) belum di-screenshot-kan.
 
 **Keadaan teknis yang perlu diketahui sesi berikutnya:**
 

@@ -558,3 +558,25 @@ CHAIN     semua tileset  → base_tile_id = MASTER_ID
           semua arch     → style reference = tileset concrete
           semua props    → background_image = screenshot room
 ```
+
+---
+
+# AMENDEMEN PENUTUPAN RK (15 Agustus 2026)
+
+> Dilipat dari RK Langkah 5 (rencana disahkan pemilik proyek).
+
+## Gate ke-7 QA (§9): GRADING DINILAI DENGAN SENSOR MENYALA
+
+Nilai grading final HANYA sah in-game: CanvasModulate + PointLight2D +
+kerucut sensor aktif. Screenshot aset lepas tidak pernah jadi dasar
+putusan grading — gelap harus dinilai saat gelap punya pekerjaan.
+
+## Aturan pijakan (§3.1): LUMINANCE PIJAKAN ≥ 2× DINDING
+
+Menggantikan bacaan ambigu "env ≤40%" yang sempat terbaca "gelapkan
+semua": permukaan yang BISA DIPIJAK/DIRAMBATI wajib ≥2× luminance
+dinding latar tepat di belakangnya — ini SIGNIFIER (kategori
+kecelakaan), bukan mood; tidak ada argumen atmosfer yang membelanya.
+Audit deterministik tersedia (audit_pijakan.gd; rasio saat lulus:
+3.39×). Pita value lain tetap berlaku: env gelap tak jenuh, amber
+≤63%, TENDRIL 60–85% selalu paling terang.

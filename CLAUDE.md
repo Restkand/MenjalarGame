@@ -486,6 +486,23 @@ AWAS permanen (pandang x1.3 AWAS_PANDANG). Rantai berulang tiap
 sergapan. Uji deterministik 3 blok LOLOS (tolak/tanam jangkar,
 kaget beku→kejar, masuk→tiba→selidik→patroli awas), blok dibuang.
 
+**PASS "SATISFYING KILL" (kritik pemilik 16 Agu + rujukan level
+design)**: (1) geometri sergap DIJUJURKAN — patroli diperpanjang
+66-130 melewati celah drain x64-72 (satu-satunya titik lantai
+lembap yang tercapai lewat rute rahasia); sebelumnya sergap
+mustahil dalam permainan wajar (bot lama teleport, tidak menguji
+keterjangkauan). (2) GAME FEEL: hitstop SERGAP_HITSTOP 0.12 dtk
+(logika dunia beku, view hidup) + guncang kamera meluruh
+(cam.offset, _shake); (3) tubuh TERSERET ke arah sulur penyergap
+4.5 u/dtk selama roboh (Pemangkas.tarik; bangkai tersinkron); (4)
+LEVEL BEREAKSI: bangkai berumur MAYAT_TUMBUH 6 dtk menumbuhkan
+NODE BULB (world.node_tanam — aura regen; kabar "BIOMASSA MENJADI
+SIMPUL") — membunuh mengubah peta permanen (pilar Grow Your Own
+Map) sekaligus tetap berisiko (rantai pengganti). Anim bunuh =
+strip teknisi_mati 7f (falling-back-death, akun grup mati_sergap).
+Semua di _urus_mayat() Ruang01Main (dipisah supaya bisa diuji bot).
+Uji deterministik 3 blok LOLOS, dibuang.
+
 Arah lain yang masih antri: (a) produksi RUANG 00 Lab Botani
 (amendemen SRD Room 01 §19/§38 menunggu pemilik), (c) sisa Phase 3
 (node-objek, destruction, fast travel). Utang tercatat: revisi SPP

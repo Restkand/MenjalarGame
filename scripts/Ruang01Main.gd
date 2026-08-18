@@ -44,6 +44,9 @@ var mayat = []             # ESKALASI: bangkai tersergap [{pos, t}] —
                            # array yang SAMA dipegang view (jangan
                            # di-reassign; clear() saat restart)
 var _pengganti_t = 0.0     # hitung mundur teknisi pengganti masuk
+var _hitstop = 0.0         # dunia menahan napas saat sergapan mengena
+var _shake = 0.0           # amplitudo guncang kamera (meluruh)
+var _t_shake = 0.0
 var hud
 var _tujuan_capai = false  # RK-2 [D]: tujuan ruangan sekali-capai
 
@@ -174,6 +177,12 @@ func _process(delta):
 			_waspada = 0.0
 		return
 
+	# HITSTOP: sergapan baru mengena — seluruh logika dunia membeku
+	# sekejap (kamera & view tetap hidup), lalu roboh dimulai
+	if _hitstop > 0.0:
+		_hitstop -= delta
+		return
+
 	var arah = Vector2(
 			_sumbu(KEY_A, KEY_LEFT, KEY_D, KEY_RIGHT),
 			_sumbu(KEY_W, KEY_UP, KEY_S, KEY_DOWN))
@@ -274,23 +283,17 @@ func _process(delta):
 	if sergap_tahan and not _sergap_lalu and avatar.bisa_sergap_musuh:
 		if pemangkas.sergap(avatar):
 			hud.kabar("BIOMASSA DISERAP", 2.5)
+			# GAME FEEL: dunia menahan napas + kamera terguncang —
+			# sergapan harus terasa MENGENA, bukan lewat begitu saja
+			_hitstop = Config.SERGAP_HITSTOP
+			_shake = 1.0
 			# ESKALASI: kota merespons — mayat tercatat, pengganti
 			# dijadwalkan datang mencari rekannya yang hilang
 			mayat.append({"pos": pemangkas.pos, "t": 0.0})
 			_pengganti_t = Config.PENGGANTI_DATANG
 	_sergap_lalu = sergap_tahan
 
-	# jam mayat + kedatangan pengganti + alarm penemuan
-	for m in mayat:
-		m.t += delta
-	if _pengganti_t > 0.0 and not pemangkas.hidup:
-		_pengganti_t -= delta
-		if _pengganti_t <= 0.0 and mayat.size() > 0:
-			pemangkas.masuk(mayat[mayat.size() - 1].pos.x)
-	if pemangkas.tiba_mayat:
-		pemangkas.tiba_mayat = false
-		_waspada = max(_waspada, Config.MAYAT_WASPADA)
-		hud.kabar("MAYAT DITEMUKAN - RUANGAN WASPADA", 3.5)
+	_urus_mayat(delta)
 
 	avatar.update(delta, i, world)
 	pemangkas.update(delta, avatar, world)
@@ -305,8 +308,42 @@ func _process(delta):
 	# kamera mengejar titik tengah badan; cahaya hijau mengikuti TENDRIL
 	cam.position = (avatar.pos + Vector2(0.0, -Config.AVATAR_TINGGI * 0.5)) \
 			* float(Config.PPU)
+	# guncang sergapan: getar kecil yang meluruh cepat
+	_t_shake += delta
+	if _shake > 0.01:
+		cam.offset = Vector2(sin(_t_shake * 70.0), cos(_t_shake * 47.0)) \
+				* 3.0 * _shake
+		_shake *= maxf(0.0, 1.0 - delta * 5.0)
+	else:
+		cam.offset = Vector2.ZERO
 	_cahaya_avatar.position = (avatar.pos
 			+ Vector2(0.0, -Config.AVATAR_TINGGI * 0.5)) * float(Config.PPU)
+
+
+# jam mayat + seret roboh + bangkai menumbuh + pengganti + alarm.
+# Fungsi terpisah supaya bot uji deterministik bisa memanggilnya.
+func _urus_mayat(delta):
+	for m in mayat:
+		m.t += delta
+		# LEVEL BEREAKSI (pilar Grow Your Own Map): bangkai yang lama
+		# dirambati lumut MENJADI jaringan — node bulb menyembul dari
+		# tubuhnya (aura regen). Membunuh meninggalkan bekas di peta.
+		if m.t >= Config.MAYAT_TUMBUH and not m.has("bulb"):
+			m["bulb"] = true
+			world.node_tanam.append(Vector2(m.pos.x, m.pos.y - 2.0))
+			hud.kabar("BIOMASSA MENJADI SIMPUL", 2.5)
+	# bangkai mengikuti tubuh yang masih terseret sulur
+	if not pemangkas.hidup and pemangkas.mati_t < 0.95 \
+			and mayat.size() > 0:
+		mayat[mayat.size() - 1].pos = pemangkas.pos
+	if _pengganti_t > 0.0 and not pemangkas.hidup:
+		_pengganti_t -= delta
+		if _pengganti_t <= 0.0 and mayat.size() > 0:
+			pemangkas.masuk(mayat[mayat.size() - 1].pos.x)
+	if pemangkas.tiba_mayat:
+		pemangkas.tiba_mayat = false
+		_waspada = max(_waspada, Config.MAYAT_WASPADA)
+		hud.kabar("MAYAT DITEMUKAN - RUANGAN WASPADA", 3.5)
 
 
 func _sumbu(neg1, neg2, pos1, pos2):

@@ -31,6 +31,7 @@ var mati_t = 0.0           # detik sejak tersergap (penggerak anim view)
 var selidik_pos = 0.0      # x avatar TERAKHIR terlihat (memori kejar)
 var awas = false           # sudah tahu ada yang salah: pandang melebar
 var kaget = 0.0            # membeku sesaat ketika PERTAMA melihat pemain
+var tarik = 0.0            # arah tubuh terseret saat tersergap (ke sulur)
 var tiba_mayat = false     # event sekali-baca: pengganti sampai di mayat
 var _masuk_tujuan = 0.0    # x mayat yang dicari saat MASUK
 var _selidik_t = 0.0
@@ -86,6 +87,11 @@ func sergap(avatar):
 		return false
 	hidup = false
 	mati_t = 0.0
+	# tubuh terseret KE ARAH sulur yang menariknya — pembunuhnya
+	# terbaca, dan bangkai mendarat di sisi penyergap
+	tarik = signf(avatar.pos.x - pos.x)
+	if tarik == 0.0:
+		tarik = -arah
 	# biomassa terserap jaringan (GDD §16) — membunuh memberi makan
 	avatar.energi = min(avatar.energi_max,
 			avatar.energi + Config.SERGAP_PANEN)
@@ -95,6 +101,8 @@ func sergap(avatar):
 func update(dt, avatar, world):
 	if not hidup:
 		mati_t += dt
+		if mati_t < 0.9:
+			pos.x += tarik * 4.5 * dt   # terseret ke pelukan sulur
 		return
 	_jeda = max(0.0, _jeda - dt)
 

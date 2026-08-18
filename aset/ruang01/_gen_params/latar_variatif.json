@@ -9,5 +9,11 @@
     "seed": 1602,
     "size": 64,
     "prompt": "dark industrial wall with faint pipe shadows, cable conduits, small vents, flat repeating texture fill edge-to-edge, no border"
+  },
+  "gril_drain": {
+    "seed": 1710,
+    "size": "64x32",
+    "prompt": "industrial floor drain grate seen from the side, heavy dark steel frame with vertical bar slots, embedded flush in concrete floor, muted desaturated gray",
+    "opsi": "no_background, selective outline, basic shading; 40x17 snap kelabu STRUCTURE (proses_gril.gd). Menutup dua celah lantai: manusia jalan di atasnya, tanaman lewat selanya - jawaban readability 'teknisi melayang di atas lubang'"
   }
 }

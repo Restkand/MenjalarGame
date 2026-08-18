@@ -38,7 +38,8 @@ func _init(w):
 			"bracket", "noda_air", "sulur_jaringan", "materi_lembap",
 			"materi_retak", "tangki_air", "atlas_lembap", "atlas_retak",
 			"atlas_air", "latar_panel", "latar_pipa", "node_bulb",
-			"node_bulb_dorman", "node_bulb_nyala", "node_tunas"]:
+			"node_bulb_dorman", "node_bulb_nyala", "node_tunas",
+			"gril_drain"]:
 		var jalur = "res://aset/ruang01/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			_tex[n] = load(jalur)
@@ -127,9 +128,12 @@ func _draw():
 			var lebar = [28.0, 36.0, 44.0][hh % 3]
 			var tinggi = [30.0, 38.0, 46.0][(hh / 7) % 3]
 			var f = [0.85, 1.0, 1.15][(hh / 31) % 3]
+			# alpha DITURUNKAN 0.5 -> 0.3 (koreksi pemilik: panel
+			# terbaca seperti kaca/pijakan) — latar harus MUNDUR jelas
+			# di belakang segala yang padat (GDD §38 readability)
 			draw_texture_rect(_tex.latar_panel,
 					Rect2(px * ppu, 18.0 * ppu, lebar * ppu,
-					tinggi * ppu), true, Color(f, f, f, 0.5))
+					tinggi * ppu), true, Color(f, f, f, 0.3))
 			px += lebar + 2.0
 			idx += 1
 	# 2) PITA UTILITAS di belakang jalur pipa — kesan konduit tertanam
@@ -137,7 +141,7 @@ func _draw():
 		draw_texture_rect(_tex.latar_pipa,
 				Rect2(16.0 * ppu, 66.0 * ppu,
 				(world.W - 32.0) * ppu, 22.0 * ppu), true,
-				Color(1, 1, 1, 0.4))
+				Color(1, 1, 1, 0.28))
 	# 3) SKIRTING gelap di kaki dinding + garis pijakan lantai
 	var kaki = Color("0B0E12")
 	kaki.a = 0.4
@@ -245,14 +249,29 @@ func _draw():
 	# GARIS PIJAKAN: strip terang tipis di permukaan atas tiap massa
 	# padat — permukaan yang bisa dipijak/dirambati terbaca seketika
 	# (aturan pijakan >= 2x luminance dinding), sekaligus memecah kotak
-	var pijak = Color("59636F")
-	pijak.a = 0.35
+	# kontras dinaikkan (koreksi pemilik: bidang pijak vs latar belum
+	# tegas) — permukaan berjalan adalah informasi gameplay, bukan mood
+	var pijak = Color("6A7683")
+	pijak.a = 0.5
 	for ty in range(world.PT_H):
 		for tx in range(world.PT_W):
 			if world.padat_t[ty * world.PT_W + tx] == 1 \
 					and ty > 0 \
 					and world.padat_t[(ty - 1) * world.PT_W + tx] == 0:
 				draw_rect(Rect2(tx * t, ty * t, t, 3.0), pijak)
+
+	# GRIL DRAIN (koreksi pemilik: manusia terlihat berjalan di atas
+	# lubang): kedua celah lantai ditutup gril besi — MANUSIA berjalan
+	# DI ATASNYA, TANAMAN menyelinap lewat sela-selanya. Satu aset yang
+	# menjelaskan aturan lintasan tanpa teks, sekaligus menandai titik
+	# sergap rute rahasia.
+	if _tex.has("gril_drain"):
+		var gw = float(_tex.gril_drain.get_width())
+		var gh = float(_tex.gril_drain.get_height())
+		for gx in [68.0, 220.0]:
+			draw_texture_rect(_tex.gril_drain,
+					Rect2(gx * ppu - gw * 0.5, 111.5 * ppu, gw, gh),
+					false)
 
 	# JUMBAI LUMUT menggantung: sel lembap yang menempel plafon padat
 	# diberi jumbai daun (aset player rambat_daun — satu bahasa piksel)

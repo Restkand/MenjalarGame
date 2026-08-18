@@ -24,6 +24,11 @@ const TERDETEKSI = 2
 
 var pos = Vector2(180.0, 10.0)   # titik lensa, satuan simulasi
 var alarm = false                # dikunci main selama waspada
+# parameter kerucut per-pemasangan (Ruang 00: kerucut grow light lebih
+# sempit & lantai lebih tinggi). Negatif = pakai angka Config Room 01.
+var lantai_y = 118.0
+var dasar = -1.0
+var lebar = -1.0
 var _fase_t = 0.0                # penghitung siklus
 var _memindai = false
 
@@ -59,13 +64,14 @@ func state(avatar, world, diam):
 	return TERDETEKSI
 
 
-# kerucut menghadap bawah: melebar SENSOR_KERUCUT_LEBAR per satuan turun
+# kerucut menghadap bawah: melebar `lebar` per satuan turun
 func _dalam_kerucut(p):
 	var dy = p.y - pos.y
-	if dy < 0.0 or p.y > 118.0:
+	if dy < 0.0 or p.y > lantai_y:
 		return false
-	return abs(p.x - pos.x) <= Config.SENSOR_KERUCUT_DASAR \
-			+ dy * Config.SENSOR_KERUCUT_LEBAR
+	var d = dasar if dasar > 0.0 else Config.SENSOR_KERUCUT_DASAR
+	var l = lebar if lebar > 0.0 else Config.SENSOR_KERUCUT_LEBAR
+	return abs(p.x - pos.x) <= d + dy * l
 
 
 # raycast grid sensor->avatar, langkah 2 satuan; beton memutus pandangan

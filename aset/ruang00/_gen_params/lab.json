@@ -1,0 +1,25 @@
+{
+  "catatan": "Aset Ruang 00 Lab Botani (SRD Lab par.4, prompt ditulis ulang gaya EDV3 par.4). Semua pixflux, crop isi, snap palet lab (kelabu STRUCTURE + cyan klinis 7FA8B0/BFD8DC + hijau kanon). Skrip: proses_lab.gd scratchpad. peta_material_lab.png dilukis lukis_material_lab.gd (semantik warna data = Room 01).",
+  "tabung_induk": {
+    "seed": 1713,
+    "size": "100x160",
+    "prompt": "tall cracked glass containment tank, thick green mother vine bursting out of the crack, cyan liquid draining, dark steel base and cap, side view"
+  },
+  "lampu_grow": {
+    "seed": 1714,
+    "size": "64x24",
+    "prompt": "hanging industrial grow light bar, warm pink glow strip under dark metal housing, two thin chains, side view",
+    "kurasi": "pendar generatan keluar UNGU - dipaksa ke tangga merah-muda hangat C76D7E/E8909E/F5BBC4 di pasca-proses (ungu = status RACUN CDD par.7, terlarang per SRD Lab par.3)"
+  },
+  "rak_semai": {
+    "seed": 1715,
+    "size": "64x40",
+    "prompt": "hydroponic seedling rack, steel shelf with trays of small green sprouts, thin frame legs, side view"
+  },
+  "kaca_latar": {
+    "seed": 1716,
+    "size": "64x64",
+    "prompt": "laboratory glass wall with steel frames, blurry plant silhouettes behind glass, pale cyan tint, flat repeating texture fill edge-to-edge, no border",
+    "kurasi": "digelapkan kuat (v x0.42, s x0.5) sebelum snap - latar wajib mundur (D5)"
+  }
+}

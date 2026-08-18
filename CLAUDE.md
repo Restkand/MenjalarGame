@@ -503,8 +503,38 @@ strip teknisi_mati 7f (falling-back-death, akun grup mati_sergap).
 Semua di _urus_mayat() Ruang01Main (dipisah supaya bisa diuji bot).
 Uji deterministik 3 blok LOLOS, dibuang.
 
-Arah lain yang masih antri: (a) produksi RUANG 00 Lab Botani
-(amendemen SRD Room 01 §19/§38 menunggu pemilik), (c) sisa Phase 3
+**RUANG 00 LAB BOTANI DIBANGUN (18 Agu, permintaan pemilik pasca
+playtest 3 tester "membingungkan tapi potensial" — onboarding).**
+Arsitektur modular: scene `ruang00.tscn` + `Ruang00Main.gd` +
+`Ruang00.gd` + `render/Ruang00View.gd` TERPISAH dari Room 01; boot
+project kini ruang00.tscn; lorong keluar = change_scene ke
+ruang01.tscn (energi/jejak tidak dibawa — kelahiran segar).
+Tiga zona SRD Lab §6 + enam beat §7: lahir MERAMBAT di tabung induk
+(moda dipaksa MERAMBAT saat _ready); celah lantai memaksa LEPAS+
+lompat (DEVIASI SADAR: 1 tile, bukan 2 — jangkauan lompat fisika
+terkunci ±13 satuan < 16; SRD ditulis pra-fisika); zona B steril:
+3 kerucut grow light MERAH-MUDA (Sensor.gd diparameterkan lantai_y/
+dasar/lebar, alarm=true = selalu memindai; bahaya=ruang, aman=saku
+gelap sisi rak & puncak rak/meja — rak 1 tile rendah bisa dilompati,
+meja 2 tile dipanjat via rak); zona C: node bulb, trellis naik,
+KATUP [E] (avatar.bisa_interaksi + HUD "[E] PUTAR KATUP") →
+sprinkler membasahi panel kanan (sel_basah dinamis kelas lembap,
+digambar atlas_air) → tumbuh naik → lorong keluar kanan-atas.
+Material lab: aset/ruang00/peta_material_lab.png (64x28; keramik/
+kaca/baja TIDAK dilukis = menolak, SRD Lab §5). Aset PixelLab seed
+1713-1716 (tabung_induk 44x138, lampu_grow — pendar ungu generatan
+DIPAKSA pink hangat, rak_semai, kaca_latar digelapkan D5) +
+pakai-ulang aset Room 01 (atlas, sulur, rumpun, node_bulb, latar).
+Uji deterministik 6 asersi beat LOLOS (lahir merambat / celah
+menahan rambat (toleransi material dirapikan: pita lukis berhenti
+2 sel dari celah) / lompat menyeberang (bot HARUS menahan
+lompat_tahan — potong-dini memangkas) / kerucut deteksi vs saku rak
+aman / steril menolak vs basah menerima / rect keluar), blok uji
+dibuang. BELUM (menunggu pemilik): mulut tersamar dari SISI Room 01
+(amendemen SRD Room 01 §19/§38) — transisi baru satu arah lab→servis;
+jawaban §10 SRD Lab (nasib tabung induk, durasi basah, dll).
+
+Arah lain yang masih antri: (c) sisa Phase 3
 (node-objek, destruction, fast travel). Utang tercatat: revisi SPP
 (pemilik), wujud sprite per tahap CDD, state machine formal CDD §37,
 belok (opsional), 12 decal + varian interior, short climb GDD §7,

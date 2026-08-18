@@ -17,11 +17,11 @@ const IDLE    = 0
 const PATROL  = 1
 const KEJAR   = 2
 const SELIDIK = 3          # Phase 5 "enemy investigation": memeriksa
-                           # titik terakhir avatar terlihat sebelum
-                           # menyerah kembali berpatroli
+						   # titik terakhir avatar terlihat sebelum
+						   # menyerah kembali berpatroli
 const MASUK   = 4          # ESKALASI: pengganti berjalan masuk dari
-                           # kanan MENCARI REKANNYA — fokus ke mayat,
-                           # belum menoleh ke mana-mana
+						   # kanan MENCARI REKANNYA — fokus ke mayat,
+						   # belum menoleh ke mana-mana
 
 var pos = Vector2()
 var arah = 1.0             # hadap: 1 kanan, -1 kiri

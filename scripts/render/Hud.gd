@@ -82,6 +82,7 @@ func _process(delta):
 	var nominal = isi > 0.9 and not avatar.terdeteksi and not avatar.curiga \
 			and not avatar.regen_mati and not avatar.mengisi \
 			and not avatar.diburu and not avatar.bisa_sergap_musuh \
+			and not avatar.bisa_interaksi \
 			and _layu_flash <= 0.0 and avatar.tumbuh_tolak <= 0.0 \
 			and avatar.jangkar_tolak <= 0.0
 	if avatar.moda != _moda_lalu or abs(isi - _energi_lalu) > 0.1 \
@@ -173,6 +174,9 @@ func _draw():
 		# jendela membunuh dalam senyap terbuka — satu-satunya petunjuk
 		# yang digambar dengan warna nilai, bukan label kelabu
 		_nilai(ix, y + 118.0, "[E] SERGAP SENYAP", C_MERAH, a)
+	elif avatar.bisa_interaksi:
+		# interaksi dunia (katup lab Ruang 00)
+		_nilai(ix, y + 118.0, "[E] PUTAR KATUP", C_KUNING, a)
 	elif avatar.moda == avatar.MERAMBAT:
 		_label(ix, y + 118.0, "[SPASI] LEPAS   [ESC] JEDA", a)
 	elif avatar.bisa_tempel:

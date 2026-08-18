@@ -1,0 +1,13 @@
+{
+  "catatan": "Rumpun daun jaringan benih (koreksi tester: tempat sembunyi tak terbaca - bahasa 'semak = tempat melebur'). Pixflux no_background + palet mini hijau CDD, crop, perkecil nearest, snap hijau DIJEPIT maks 4F8F32 (ujung hidup & jejak pemain tetap paling terang, EDV3 3.1). Ditanam Ruang01View tiap ~26 satuan sepanjang jalur_seed, rotasi ikut segmen, variasi hash (varian/skala/cermin). Skrip: proses_rumpun.gd scratchpad.",
+  "rumpun_1": {
+    "seed": 1711,
+    "size": "64x48",
+    "prompt": "dense leafy vine bush clump, thick overlapping dark green leaves, wild tangled foliage ball, side view game prop"
+  },
+  "rumpun_2": {
+    "seed": 1712,
+    "size": "64x32",
+    "prompt": "wide low leafy vine thicket, dense overlapping dark green leaves draped over a horizontal stem, wild foliage, side view game prop"
+  }
+}

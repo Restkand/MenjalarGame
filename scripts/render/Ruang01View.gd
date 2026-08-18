@@ -39,7 +39,7 @@ func _init(w):
 			"materi_retak", "tangki_air", "atlas_lembap", "atlas_retak",
 			"atlas_air", "latar_panel", "latar_pipa", "node_bulb",
 			"node_bulb_dorman", "node_bulb_nyala", "node_tunas",
-			"gril_drain"]:
+			"gril_drain", "rumpun_1", "rumpun_2"]:
 		var jalur = "res://aset/ruang01/%s.png" % n
 		if ResourceLoader.exists(jalur):
 			_tex[n] = load(jalur)
@@ -346,6 +346,36 @@ func _draw():
 			draw_set_transform_matrix(Transform2D())
 		else:
 			draw_line(a, b, C_JARING, 3.0)
+
+	# RUMPUN DAUN di jaringan benih (koreksi tester pemilik: tempat
+	# sembunyi tak terbaca): bahasa genre "semak = tempat melebur".
+	# Mekanik TIDAK berubah — merambat di jaringan memang tersembunyi;
+	# rumpun hanya membuat janji itu TERLIHAT. Value dijepit di bawah
+	# ujung hidup & jejak pemain (EDV3 §3.1): rumpun benih tua lebih
+	# gelap daripada pertumbuhan segar.
+	for si in range(world.jalur_seed.size()):
+		var seg2 = world.jalur_seed[si]
+		var a2 = seg2[0]
+		var b2 = seg2[1]
+		var jml_r = int(a2.distance_to(b2) / 26.0)
+		for k in range(jml_r):
+			var h2 = absi((si * 73471) ^ ((k + 1) * 15731))
+			var t2 = (float(k) + 0.5 + float(h2 % 40) * 0.01) \
+					/ float(jml_r)
+			var pr = a2.lerp(b2, t2) * ppu
+			var nama_r = "rumpun_1" if h2 % 3 == 0 else "rumpun_2"
+			if not _tex.has(nama_r):
+				continue
+			var tr = _tex[nama_r]
+			var sk = [0.8, 0.95, 1.1][(h2 / 7) % 3]
+			var w2 = tr.get_width() * sk
+			var h_r = tr.get_height() * sk
+			var cermin2 = -1.0 if (h2 / 13) % 2 == 0 else 1.0
+			draw_set_transform(pr, (b2 - a2).angle(),
+					Vector2(cermin2, 1.0))
+			draw_texture_rect(tr,
+					Rect2(-w2 * 0.5, -h_r * 0.55, w2, h_r), false)
+			draw_set_transform_matrix(Transform2D())
 
 	# GDD §39 (penyimpangan #1): dua penanda MVP, bahasa bentuk tanpa teks
 	# — NODE kelahiran di jaringan rumah (§6.2: checkpoint/respawn) dan

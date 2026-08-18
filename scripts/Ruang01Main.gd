@@ -97,8 +97,11 @@ func _ready():
 	sensor.pos = world.sensor_pos
 
 	# RK-2 [C]: SATU Pemangkas berpatroli di lantai tengah terbuka
-	# (x 84-130, sebelum tangga peti) — rute cepat kini berpenjaga
-	pemangkas = PemangkasCls.new(84.0, 130.0)
+	# sampai tangga peti. Batas kiri 66 (koreksi playtest pemilik:
+	# sergap tak terjangkau): patroli MELEWATI celah drain x64-72 —
+	# satu-satunya titik lantai yang bisa ditumbuhi (lembap) dan
+	# dicapai pemain lewat rute rahasia = titik sergap yang jujur
+	pemangkas = PemangkasCls.new(66.0, 130.0)
 	pemangkas_view = PemangkasViewCls.new(pemangkas)
 	pemangkas_view.mayat = mayat
 	add_child(pemangkas_view)

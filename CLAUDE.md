@@ -534,6 +534,25 @@ dibuang. BELUM (menunggu pemilik): mulut tersamar dari SISI Room 01
 (amendemen SRD Room 01 §19/§38) — transisi baru satu arah lab→servis;
 jawaban §10 SRD Lab (nasib tabung induk, durasi basah, dll).
 
+**PROGRAM DAYA TARIK (19 Agu)**: tester bilang "kurang menarik di
+kesan pertama" → `docs/TANYA-TENDRIL-DAYA-TARIK.md` (dokumen kerja,
+BUKAN kanon) berisi 17 pertanyaan desain — SEMUA DIJAWAB PEMILIK
+(§5 dokumen; belum dilipat ke GDD — tugas pemilik). Urutan eksekusi
+H2 disahkan: (1) audio minimal ✓ SELESAI (commit `f4f621a`+`359b6ae`:
+6 WAV sintesis prosedural seed 1717 — ambience+dengung, gesek rambat,
+pegas lompat, sergap, alarm, jantung DIBURU; `render/Suara.gd`
+terpasang di kedua ruangan; loop di-duplicate() sebelum dimutasi dan
+BISU di headless — dua-duanya wajib agar verifikasi bersih) →
+(2) kelahiran sinematik tabung pecah + pan kamera + poster peta
+evakuasi (A1/A2/C2) → (3) kill wajib skrip Teknisi membelakangi +
+kejaran terskrip aman (D3/E1) → (4) rahasia kecil + state "ruangan
+milikku" 60% (D2/F2). Keputusan lain yang menunggu giliran di
+langkah-langkah itu: lab dipangkas 90 dtk (D1), pestisida grow light
+(E2), landmark pipa/katup evakuasi (C1), ikon tombol di titik sambung
+(G1), poster K3 (G2). Kalimat target F1: "Splinter Cell, tapi kamu
+tanaman parasit yang merayap di langit-langit dan menelan penjaga
+satu per satu."
+
 Arah lain yang masih antri: (c) sisa Phase 3
 (node-objek, destruction, fast travel). Utang tercatat: revisi SPP
 (pemilik), wujud sprite per tahap CDD, state machine formal CDD §37,

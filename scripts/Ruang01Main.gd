@@ -19,6 +19,7 @@ const PemangkasCls   = preload("res://scripts/Pemangkas.gd")
 const PemangkasViewCls = preload("res://scripts/render/PemangkasView.gd")
 const HudCls         = preload("res://scripts/render/Hud.gd")
 const MenuJedaCls    = preload("res://scripts/render/MenuJeda.gd")
+const SuaraCls       = preload("res://scripts/render/Suara.gd")
 
 var world
 var avatar
@@ -47,6 +48,7 @@ var _pengganti_t = 0.0     # hitung mundur teknisi pengganti masuk
 var _hitstop = 0.0         # dunia menahan napas saat sergapan mengena
 var _shake = 0.0           # amplitudo guncang kamera (meluruh)
 var _t_shake = 0.0
+var suara
 var hud
 var _tujuan_capai = false  # RK-2 [D]: tujuan ruangan sekali-capai
 
@@ -108,6 +110,10 @@ func _ready():
 	pemangkas_view = PemangkasViewCls.new(pemangkas)
 	pemangkas_view.mayat = mayat
 	add_child(pemangkas_view)
+
+	# SUARA minimal (B1): ambience jalan terus, sisanya event-driven
+	suara = SuaraCls.new()
+	add_child(suara)
 
 	# HUD GDD §31 di CanvasLayer sendiri — tidak ikut kamera/zoom
 	var lapis_hud = CanvasLayer.new()
@@ -197,6 +203,8 @@ func _process(delta):
 		"lari": Input.is_physical_key_pressed(KEY_SHIFT),
 		"masuk": false,
 	}
+	if i.lompat and (avatar.di_tanah or avatar.moda == avatar.MERAMBAT):
+		suara.sfx("lompat")
 	_lompat_lalu = lompat_tahan
 
 	if jangkar_tahan and not _jangkar_lalu:
@@ -283,6 +291,7 @@ func _process(delta):
 	if sergap_tahan and not _sergap_lalu and avatar.bisa_sergap_musuh:
 		if pemangkas.sergap(avatar):
 			hud.kabar("BIOMASSA DISERAP", 2.5)
+			suara.sfx("sergap")
 			# GAME FEEL: dunia menahan napas + kamera terguncang —
 			# sergapan harus terasa MENGENA, bukan lewat begitu saja
 			_hitstop = Config.SERGAP_HITSTOP
@@ -297,6 +306,12 @@ func _process(delta):
 
 	avatar.update(delta, i, world)
 	pemangkas.update(delta, avatar, world)
+
+	# suara situasional (B2: hening total hanya saat diam di gelap)
+	suara.atur_loop("rambat",
+			avatar.moda == avatar.MERAMBAT and not diam, -16.0)
+	suara.atur_loop("alarm", _waspada > 0.0, -14.0)
+	suara.atur_loop("jantung", avatar.diburu, -8.0)
 
 	# RK-2 [D]: mencapai TUJUAN lewat jaringan — bulb menyala + kabar
 	if not _tujuan_capai and avatar.moda == avatar.MERAMBAT \

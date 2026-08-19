@@ -189,10 +189,52 @@ state "ruangan milikku" (F2). Setuju / susun ulang?
 
 ---
 
-## 5. CARA MEMAKAI DOKUMEN INI
+## 5. JAWABAN PEMILIK (19 Agustus 2026) — SAH, siap dilipat ke GDD
 
-1. Pemilik menjawab di tempat (edit file ini langsung).
+- **A1 = (a)** Kelahiran sinematik: tabung pecah, sulur menyembur,
+  kamera menyapu lab, baru kendali diserahkan. Tutorial = "akibat"
+  pelarian awal.
+- **A2 = YA.** Pan kamera 5–8 dtk ke lorong keluar/tujuan saat pemain
+  pertama kali menginjak ruang terbuka — wajib untuk spatial awareness.
+- **B1 = SEKARANG**, prioritas tertinggi sebelum Phase 7. Minimal:
+  ambience gedung dingin + dengung mesin + 5 SFX inti (rambat, lompat,
+  sergap, alarm, detak jantung DIBURU).
+- **B2 = campuran organik×industrial**: basah/getah bergesekan logam
+  dingin, kabel korslet, langkah bergemerincing di gril. Keheningan
+  total HANYA saat pemain diam di tempat gelap.
+- **C1**: landmark besar = Pipa Utama / Katup Evakuasi Utama terkunci
+  gril tebal di ujung vertikal ruangan — "aku harus naik ke sana."
+- **C2 = YA**: poster peta evakuasi pudar di dinding lab (diegetic map,
+  posisi pemain di basement terbawah).
+- **D1**: lab dipangkas ke ±90 detik, beat dipadatkan.
+- **D2 = setuju penuh**: rahasia kecil bertebaran (tabung utuh pecah =
+  energi instan, catatan peneliti robek).
+- **D3 = wajib satu kali**: Teknisi pertama membelakangi pemain di
+  jalur utama Room 01 dengan jeda skrip — hard tutorial sergap senyap.
+- **E1 = YA (ringan)**: sensor pertama kali melihat → alarm + pintu
+  menutup paksa → panik → merayap cepat → sembunyi di rumpun pertama.
+  Mengajarkan DIBURU secara aman & dramatis.
+- **E2 = YA**: grow light lab: terdeteksi terlalu lama → semprotan
+  pestisida (damage ringan + melunturkan samaran).
+- **F1 (kalimat target)**: *"Splinter Cell, tapi kamu adalah tanaman
+  parasit yang merayap di langit-langit dan menelan penjaga satu per
+  satu."*
+- **F2 = YA (versi mini)**: Room 01 ≥60% ditumbuhi → lampu berkedip
+  redup, dengung berubah getar organik, sensor zona mati tercekik.
+- **G1**: W/S manual DIPERTAHANKAN + ikon tombol kecil transparan di
+  dekat sulur pada titik sambung.
+- **G2 = YA**: poster K3 korporat fiktif berisi ikon kendali
+  (diegetic).
+- **H1**: anggaran PixelLab difokuskan aset naratif pembuka + dasar.
+- **H2 (urutan disetujui)**: (1) Audio minimal → (2) Kelahiran
+  sinematik + poster peta → (3) Kill wajib + kejaran scripted →
+  (4) Rahasia kecil + state "ruangan milikku".
+
+## 6. CARA MEMAKAI DOKUMEN INI
+
+1. ~~Pemilik menjawab~~ SELESAI — jawaban di §5.
 2. Jawaban yang mengubah desain → pemilik lipat ke GDD/SRD (atau
    perintahkan amendemen).
-3. Saya eksekusi sesuai urutan yang disepakati di H2.
-4. Dokumen dibuang setelah semua jawaban terlipat.
+3. Eksekusi sesuai urutan H2 — satu langkah per sesi, commit
+   terverifikasi (GDD §41).
+4. Dokumen dibuang setelah semua jawaban terlipat & langkah tuntas.

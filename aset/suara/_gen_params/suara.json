@@ -1,0 +1,9 @@
+{
+  "catatan": "Suara minimal (jawaban pemilik B1/B2 di TANYA-TENDRIL): 6 WAV 22050 Hz mono 16-bit, SINTESIS PROSEDURAL murni (bukan PixelLab - PixelLab tidak membuat audio). Skrip: sintesis_suara.gd scratchpad, seed 1717, deterministik. Identitas B2: organik basah x industrial dingin. Loop di-set runtime oleh Suara.gd (LOOP_FORWARD).",
+  "ambience_gedung": "8 dtk loop: noise coklat bernapas + dengung mesin 55/110 Hz + desis listrik; fade silang ujung",
+  "rambat": "0.9 dtk loop: tiga gesekan daun basah (noise lowpass beramplop) - hidup saat MERAMBAT bergerak",
+  "lompat": "0.22 dtk: pegas organik, sapuan sinus 320->120 Hz + noise basah",
+  "sergap": "0.6 dtk: retakan tajam 60 ms + debum 90->55 Hz - ditelan",
+  "alarm": "1.2 dtk loop: dua nada kotak-lunak 880/659 Hz - selama waspada",
+  "jantung": "1.0 dtk loop: dub-DUB 52 Hz - hanya saat DIBURU"
+}

@@ -16,6 +16,7 @@ const DaunViewCls    = preload("res://scripts/render/DaunView.gd")
 const SensorCls      = preload("res://scripts/Sensor.gd")
 const HudCls         = preload("res://scripts/render/Hud.gd")
 const MenuJedaCls    = preload("res://scripts/render/MenuJeda.gd")
+const SuaraCls       = preload("res://scripts/render/Suara.gd")
 
 var world
 var avatar
@@ -35,6 +36,7 @@ var _interaksi_lalu = false
 var _esc_lalu = false
 var _keluar = false        # transisi sekali jalan
 var menu_jeda
+var suara
 var hud
 
 
@@ -91,6 +93,10 @@ func _ready():
 		s.lebar = 0.12
 		s.alarm = true   # kunci: memindai terus
 		kerucut.append(s)
+
+	# SUARA minimal (B1): ambience gedung sejak detik pertama
+	suara = SuaraCls.new()
+	add_child(suara)
 
 	var lapis_hud = CanvasLayer.new()
 	add_child(lapis_hud)
@@ -161,6 +167,8 @@ func _process(delta):
 		"lari": Input.is_physical_key_pressed(KEY_SHIFT),
 		"masuk": false,
 	}
+	if i.lompat and (avatar.di_tanah or avatar.moda == avatar.MERAMBAT):
+		suara.sfx("lompat")
 	_lompat_lalu = lompat_tahan
 
 	var jangkar_tahan = Input.is_physical_key_pressed(KEY_F)
@@ -208,6 +216,11 @@ func _process(delta):
 				else 0.7
 
 	avatar.update(delta, i, world)
+
+	# suara situasional (B2: hening total hanya saat diam di gelap)
+	suara.atur_loop("rambat",
+			avatar.moda == avatar.MERAMBAT and not diam, -16.0)
+	suara.atur_loop("alarm", _waspada > 0.0, -14.0)
 
 	# LORONG KELUAR (SRD Lab §0): menyentuh bukaan = lahir ke Room 01
 	if not _keluar and world.di_keluar(avatar.pos):
